@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>TypingFast — Vertical</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+    :root{
+      --bg-1:#041428;
+      --bg-2:#06243a;
+      --neon:#9be9ff;
+      --accent:#7c9eff;
+      --muted:#9bdff0;
+      --card:#071428;
+      --danger:#ff6b6b;
+      --success:#7ef0c7;
+      --glass: rgba(255,255,255,0.03);
+    }
+
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:
+      radial-gradient(600px 300px at 10% 10%, rgba(155,233,255,0.03), transparent 8%),
+      linear-gradient(180deg,var(--bg-1),var(--bg-2));color:#e6f7ff;-webkit-font-smoothing:antialiased}
+
+    /* Phone vertical container */
+    .phone {
+      width:360px; max-width:94vw; margin:18px auto; border-radius:22px; overflow:hidden;
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      box-shadow:0 18px 60px rgba(2,6,23,0.7), inset 0 1px 0 rgba(255,255,255,0.02);
+      border:1px solid rgba(255,255,255,0.03);
+      position:relative;
+    }
+
+    /* Top bar: left image header and right controls */
+    .top {
+      padding:10px 12px; display:flex;align-items:center;gap:12px;justify-content:center;
+      background:linear-gradient(180deg, rgba(0,0,0,0.08), rgba(255,255,255,0.01));
+      border-bottom:1px solid rgba(255,255,255,0.02);
+      min-height:56px;
+    }
+    .header-left { display:none; }
+    .header-img {
+      width:56px; height:44px; border-radius:8px; object-fit:cover; background:linear-gradient(90deg,#0b2b3a,#0f4a6b);
+      border:1px solid rgba(255,255,255,0.03);
+    }
+    .header-title { display:flex; flex-direction:column; gap:2px; }
+    .header-title .small { font-size:11px; color:var(--muted) }
+    .controls-top { display:flex; gap:8px; align-items:center; }
+
+    /* Pause icon (II) and options triangle */
+    .icon-btn {
+      width:50px; height:44px; border-radius:8px; display:flex;align-items:center;justify-content:center;
+      background:linear-gradient(90deg,var(--neon),var(--accent)); color:#04121a; font-weight:800; cursor:pointer; font-size:20px;
+      box-shadow:0 8px 20px rgba(0,0,0,0.35), 0 0 15px rgba(155,233,255,0.5); border:0; letter-spacing:2px;
+      animation:glow-pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes glow-pulse { 0%, 100% { box-shadow:0 8px 20px rgba(0,0,0,0.35), 0 0 10px rgba(155,233,255,0.3); } 50% { box-shadow:0 8px 20px rgba(0,0,0,0.35), 0 0 20px rgba(155,233,255,0.8); } }
+    .icon-ghost {
+      width:40px; height:36px; border-radius:8px; display:flex;align-items:center;justify-content:center;
+      background:transparent; color:var(--neon); border:1px solid rgba(255,255,255,0.04); cursor:pointer;
+    }
+
+    /* Main screen */
+    .screen {
+      padding:14px; display:flex;flex-direction:column;align-items:center;gap:12px;
+      min-height:560px; position:relative;
+    }
+
+    .bg-grid {
+      position:absolute; inset:0; opacity:0.04; background-image:
+      radial-gradient(circle at 10% 10%, rgba(124,58,237,0.06) 0 2px, transparent 2px),
+      radial-gradient(circle at 80% 80%, rgba(155,233,255,0.04) 0 2px, transparent 2px);
+      pointer-events:none;
+    }
+
+    .word-card {
+      width:92%; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:14px; padding:18px; display:flex;flex-direction:column;align-items:center;gap:8px;
+      box-shadow:0 8px 30px rgba(2,6,23,0.6) inset; border:1px solid rgba(255,255,255,0.02);
+      position:relative;
+    }
+
+    .word {
+      font-family:'Press Start 2P',monospace;font-size:36px;color:var(--neon);text-align:center;
+      letter-spacing:1px; margin:0; word-break:break-word;
+      transition:transform .12s ease, opacity .12s ease;
+      text-shadow:0 0 10px rgba(155,233,255,0.8), 0 4px 0 rgba(0,0,0,0.3);
+    }
+    .hint { font-size:11px;color:var(--muted); text-align:center; margin-top:6px }
+
+    .meter { width:100%; height:12px; background:rgba(255,255,255,0.03); border-radius:10px; overflow:hidden; margin-top:6px; border:1px solid rgba(255,255,255,0.02) }
+    .meter > i { display:block; height:100%; width:100%; background:linear-gradient(90deg,var(--neon),var(--accent)); transition:width .06s linear }
+
+    .input-row { width:100%; display:flex; gap:8px; margin-top:12px; align-items:center }
+    input[type="text"] {
+      flex:1; padding:12px; border-radius:0; border:2px solid var(--neon);
+      background:transparent; color:var(--neon); font-weight:700; font-size:14px; text-align:center;
+      outline:none; font-family:'Press Start 2P',monospace; letter-spacing:0.5px;
+      transition:all 0.2s;
+    }
+    input[type="text"]:focus { 
+      border-color:#ff6b6b; 
+      box-shadow:0 0 10px rgba(155,233,255,0.8), inset 0 0 10px rgba(155,233,255,0.2);
+    }
+
+    .stats {
+      width:92%; display:flex; justify-content:space-between; gap:8px; margin-top:12px;
+    }
+    .stat {
+      flex:1; background:var(--card); padding:10px; border-radius:10px; text-align:center; border:1px solid rgba(255,255,255,0.02)
+    }
+    .stat .label { font-size:10px; color:var(--muted); font-family:'Press Start 2P',monospace; }
+    .stat .value { font-family:'Press Start 2P',monospace; font-size:18px; color:var(--neon); text-shadow:0 0 8px rgba(155,233,255,0.6); }
+
+    /* Streak badge with animation */
+    .streak-badge {
+      display:flex;flex-direction:column;align-items:center;gap:6px;
+    }
+    .streak-number {
+      font-family:'Press Start 2P',monospace;font-size:20px;color:var(--neon);
+      padding:6px 10px;border-radius:10px;background:linear-gradient(90deg, rgba(155,233,255,0.06), rgba(124,154,255,0.03));
+      box-shadow:0 6px 18px rgba(0,0,0,0.45), 0 0 18px rgba(155,233,255,0.06) inset;
+      transition:transform .12s ease, box-shadow .12s ease;
+    }
+    .streak-number.pop {
+      transform:scale(1.18);
+      box-shadow:0 14px 30px rgba(0,0,0,0.55), 0 0 30px rgba(155,233,255,0.18) inset;
+    }
+
+    /* Bottom controls */
+    .controls { width:92%; display:flex; gap:8px; margin:14px auto 22px; justify-content:space-between }
+    .btn {
+      flex:1; padding:12px; border-radius:0; border:3px solid rgba(0,0,0,0.3); font-weight:800; font-size:12px; cursor:pointer;
+      color:#04121a; background:linear-gradient(90deg,var(--neon),var(--accent));
+      box-shadow:0 6px 0 rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+      font-family:'Press Start 2P',monospace; letter-spacing:1px; transition:all 0.08s;
+      position:relative;
+    }
+    .btn:active { transform:translateY(6px); box-shadow:0 0 0 rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2); }
+    .btn:hover { filter:brightness(1.15); }
+    .btn.ghost { background:transparent; color:var(--neon); border:2px solid var(--neon); box-shadow:0 4px 0 rgba(155,233,255,0.4); }
+    .btn.ghost:active { transform:translateY(4px); box-shadow:0 0 0 rgba(155,233,255,0.4); }
+    .btn.danger { background:linear-gradient(90deg,#ff7a7a,#ff3b81); color:#04121a }
+
+    /* Menu overlay with blur backdrop */
+    .overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:90; }
+    .overlay .backdrop { position:absolute; inset:0; backdrop-filter: blur(6px) saturate(120%); background:rgba(2,6,23,0.55); }
+    .menu {
+      width:340px; background:linear-gradient(180deg,#071428,#041025); border-radius:16px; padding:18px; border:1px solid rgba(255,255,255,0.04);
+      box-shadow:0 20px 60px rgba(0,0,0,0.7); position:relative; z-index:2; transform-origin:center;
+      animation:menu-pop 420ms cubic-bezier(.2,.9,.2,1);
+    }
+    @keyframes menu-pop {
+      0% { transform:scale(0.86); opacity:0 }
+      60% { transform:scale(1.04); opacity:1 }
+      100% { transform:scale(1); opacity:1 }
+    }
+    .menu h2 { font-family:'Press Start 2P',monospace; color:var(--neon); font-size:16px; margin:0 0 8px 0; text-align:center; text-shadow:0 0 10px rgba(155,233,255,0.8), 0 4px 0 #041428; animation:pulse-glow 1.5s ease-in-out infinite; }
+    @keyframes pulse-glow { 0%, 100% { text-shadow:0 0 10px rgba(155,233,255,0.6), 0 4px 0 #041428; } 50% { text-shadow:0 0 20px rgba(155,233,255,1), 0 4px 0 #041428; } }
+    .menu p { color:var(--muted); font-size:12px; text-align:center; margin:6px 0 12px 0 }
+    .menu .big-btn { width:100%; padding:12px; border-radius:0; border:3px solid rgba(255,255,255,0.1); font-weight:800; font-size:13px; cursor:pointer; color:#04121a; background:linear-gradient(90deg,var(--neon),var(--accent)); margin-bottom:10px; font-family:'Press Start 2P',monospace; letter-spacing:1px; transition:all 0.1s; box-shadow:0 6px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2); position:relative; }
+    .menu .big-btn:active { transform:translateY(6px); box-shadow:0 0 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2); }
+    .menu .big-btn:hover { filter:brightness(1.1); }
+    .menu .small { font-size:12px; color:var(--muted); text-align:center; margin-top:8px }
+
+    /* Ranking table */
+    .ranking { max-height:260px; overflow:auto; margin-top:8px; border-radius:8px; background:rgba(255,255,255,0.01); padding:8px; }
+    .rank-row { display:flex; justify-content:space-between; gap:8px; padding:8px; border-radius:6px; background:rgba(255,255,255,0.02); margin-bottom:6px; font-size:13px; color:var(--neon) }
+
+    /* Candy popups */
+    .candy {
+      position:fixed; left:50%; top:36%; transform:translate(-50%,-50%) scale(0.8);
+      font-family:'Press Start 2P',monospace; font-size:28px; color:#04121a; padding:12px 18px; border-radius:12px;
+      background:linear-gradient(90deg,#9be9ff,#7c9eff); box-shadow:0 18px 40px rgba(0,0,0,0.5);
+      opacity:0; pointer-events:none; z-index:90; text-align:center;
+      animation: candy-pop 900ms cubic-bezier(.2,.9,.2,1) forwards;
+    }
+    @keyframes candy-pop {
+      0% { transform:translate(-50%,-50%) scale(0.6); opacity:0; filter:blur(6px); }
+      40% { transform:translate(-50%,-60%) scale(1.06); opacity:1; filter:blur(0); }
+      100% { transform:translate(-50%,-120%) scale(0.9); opacity:0; }
+    }
+
+    /* Game over improved buttons */
+    .gameover-card { width:340px; background:linear-gradient(180deg,#071428,#041025); border-radius:16px; padding:18px; border:1px solid rgba(255,255,255,0.04); text-align:center; color:#fff; box-shadow:0 20px 60px rgba(0,0,0,0.7); position:relative; z-index:100; }
+    .gameover-card h3 { font-family:'Press Start 2P',monospace; color:#ff6b6b; font-size:16px; margin:0 0 8px 0; letter-spacing:1px; }
+    .gameover-actions { display:flex; gap:10px; margin-top:12px }
+    .gameover-actions button { flex:1; padding:10px; border-radius:0; border:3px solid; font-weight:800; cursor:pointer; font-family:'Press Start 2P',monospace; letter-spacing:1px; transition:all 0.08s; box-shadow:0 6px 0 rgba(0,0,0,0.5); }
+    .btn-retry { background:#00f5ff; color:#04121a; border-color:#04121a; }
+    .btn-menu { background:#00f5ff; color:#04121a; border-color:#04121a; }
+
+    #gameOverOverlay { z-index:110 !important; }
+
+    @media(min-width:420px){
+      .phone { width:400px }
+      .word { font-size:40px }
+    }
+  </style>
+</head>
+<body>
+  <div class="phone" role="application" aria-label="TypingFast vertical">
+    <div class="top">
+      <div class="header-left">
+        <!-- Header image (user-provided URL will be set by script) -->
+        <img id="menuHeaderImg" class="header-img" src="" alt="Cabecera" />
+        <div class="header-title">
+          <div class="small" id="headerSmall"> </div>
+          <div class="small" id="headerCredits" style="font-size:10px;color:var(--muted)">© Todos los derechos reservados · Creado por Sam Alexander</div>
+        </div>
+      </div>
+
+      <div class="controls-top">
+        <!-- Pause (II) - Main pause menu button -->
+        <button id="pauseBtnTop" class="icon-btn" title="Pausar">II</button>
+      </div>
+    </div>
+
+    <div class="screen">
+      <div class="bg-grid" aria-hidden="true"></div>
+
+      <div class="word-card" role="region" aria-live="polite">
+        <div id="word" class="word">PRESIONA INICIAR</div>
+        <div class="hint" id="wordHint">▶ Escribe + ENTER ◀</div>
+        <div class="meter" aria-hidden="true"><i id="meterBar" style="width:0%"></i></div>
+
+        <div class="input-row">
+          <input id="input" type="text" placeholder="Escribe aquí..." autocomplete="off" inputmode="text" disabled />
+        </div>
+
+        <div style="margin-top:10px;display:flex;align-items:center;gap:10px;justify-content:center">
+          <div style="text-align:center">
+            <div style="font-size:10px;color:var(--muted);font-family:'Press Start 2P',monospace;letter-spacing:0.5px">RACHA</div>
+            <div class="streak-badge">
+              <div id="streakNumber" class="streak-number">0</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="stats" aria-hidden="false">
+        <div class="stat">
+          <div class="label">PUNTOS</div>
+          <div class="value" id="score">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">NIVEL</div>
+          <div class="value" id="level">1</div>
+        </div>
+        <div class="stat">
+          <div class="label">FALLOS</div>
+          <div class="value" id="misses">0</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="btnStart" class="btn" style="color:#04121a">INICIAR</button>
+        <button id="btnMenu" class="btn ghost">MENÚ</button>
+        <button id="btnStop" class="btn danger">PARAR</button>
+      </div>
+
+      <!-- candy popups container -->
+      <div id="candyContainer" aria-hidden="true"></div>
+    </div>
+  </div>
+
+  <!-- Options overlay (pause menu with pixel icons) -->
+  <div id="optionsOverlay" class="overlay" style="display:none">
+    <div class="backdrop"></div>
+    <div class="menu" role="dialog" aria-modal="true">
+      <h2>PAUSA</h2>
+      <p style="color:var(--muted);font-size:11px;text-align:center;margin-bottom:12px;font-family:'Press Start 2P',monospace;letter-spacing:0.5px">ELIGE ACCIÓN</p>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <button id="optResume" class="big-btn" style="flex:1;background:linear-gradient(90deg,#00f5ff,#7c3aed)">REANUDAR</button>
+        <button id="optMenu" class="big-btn" style="flex:1;background:linear-gradient(90deg,#ffd166,#ff7a66)">MENÚ</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <button id="optSound" class="big-btn" style="flex:1;background:linear-gradient(90deg,#9be9ff,#7c9eff)">AUDIO</button>
+        <button id="optReset" class="big-btn" style="flex:1;background:linear-gradient(90deg,#ff7a7a,#ff3b81)">RESET</button>
+      </div>
+      <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:8px;font-family:'Press Start 2P',monospace;letter-spacing:0.5px">© 2026 SAM ALEXANDER</div>
+    </div>
+  </div>
+
+  <!-- Main menu overlay (animated, with blur) -->
+  <div id="menuOverlay" class="overlay" style="display:flex">
+    <div class="backdrop"></div>
+    <div class="menu" role="dialog" aria-modal="true">
+      <!-- header image -->
+      <img id="menuHeader" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhbA5rbFG6ImHx0jAS7vAIJDJjnxJvVHNXG__cX4osbxEl13dbzSSRot-2YPY9Zdz118Pz9531RX-lFc5mf951ZM1gj_hiSoeDuDfLBebn6Nhrbhq0yKlTAEA3vZEMyjb3nlODuckvWi2nXax5Jpecf2cR6oHqETvCZaCoKW8BsKzQdRdXBCDILw5pJpF8/s320/Copilot_20260524_233730.png" alt="Cabecera" style="width:100%;height:110px;object-fit:cover;border-radius:8px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.03)" />
+      <p style="color:var(--muted);font-size:10px;text-align:center;margin:6px 0 12px 0;font-family:'Press Start 2P',monospace;letter-spacing:0.5px">» INGRESA TU NOMBRE «</p>
+
+      <input id="menuName" type="text" placeholder="Tu nombre..." maxlength="20" style="width:calc(100% - 4px);padding:8px;border-radius:0;border:2px solid var(--neon);background:transparent;color:var(--neon);font-weight:700;font-family:'Press Start 2P',monospace;margin-bottom:12px;letter-spacing:0.5px;font-size:11px;text-align:center;box-sizing:border-box" />
+
+      <button id="menuPlay" class="big-btn" style="animation:pulse-start 0.8s ease-in-out infinite;">JUGAR</button>
+      <style>
+        @keyframes pulse-start { 0%, 100% { box-shadow:0 6px 0 rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2), 0 0 0 rgba(155,233,255,0.3); } 50% { box-shadow:0 6px 0 rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2), 0 0 15px rgba(155,233,255,0.8); } }
+      </style>
+      <button id="menuSound" class="big-btn" style="background:linear-gradient(90deg,#ffd166,#ff7a66)">AUDIO</button>
+      <button id="menuRanking" class="big-btn" style="background:linear-gradient(90deg,#9be9ff,#7c3aed)">RANKING</button>
+
+      <div id="rankingPanel" style="display:none;margin-top:10px">
+        <div class="ranking" id="rankingList"></div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="closeRanking" class="big-btn" style="flex:1;background:linear-gradient(90deg,#00f5ff,#7c3aed)">◄ ATRÁS</button>
+          <button id="clearRanking" class="big-btn" style="flex:1;background:linear-gradient(90deg,#ff7a7a,#ff3b81)">✕ BORRAR</button>
+        </div>
+      </div>
+
+      <div class="small" style="margin-top:10px;color:var(--muted);text-align:center;font-family:'Press Start 2P',monospace;font-size:8px;letter-spacing:0.5px">© 2026 SAM ALEXANDER</div>
+    </div>
+  </div>
+
+  <!-- Game over overlay -->
+  <div id="gameOverOverlay" class="overlay" style="display:none">
+    <div class="backdrop"></div>
+    <div class="gameover-card" role="dialog" aria-modal="true">
+      <h3 style="text-shadow:0 0 15px rgba(255,107,107,0.9), 0 4px 0 #041428;animation:blink-gameover 0.5s ease-in-out infinite;">▲ GAME OVER ▲</h3>
+      <div style="margin-top:8px;color:var(--muted)">Jugador</div>
+      <div style="font-weight:800;color:var(--neon)" id="finalName">—</div>
+      <div style="margin-top:10px;color:var(--muted)">Puntos</div>
+      <div style="font-weight:800;color:var(--success);font-size:20px" id="finalScore">0</div>
+
+      <div class="gameover-actions">
+        <button id="btnRetry" class="btn-retry">REINTENTAR</button>
+        <button id="btnToMenu" class="btn-menu">MENÚ</button>
+      </div>
+      <style>
+        @keyframes blink-gameover { 0%, 100% { opacity:1; } 50% { opacity:0.7; } }
+        #btnRetry:hover, #btnToMenu:hover { filter:brightness(0.9); }
+        #btnRetry:active, #btnToMenu:active { transform:translateY(6px); box-shadow:0 0 0 rgba(0,0,0,0.5); }
+      </style>
+    </div>
+  </div>
+
+  <script>
+    // Wrap all DOM access inside DOMContentLoaded to avoid null references
+    document.addEventListener('DOMContentLoaded', () => {
+      /* -------------------- Palabras reales con acentos correctos -------------------- */
+      const WORD_POOL = [
+        "casa","árbol","sol","mar","libro","puerta","ventana","cielo","fuego","agua",
+        "tierra","amigo","música","ciudad","camino","flor","montaña","río","noche","día",
+        "gato","perro","familia","escuela","comida","fruta","verde","azul","rojo","blanco",
+        "negro","amarillo","tiempo","viento","lluvia","arena","playa","isla","barco","tren",
+        "avión","auto","bicicleta","reloj","teléfono","pantalla","teclado","ratón","silla",
+        "mesa","cama","almohada","ropa","zapato","sombrero","bolsa","llave","puente","plaza",
+        "parque","jardín","bosque","sendero","camisa","pantalón","calcetín","sombrilla","estrella",
+        "luna","planeta","universo","galaxia","café","té","azúcar","sal","pimienta","pastel",
+        "helado","queso","pan","leche","huevo","pollo","pescado","verdura","ensalada","pelota",
+        "juego","película","teatro","museo","arte","pintura","canción","poema","historia","poeta",
+        "doctor","hospital","medicina","ciencia","laboratorio","fábrica","oficina","trabajo","empleo",
+        "dinero","banco","mercado","tienda","restaurante","cocina","chef","receta","ingrediente",
+        "viaje","vacaciones","hotel","mapa","guía","aventura","deporte","fútbol","baloncesto",
+        "natación","carrera","entrenamiento","salud","ejercicio","yoga","meditación","relajación",
+        "amor","amistad","sonrisa","risa","llanto","emoción","sueño","descanso","energía",
+        "tecnología","computadora","programa","aplicación","internet","red","servidor","datos",
+        "seguridad","privacidad","lenguaje","idioma","palabra","frase","oración","texto","libertad",
+        "justicia","paz","guerra","cultura","tradición","fiesta","celebración","instrumento",
+        "guitarra","piano","violín","batería","voz","melodía","ritmo","baile","danza","cine",
+        "actor","actriz","director","guion","escena","fotografía","luz","sombra","color","diseño"
+      ];
+
+      /* -------------------- State -------------------- */
+      let playerName = localStorage.getItem('typingfast_player') || '';
+      let running = false;
+      let score = 0;
+      let hits = 0;
+      let misses = 0;
+      let streak = 0;
+      let level = 1;
+
+      const BASE_TIME = 4.8;   // seconds at start
+      const MIN_TIME = 1.2;    // minimum seconds per word
+      const LEVEL_STEP = 10;   // points per level
+      const STREAK_SPEED_FACTOR = 0.06;
+      const LEVEL_SPEED_FACTOR = 0.18;
+
+      let timeLimit = BASE_TIME;
+      let timeRemaining = 0;
+      let tickInterval = null;
+
+      /* -------------------- Pool without repeats during session -------------------- */
+      let pool = [];
+      let poolIndex = 0;
+      function shufflePool(){
+        pool = WORD_POOL.slice();
+        for(let i = pool.length - 1; i > 0; i--){
+          const j = Math.floor(Math.random() * (i + 1));
+          [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+        poolIndex = 0;
+      }
+      shufflePool();
+      function nextFromPool(){
+        if(poolIndex >= pool.length) shufflePool();
+        return pool[poolIndex++];
+      }
+
+      /* -------------------- DOM refs -------------------- */
+      const menuOverlay = document.getElementById('menuOverlay');
+      const menuName = document.getElementById('menuName');
+      const menuPlay = document.getElementById('menuPlay');
+      const menuSound = document.getElementById('menuSound');
+      const menuRanking = document.getElementById('menuRanking');
+      const rankingPanel = document.getElementById('rankingPanel');
+      const rankingList = document.getElementById('rankingList');
+      const closeRanking = document.getElementById('closeRanking');
+      const clearRanking = document.getElementById('clearRanking');
+      const menuHeaderImg = document.getElementById('menuHeader');
+
+      const phoneInput = document.getElementById('input');
+      const wordEl = document.getElementById('word');
+      const meterBar = document.getElementById('meterBar');
+      const scoreEl = document.getElementById('score');
+      const levelEl = document.getElementById('level');
+      const streakEl = document.getElementById('streakNumber');
+
+      const btnStart = document.getElementById('btnStart');
+      const btnMenu = document.getElementById('btnMenu');
+      const btnStop = document.getElementById('btnStop');
+      const pauseBtnTop = document.getElementById('pauseBtnTop');
+
+      const optionsOverlay = document.getElementById('optionsOverlay');
+      const optResume = document.getElementById('optResume');
+      const optMenu = document.getElementById('optMenu');
+      const optSound = document.getElementById('optSound');
+      const optReset = document.getElementById('optReset');
+
+      const candyContainer = document.getElementById('candyContainer');
+
+      const gameOverOverlay = document.getElementById('gameOverOverlay');
+      const finalName = document.getElementById('finalName');
+      const finalScore = document.getElementById('finalScore');
+      const btnRetry = document.getElementById('btnRetry');
+      const btnToMenu = document.getElementById('btnToMenu');
+
+      /* -------------------- Ranking storage (full table) -------------------- */
+      const STORAGE_KEY = 'typingfast_ranking_v1';
+      function loadRanking(){
+        try{
+          const raw = localStorage.getItem(STORAGE_KEY);
+          return raw ? JSON.parse(raw) : [];
+        }catch(e){ return []; }
+      }
+      function saveRanking(arr){
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+      }
+      function addRanking(name, pts){
+        const arr = loadRanking();
+        arr.push({name: name || 'Anon', score: pts, date: new Date().toLocaleString()});
+        arr.sort((a,b)=>b.score - a.score);
+        saveRanking(arr);
+      }
+      function clearRankingStorage(){
+        localStorage.removeItem(STORAGE_KEY);
+        renderRanking();
+      }
+      function renderRanking(){
+        const arr = loadRanking();
+        rankingList.innerHTML = '';
+        if(arr.length === 0){
+          const el = document.createElement('div'); el.className='rank-row'; el.textContent='Sin partidas registradas';
+          rankingList.appendChild(el); return;
+        }
+        arr.forEach((r, i) => {
+          const row = document.createElement('div'); row.className='rank-row';
+          row.innerHTML = `<div style="font-weight:800">${i+1}. ${escapeHtml(r.name)}</div><div style="color:var(--muted)">${r.score}</div><div style="color:var(--muted);font-size:11px">${r.date}</div>`;
+          rankingList.appendChild(row);
+        });
+      }
+      function escapeHtml(str){
+        return String(str).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]; });
+      }
+
+      /* -------------------- Sound (simple beeps) -------------------- */
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      let audioCtx = null;
+      let soundOn = true;
+      function beep(freq=440, time=0.06, type='sine', gain=0.06){
+        if(!soundOn) return;
+        if(!audioCtx) audioCtx = new AudioCtx();
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = type;
+        o.frequency.value = freq;
+        g.gain.value = gain;
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start();
+        o.stop(audioCtx.currentTime + time);
+      }
+
+      /* -------------------- Time & progression -------------------- */
+      function computeTimeLimit(){
+        const levelReduction = Math.floor(score / LEVEL_STEP) * LEVEL_SPEED_FACTOR;
+        const streakReduction = Math.floor(streak) * STREAK_SPEED_FACTOR;
+        const t = Math.max(MIN_TIME, BASE_TIME - levelReduction - streakReduction);
+        return parseFloat(t.toFixed(2));
+      }
+
+      function updateUI(){
+        // safe DOM updates (elements exist because we are inside DOMContentLoaded)
+        scoreEl.textContent = score;
+        levelEl.textContent = level;
+        streakEl.textContent = streak;
+        meterBar.style.background = (timeRemaining / timeLimit) * 100 < 30 ? 'linear-gradient(90deg,var(--danger),#ff7a7a)' : 'linear-gradient(90deg,var(--neon),var(--accent))';
+      }
+
+      /* -------------------- Game flow -------------------- */
+      let currentWord = '';
+      const MAX_MISSES = 3;
+
+      function resetGame(){
+        running = false;
+        clearInterval(tickInterval);
+        tickInterval = null;
+        score = 0; hits = 0; misses = 0; streak = 0; level = 1;
+        timeLimit = BASE_TIME;
+        timeRemaining = 0;
+        phoneInput.disabled = true;
+        phoneInput.value = '';
+        currentWord = '';
+        wordEl.textContent = 'PRESIONA INICIAR';
+        meterBar.style.width = '0%';
+        updateUI();
+        shufflePool();
+      }
+
+      function startGame(){
+        if(!playerName){
+          menuOverlay.style.display = 'flex';
+          menuName.focus();
+          return;
+        }
+        if(running) return;
+        running = true;
+        timeLimit = computeTimeLimit();
+        timeRemaining = timeLimit;
+        currentWord = nextFromPool();
+        wordEl.textContent = currentWord;
+        meterBar.style.width = '100%';
+        phoneInput.disabled = false;
+        phoneInput.value = '';
+        phoneInput.focus();
+        tickInterval = setInterval(tick, 60);
+        updateUI();
+        beep(880, 0.06, 'square', 0.06);
+      }
+
+      function pauseGame(){
+        if(!running) return;
+        running = false;
+        clearInterval(tickInterval);
+        tickInterval = null;
+        phoneInput.disabled = true;
+        wordEl.textContent = 'PAUSADO';
+      }
+
+      function stopGame(){
+        if(!running && !currentWord) return;
+        running = false;
+        clearInterval(tickInterval);
+        tickInterval = null;
+        phoneInput.disabled = true;
+        showGameOver();
+      }
+
+      function tick(){
+        timeRemaining -= 0.06;
+        if(timeRemaining < 0) timeRemaining = 0;
+        const pct = Math.max(0, (timeRemaining / timeLimit) * 100);
+        meterBar.style.width = pct + '%';
+        if(pct < 30) meterBar.style.background = 'linear-gradient(90deg,var(--danger),#ff7a7a)';
+        else meterBar.style.background = 'linear-gradient(90deg,var(--neon),var(--accent))';
+        if(timeRemaining <= 0){
+          onMiss();
+        }
+      }
+
+      function onHit(){
+        score += 1;
+        hits += 1;
+        streak += 1;
+        level = 1 + Math.floor(score / LEVEL_STEP);
+        popStreak();
+        maybeShowCandy();
+        beep(1200 + Math.min(2000, score*8), 0.06, 'sine', 0.06);
+        timeLimit = computeTimeLimit();
+        nextWord();
+        updateUI();
+      }
+
+      function onMiss(){
+        misses += 1;
+        streak = 0;
+        if(score > 0) score = Math.max(0, score - 1);
+        timeLimit = computeTimeLimit();
+        beep(160, 0.12, 'sawtooth', 0.08);
+        if(misses >= MAX_MISSES){
+          stopGame();
+          return;
+        }
+        nextWord();
+        updateUI();
+      }
+
+      function nextWord(){
+        let candidate = nextFromPool();
+        if(streak >= 6){
+          const longWords = WORD_POOL.filter(w => w.length >= 7);
+          if(longWords.length) candidate = longWords[Math.floor(Math.random() * longWords.length)];
+        }
+        currentWord = candidate;
+        wordEl.style.transform = 'translateY(-6px)';
+        wordEl.style.opacity = '0.95';
+        setTimeout(()=>{ wordEl.style.transform = ''; wordEl.style.opacity = '1'; }, 120);
+        wordEl.textContent = currentWord;
+        timeRemaining = timeLimit;
+        meterBar.style.width = '100%';
+        phoneInput.value = '';
+        phoneInput.focus();
+      }
+
+      function showGameOver(){
+        finalName.textContent = playerName || '—';
+        finalScore.textContent = score;
+        addRanking(playerName || 'Anon', score);
+        renderRanking();
+        gameOverOverlay.style.display = 'flex';
+        beep(80, 0.3, 'sine', 0.12);
+      }
+
+      /* -------------------- Candy popups (GREAT, AMAZING, GOOD, NICE) -------------------- */
+      function maybeShowCandy(){
+        if(score > 0 && (score % 5 === 0 || streak >= 5)){
+          const messages = ['GREAT','AMAZING','GOOD','NICE','WOW','SUPER'];
+          const msg = messages[Math.floor(Math.random() * messages.length)];
+          showCandy(msg);
+        }
+      }
+      function showCandy(text){
+        const el = document.createElement('div');
+        el.className = 'candy';
+        el.textContent = text;
+        candyContainer.appendChild(el);
+        setTimeout(()=>{ el.remove(); }, 900);
+      }
+
+      /* -------------------- UI interactions -------------------- */
+      // Menu actions
+      menuPlay.addEventListener('click', ()=>{
+        const name = menuName.value.trim();
+        if(!name){
+          alert('Ingresa tu nombre para jugar');
+          menuName.focus();
+          return;
+        }
+        playerName = name;
+        localStorage.setItem('typingfast_player', playerName);
+        menuOverlay.style.display = 'none';
+        resetGame();
+        startGame();
+      });
+
+      // Sound toggle
+      menuSound.addEventListener('click', ()=>{
+        soundOn = !soundOn;
+        menuSound.textContent = '♪ AUDIO: ' + (soundOn ? 'ON' : 'OFF');
+        if(soundOn) beep(880, 0.06, 'square', 0.06);
+      });
+
+      // Ranking panel
+      menuRanking.addEventListener('click', ()=>{
+        renderRanking();
+        rankingPanel.style.display = rankingPanel.style.display === 'block' ? 'none' : 'block';
+        menuRanking.textContent = rankingPanel.style.display === 'block' ? 'OCULTAR RANKING' : 'RANKING';
+      });
+      closeRanking.addEventListener('click', ()=>{
+        rankingPanel.style.display = 'none';
+        menuRanking.textContent = 'RANKING';
+      });
+      clearRanking.addEventListener('click', ()=>{
+        if(confirm('Borrar todo el ranking?')){ clearRankingStorage(); alert('Ranking borrado'); }
+      });
+
+      // Buttons
+      btnStart.addEventListener('click', ()=>{ if(!playerName){ menuOverlay.style.display='flex'; menuName.focus(); return; } startGame(); });
+      btnMenu.addEventListener('click', ()=>{ menuOverlay.style.display='flex'; menuName.value = playerName || ''; menuName.focus(); });
+      btnStop.addEventListener('click', ()=>{ stopGame(); });
+
+      // Pause top button - Opens pause menu
+      pauseBtnTop.addEventListener('click', ()=>{
+        optionsOverlay.style.display = 'flex';
+      });
+
+      // Options overlay actions
+      optResume.addEventListener('click', ()=>{
+        optionsOverlay.style.display = 'none';
+        if(!running) startGame();
+      });
+      optMenu.addEventListener('click', ()=>{
+        optionsOverlay.style.display = 'none';
+        menuOverlay.style.display = 'flex';
+        resetGame();
+      });
+      optSound.addEventListener('click', ()=>{
+        soundOn = !soundOn;
+        optSound.textContent = '♪ AUDIO: ' + (soundOn ? 'ON' : 'OFF');
+        if(soundOn) beep(880, 0.06, 'square', 0.06);
+      });
+      optReset.addEventListener('click', ()=>{
+        optionsOverlay.style.display = 'none';
+        if(confirm('¿Reiniciar partida?')) resetGame();
+      });
+
+      // Game over actions
+      btnRetry.addEventListener('click', ()=>{
+        gameOverOverlay.style.display = 'none';
+        resetGame();
+        startGame();
+      });
+      btnToMenu.addEventListener('click', ()=>{
+        gameOverOverlay.style.display = 'none';
+        menuOverlay.style.display = 'flex';
+      });
+
+      // Input submit
+      phoneInput.addEventListener('keydown', (e)=>{
+        if(!running) return;
+        if(e.key === 'Enter'){
+          const val = phoneInput.value.trim();
+          if(val.length === 0) return;
+          if(val.normalize('NFC').toLowerCase() === currentWord.normalize('NFC').toLowerCase()){
+            onHit();
+          } else {
+            onMiss();
+          }
+        }
+      });
+
+      // Global shortcuts
+      document.addEventListener('keydown', (e)=>{
+        if(e.code === 'Space'){
+          e.preventDefault();
+          if(!running) startGame();
+          else {
+            if(document.activeElement !== phoneInput) phoneInput.focus();
+            phoneInput.value = '';
+          }
+        } else if(e.key === 'Escape'){
+          resetGame();
+        }
+      });
+
+      // Streak pop animation
+      function popStreak(){
+        const el = document.getElementById('streakNumber');
+        el.classList.add('pop');
+        setTimeout(()=> el.classList.remove('pop'), 220);
+      }
+
+      // Prevent mobile autocorrect interfering
+      phoneInput.setAttribute('autocapitalize','off');
+      phoneInput.setAttribute('autocorrect','off');
+      phoneInput.setAttribute('spellcheck','false');
+
+      // Initialize UI and set header image (user provided URL)
+      function init(){
+        // set header image to the URL the user provided
+        const headerUrl = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhbA5rbFG6ImHx0jAS7vAIJDJjnxJvVHNXG__cX4osbxEl13dbzSSRot-2YPY9Zdz118Pz9531RX-lFc5mf951ZM1gj_hiSoeDuDfLBebn6Nhrbhq0yKlTAEA3vZEMyjb3nlODuckvWi2nXax5Jpecf2cR6oHqETvCZaCoKW8BsKzQdRdXBCDILw5pJpF8/s320/Copilot_20260524_233730.png";
+        const img = document.getElementById('menuHeaderImg');
+        if(img) img.src = headerUrl;
+
+        if(playerName){
+          menuName.value = playerName;
+        }
+        renderRanking();
+        menuOverlay.style.display = 'flex';
+        currentWord = nextFromPool();
+        wordEl.textContent = 'PRESIONA INICIAR';
+        meterBar.style.width = '0%';
+        updateUI();
+      }
+
+      init();
+    }); // DOMContentLoaded end
+  </script>
+</body>
+</html>
