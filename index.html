@@ -958,7 +958,7 @@
             document.getElementById('theme-toggle').checked = (savedTheme === 'dark');
             document.getElementById('lang-select').value = currentLang;
             applyLanguage(currentLang);
-            initBoomerangLoopers();
+            IntersectionObserver();
         };
 
         function toggleTheme(isDark) {
@@ -1581,7 +1581,7 @@
                     }
                 }
             });
-            db.ref('users').on('value', snap => { 
+            db.ref('users').on('child_added', snap => { 
                 allUsers = snap.val() || {}; 
                 if(document.getElementById('view-search').classList.contains('active')) searchUsers(); 
                 if(document.getElementById('view-profile').classList.contains('active') && currentlyViewingProfileUid) {
@@ -1589,7 +1589,7 @@
                 }
                 if(document.getElementById('view-ranking').classList.contains('active')) renderRanking();
             });
-            db.ref('posts').on('value', snap => {
+            db.ref('posts').on('child_added', snap => {
                 const data = snap.val(); posts = data ? Object.values(data).sort((a,b) => b.timestamp - a.timestamp) : [];
                 if(document.getElementById('view-feed').classList.contains('active')) renderFeed();
                 if(document.getElementById('view-profile').classList.contains('active') && currentlyViewingProfileUid) {
@@ -1597,7 +1597,7 @@
                 }
                 checkUrlForPost();
             });
-            db.ref('stories').on('value', snap => {
+            db.ref('stories').on('child_added', snap => {
                 const data = snap.val(); stories = data ? Object.values(data) : [];
                 if(document.getElementById('view-feed').classList.contains('active')) renderStories();
             });
