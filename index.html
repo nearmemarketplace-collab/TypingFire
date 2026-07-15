@@ -15,6 +15,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
     <style>
         /* === VARIABLES & TEMAS === */
@@ -718,6 +719,7 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.database();
+        const storage = firebase.storage(); // <- Añadido Storage para poder manejar los Blobs
 
         /* === ESTADO GLOBAL === */
         let currentUser = null;
@@ -727,9 +729,9 @@
         let notifications = [];
         let isAiLoaded = false;
         
-        let uploadBase64 = null;
-        let regAvatarBase64 = null;
-        let editAvatarBase64 = null;
+        let uploadBlob = null; // <- Cambiado a Blob
+        let regAvatarBlob = null; // <- Cambiado a Blob
+        let editAvatarBlob = null; // <- Cambiado a Blob
         let currentUploadIsVideo = false;
         
         let currentPostIdForAction = null; 
@@ -737,7 +739,7 @@
         let currentStoryId = null;
         
         let editingPostId = null;
-        let editingPostBase64 = null;
+        let editingPostBlob = null; // <- Cambiado a Blob/File
 
         let currentlyViewingProfileUid = null; 
         let currentUploadIsAI = false;
@@ -980,11 +982,21 @@
             if (seconds >= 3600) return `${d.ago}${Math.floor(seconds/3600)} ${d.h}`;
             return `${d.ago}${Math.floor(seconds/60)} ${d.m}`;
         }
+        
+        /* === HELPER FIREBASE STORAGE === */
+        async function uploadBlobToStorage(blob, folder, userId) {
+            if(typeof blob === 'string') return blob; // Si ya es una URL existente
+            const filename = `${folder}/${userId}_${Date.now()}`;
+            const ref = storage.ref().child(filename);
+            await ref.put(blob);
+            return await ref.getDownloadURL();
+        }
 
-        /* === COMPRESIÓN DE IMÁGENES === */
-        function compressImage(base64Str, maxWidth, callback) {
+        /* === COMPRESIÓN DE IMÁGENES A BLOB === */
+        function compressImageToBlob(fileOrUrl, maxWidth, callback) {
             let img = new Image();
-            img.src = base64Str;
+            // Si es un File/Blob, creamos la URL temporal
+            img.src = typeof fileOrUrl === 'string' ? fileOrUrl : URL.createObjectURL(fileOrUrl);
             img.onload = () => {
                 let canvas = document.createElement('canvas');
                 let width = img.width;
@@ -997,7 +1009,10 @@
                 canvas.height = height;
                 let ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                callback(canvas.toDataURL('image/jpeg', 0.8));
+                // Convertimos el canvas a Blob en lugar de Base64
+                canvas.toBlob((blob) => {
+                    callback(blob);
+                }, 'image/jpeg', 0.8);
             };
         }
 
@@ -1252,25 +1267,25 @@
                     ctx.drawImage(firstCamImage, 15, 15, smallW, smallH);
                     ctx.strokeStyle = "#fff"; ctx.lineWidth = 4; ctx.strokeRect(15, 15, smallW, smallH);
 
-                    compressImage(finalCanvas.toDataURL('image/jpeg'), 800, finishCapture);
+                    finalCanvas.toBlob(blob => compressImageToBlob(blob, 800, finishCapture), 'image/jpeg');
                     dualCamStep = 0; isDualCamMode = false; dualCamType = '';
                     document.getElementById('dual-cam-btn').classList.remove('dual-cam-active');
                     document.getElementById('t-cap-btn').innerText = i18n[currentLang].capBtn;
                     return;
                 }
             } else {
-                compressImage(tCanvas.toDataURL('image/jpeg'), 800, finishCapture);
+                tCanvas.toBlob(blob => compressImageToBlob(blob, 800, finishCapture), 'image/jpeg');
             }
         }
         
-        function finishCapture(compressedBase64) {
-            uploadBase64 = compressedBase64;
+        function finishCapture(compressedBlob) {
+            uploadBlob = compressedBlob;
             currentUploadIsAI = false; 
             currentUploadIsVideo = false;
             closeLiveCamera();
             document.getElementById('preview-vid').style.display = 'none';
             const img = document.getElementById('preview-img');
-            img.src = uploadBase64; img.style.display = 'block';
+            img.src = URL.createObjectURL(uploadBlob); img.style.display = 'block';
             document.getElementById('btn-publish').style.display = 'block';
         }
 
@@ -1288,42 +1303,39 @@
             
             if(!currentUploadIsVideo) checkAIGenerated(file);
 
-            const reader = new FileReader();
-            reader.onload = ev => {
-                const processMedia = (base64) => {
-                    uploadBase64 = base64;
-                    if(currentUploadIsVideo) {
-                        document.getElementById('preview-img').style.display = 'none';
-                        const vid = document.getElementById('preview-vid');
-                        vid.src = uploadBase64;
-                        vid.style.display = 'block';
-                    } else {
-                        document.getElementById('preview-vid').style.display = 'none';
-                        const img = document.getElementById('preview-img');
-                        img.src = uploadBase64; 
-                        img.style.display = 'block';
-                    }
-                    
-                    setTimeout(() => {
-                        btnPub.disabled = false;
-                        btnPub.innerHTML = `<i class="fas fa-magic"></i> ${i18n[currentLang].btnPub || 'Analizar y Publicar'}`;
-                        if(currentUploadIsAI && !currentUploadIsVideo) {
-                            document.getElementById('ai-pre-detect-alert').style.display = 'block';
-                        }
-                    }, 1000);
-                };
-
-                if (currentUploadIsVideo || file.type === 'image/gif') {
-                    processMedia(ev.target.result);
+            const processMedia = (blob) => {
+                uploadBlob = blob;
+                const tempUrl = URL.createObjectURL(blob);
+                if(currentUploadIsVideo) {
+                    document.getElementById('preview-img').style.display = 'none';
+                    const vid = document.getElementById('preview-vid');
+                    vid.src = tempUrl;
+                    vid.style.display = 'block';
                 } else {
-                    compressImage(ev.target.result, 800, processMedia);
+                    document.getElementById('preview-vid').style.display = 'none';
+                    const img = document.getElementById('preview-img');
+                    img.src = tempUrl; 
+                    img.style.display = 'block';
                 }
-            }; 
-            reader.readAsDataURL(file);
+                
+                setTimeout(() => {
+                    btnPub.disabled = false;
+                    btnPub.innerHTML = `<i class="fas fa-magic"></i> ${i18n[currentLang].btnPub || 'Analizar y Publicar'}`;
+                    if(currentUploadIsAI && !currentUploadIsVideo) {
+                        document.getElementById('ai-pre-detect-alert').style.display = 'block';
+                    }
+                }, 1000);
+            };
+
+            if (currentUploadIsVideo || file.type === 'image/gif') {
+                processMedia(file);
+            } else {
+                compressImageToBlob(file, 800, processMedia);
+            }
         }
 
         async function analyzeAndPublish() {
-            if(!uploadBase64) return;
+            if(!uploadBlob) return;
             const btn = document.getElementById('btn-publish');
             btn.disabled = true; btn.innerHTML = i18n[currentLang].analyzing;
             
@@ -1375,13 +1387,16 @@
             if(userLocationText) detectedText += ` | ${userLocationText}`;
             if(filterText) detectedText += (detectedText ? ' | ' : '') + filterText;
 
+            // Subimos el Blob al Storage
+            const finalImageUrl = await uploadBlobToStorage(uploadBlob, 'posts', currentUser.uid);
+
             const newPost = {
                 id: 'post_' + Date.now(),
                 userId: currentUser.uid, 
                 userName: currentUser.name || "Usuario", 
                 userAvatar: currentUser.avatar || "", 
                 username: currentUser.username || "",
-                image: uploadBase64 || "", 
+                image: finalImageUrl, 
                 isVideo: currentUploadIsVideo,
                 caption: document.getElementById('post-caption').value || "", 
                 emotion: detectedText || "",
@@ -1403,7 +1418,7 @@
             currentUploadIsVideo = false;
 
             userLocationText = ""; document.getElementById('location-display').innerText = "";
-            uploadBase64 = null; btn.style.display = 'none'; btn.disabled = false;
+            uploadBlob = null; btn.style.display = 'none'; btn.disabled = false;
             btn.innerHTML = `<i class="fas fa-magic"></i> ${dict.btnPub}`;
             openView('view-feed');
         }
@@ -1513,23 +1528,19 @@
         function handleRegAvatar(e) {
             const file = e.target.files[0]; 
             if(!file) return;
-            const reader = new FileReader();
-            reader.onload = ev => { 
-                if (file.type === 'image/gif') {
-                    regAvatarBase64 = ev.target.result;
-                    document.getElementById('reg-avatar-preview').src = regAvatarBase64; 
+            if (file.type === 'image/gif') {
+                regAvatarBlob = file;
+                document.getElementById('reg-avatar-preview').src = URL.createObjectURL(file); 
+                document.getElementById('reg-avatar-preview').style.display = 'block'; 
+                document.getElementById('reg-avatar-icon').style.display = 'none'; 
+            } else {
+                compressImageToBlob(file, 400, (compBlob) => {
+                    regAvatarBlob = compBlob; 
+                    document.getElementById('reg-avatar-preview').src = URL.createObjectURL(compBlob); 
                     document.getElementById('reg-avatar-preview').style.display = 'block'; 
                     document.getElementById('reg-avatar-icon').style.display = 'none'; 
-                } else {
-                    compressImage(ev.target.result, 400, (comp) => {
-                        regAvatarBase64 = comp; 
-                        document.getElementById('reg-avatar-preview').src = regAvatarBase64; 
-                        document.getElementById('reg-avatar-preview').style.display = 'block'; 
-                        document.getElementById('reg-avatar-icon').style.display = 'none'; 
-                    });
-                }
-            };
-            if(file) reader.readAsDataURL(file);
+                });
+            }
         }
 
         async function register() {
@@ -1537,7 +1548,7 @@
             const errorLabel = document.getElementById('auth-error');
             errorLabel.style.color = "#ff4d4d";
             
-            if(!name || !email || !pass || !regAvatarBase64) return errorLabel.innerText = i18n[currentLang].reqPic;
+            if(!name || !email || !pass || !regAvatarBlob) return errorLabel.innerText = i18n[currentLang].reqPic;
             if(pass.length < 6) return errorLabel.innerText = "La contraseña debe tener al menos 6 caracteres";
             
             const autoUsername = '@' + name.replace(/\s+/g, '').toLowerCase() + Math.floor(Math.random() * 1000);
@@ -1545,8 +1556,11 @@
             document.getElementById('btn-register').disabled = true;
             try {
                 const cred = await auth.createUserWithEmailAndPassword(email, pass);
+                // Subir a storage
+                const avatarUrl = await uploadBlobToStorage(regAvatarBlob, 'avatars', cred.user.uid);
+
                 await cred.user.sendEmailVerification();
-                await db.ref('users/' + cred.user.uid).set({ uid: cred.user.uid, name: name, username: autoUsername, stars: 0, bio: "¡Hola! Uso StarShine ✨", avatar: regAvatarBase64, followersCount: 0, followingCount: 0 });
+                await db.ref('users/' + cred.user.uid).set({ uid: cred.user.uid, name: name, username: autoUsername, stars: 0, bio: "¡Hola! Uso StarShine ✨", avatar: avatarUrl, followersCount: 0, followingCount: 0 });
                 await auth.signOut();
                 
                 errorLabel.style.color = "var(--primary)";
@@ -1613,18 +1627,17 @@
         /* === HISTORIAS === */
         function handleStoryUpload(e) {
             const file = e.target.files[0]; if(!file) return;
-            const reader = new FileReader();
-            reader.onload = async ev => {
-                if (file.type === 'image/gif') {
-                    const newStory = { id: 'story_' + Date.now(), userId: currentUser.uid, userName: currentUser.name, userAvatar: currentUser.avatar, image: ev.target.result, timestamp: Date.now(), score: 0 };
-                    await db.ref('stories/' + newStory.id).set(newStory);
-                } else {
-                    compressImage(ev.target.result, 800, async (compressed) => {
-                        const newStory = { id: 'story_' + Date.now(), userId: currentUser.uid, userName: currentUser.name, userAvatar: currentUser.avatar, image: compressed, timestamp: Date.now(), score: 0 };
-                        await db.ref('stories/' + newStory.id).set(newStory);
-                    });
-                }
-            }; reader.readAsDataURL(file);
+            const processStoryBlob = async (blob) => {
+                const storyUrl = await uploadBlobToStorage(blob, 'stories', currentUser.uid);
+                const newStory = { id: 'story_' + Date.now(), userId: currentUser.uid, userName: currentUser.name, userAvatar: currentUser.avatar, image: storyUrl, timestamp: Date.now(), score: 0 };
+                await db.ref('stories/' + newStory.id).set(newStory);
+            };
+
+            if (file.type === 'image/gif') {
+                processStoryBlob(file);
+            } else {
+                compressImageToBlob(file, 800, processStoryBlob);
+            }
         }
         
         function renderStories() {
@@ -1910,7 +1923,7 @@
         function openEditPost(postId) {
             const post = posts.find(p => p.id === postId); if(!post) return;
             editingPostId = postId;
-            editingPostBase64 = post.image;
+            editingPostBlob = post.image; // Mantiene la URL original por ahora
             document.getElementById('edit-post-preview').src = post.image;
             document.getElementById('edit-post-caption').value = post.caption || '';
             const menu = document.getElementById(`menu-${postId}`);
@@ -1923,18 +1936,15 @@
         function handleEditPostImage(e) {
             const file = e.target.files[0]; if(!file) return;
             checkAIGenerated(file);
-            const reader = new FileReader();
-            reader.onload = ev => {
-                if (file.type === 'image/gif' || file.type.startsWith('video/')) {
-                    editingPostBase64 = ev.target.result;
-                    document.getElementById('edit-post-preview').src = editingPostBase64;
-                } else {
-                    compressImage(ev.target.result, 800, (compressedBase64) => {
-                        editingPostBase64 = compressedBase64;
-                        document.getElementById('edit-post-preview').src = editingPostBase64;
-                    });
-                }
-            }; reader.readAsDataURL(file);
+            if (file.type === 'image/gif' || file.type.startsWith('video/')) {
+                editingPostBlob = file;
+                document.getElementById('edit-post-preview').src = URL.createObjectURL(file);
+            } else {
+                compressImageToBlob(file, 800, (compressedBlob) => {
+                    editingPostBlob = compressedBlob;
+                    document.getElementById('edit-post-preview').src = URL.createObjectURL(compressedBlob);
+                });
+            }
         }
 
         async function saveEditPost() {
@@ -1943,8 +1953,10 @@
             const newCaption = document.getElementById('edit-post-caption').value;
             
             let updateData = { caption: newCaption, edited: true };
-            if (editingPostBase64 !== post.image) {
-                updateData.image = editingPostBase64;
+            if (editingPostBlob !== post.image) {
+                // Si cambió, subimos el nuevo Blob
+                const newUrl = await uploadBlobToStorage(editingPostBlob, 'posts', currentUser.uid);
+                updateData.image = newUrl;
                 updateData.isAI = currentUploadIsAI;
             }
 
@@ -2118,7 +2130,7 @@
             document.getElementById('edit-x').value = currentUser.x || '';
             document.getElementById('edit-web').value = currentUser.web || '';
 
-            editAvatarBase64 = currentUser.avatar;
+            editAvatarBlob = currentUser.avatar; // Por defecto mantenemos la URL actual
             document.getElementById('overlay').style.display = 'block';
             document.getElementById('edit-profile-modal').style.display = 'flex';
         }
@@ -2126,14 +2138,10 @@
         function handleEditAvatar(e) {
             const file = e.target.files[0];
             if(!file) return;
-            const reader = new FileReader();
-            reader.onload = ev => {
-                compressImage(ev.target.result, 400, (comp) => {
-                    editAvatarBase64 = comp;
-                    document.getElementById('edit-avatar-preview').src = comp;
-                });
-            };
-            reader.readAsDataURL(file);
+            compressImageToBlob(file, 400, (compBlob) => {
+                editAvatarBlob = compBlob;
+                document.getElementById('edit-avatar-preview').src = URL.createObjectURL(compBlob);
+            });
         }
 
         async function saveProfileChanges() {
@@ -2147,8 +2155,13 @@
             const x = document.getElementById('edit-x').value;
             const web = document.getElementById('edit-web').value;
 
+            let newAvatarUrl = currentUser.avatar;
+            if(editAvatarBlob !== currentUser.avatar) {
+                newAvatarUrl = await uploadBlobToStorage(editAvatarBlob, 'avatars', currentUser.uid);
+            }
+
             await db.ref(`users/${currentUser.uid}`).update({ 
-                name: name, bio: bio, avatar: editAvatarBase64,
+                name: name, bio: bio, avatar: newAvatarUrl,
                 wa: wa, ig: ig, snap: snap, yt: yt, tt: tt, x: x, web: web
             });
             closeModals();
