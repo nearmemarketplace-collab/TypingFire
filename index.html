@@ -221,7 +221,7 @@
         
         /* Media interactiva en post */
         .post-media-container { position: relative; width: 100%; border-radius: 16px; overflow: hidden; margin-bottom: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.3); background: #000; }
-        .post-media { width: 100%; display: block; object-fit: cover; max-height: 500px; transition: transform 0.5s ease;}
+        .post-media { width: 100%; display: block; object-fit: cover; max-height: 500px; transition: transform 0.5s ease; cursor: pointer;}
         .post-media-container:hover .post-media { transform: scale(1.03); }
         
         .star-burst { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); color: #FFD700; font-size: 5rem; text-shadow: 0 0 30px rgba(255,215,0,0.8); opacity: 0; pointer-events: none; z-index: 10;}
@@ -243,7 +243,7 @@
         .action-icons i { cursor: pointer; transition: all 0.3s; text-shadow: 0 0 5px rgba(0,0,0,0.1); }
         .action-icons i:hover { color: var(--primary); transform: translateY(-2px);}
 
-        /* Menú de Opciones del Post (Editar/Eliminar/Descargar) */
+        /* Menú de Opciones del Post (Editar/Eliminar) */
         .post-menu { position: absolute; top: 45px; right: 15px; background: var(--surface); border: 1px solid var(--primary); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,168,232,0.3); z-index: 10; display: none; flex-direction: column; overflow: hidden; backdrop-filter: blur(15px);}
         .post-menu button { background: transparent; border: none; padding: 12px 18px; color: var(--text-main); text-align: left; cursor: pointer; font-size: 0.95rem; transition: background 0.2s; display: flex; align-items: center; gap: 10px;}
         .post-menu button:hover { background: rgba(0,168,232,0.2); }
@@ -263,11 +263,6 @@
         .stat span { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; }
         .profile-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
         .profile-grid img, .profile-grid video { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; cursor: pointer; transition: transform 0.2s;}
-
-        /* Social Links Perfil */
-        .social-links { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
-        .social-links a { color: var(--primary); font-size: 1.2rem; transition: 0.3s; }
-        .social-links a:hover { transform: scale(1.1); text-shadow: 0 0 10px rgba(0,168,232,0.5); }
 
         /* === MODALES Y EXTRAS === */
         .modal { display: none; position: absolute; bottom: 0; width: 100%; height: 85%; background: var(--surface); border-radius: 20px 20px 0 0; box-shadow: 0 -10px 50px rgba(0,168,232,0.4); z-index: 50; flex-direction: column; animation: slideUp 0.4s ease; border-top: 1px solid rgba(0,168,232,0.3); backdrop-filter: blur(15px);}
@@ -322,10 +317,8 @@
         .search-user-item:hover { transform: scale(1.02); border-color: var(--primary); }
         .search-user-item .avatar { width: 40px; height: 40px; margin-right: 15px; }
 
-        /* Dual Cam Button & Timer */
+        /* Dual Cam Button */
         .dual-cam-active { background: var(--star-active) !important; color: #000 !important; box-shadow: 0 0 15px rgba(255, 215, 0, 0.8) !important; border-color: #FFD700 !important;}
-        
-        .timer-display { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 5rem; color: white; text-shadow: 0 0 20px var(--primary); z-index: 20; display: none; font-weight: bold;}
     </style>
 </head>
 <body>
@@ -340,6 +333,16 @@
         <div id="profile-loader-overlay">
             <div class="loader"></div>
             <h2 style="color:var(--primary); margin-top:20px; font-family:sans-serif; text-shadow: 0 0 10px rgba(0,168,232,0.5);">Buscando estrella...</h2>
+        </div>
+
+        <!-- FULLSCREEN MODAL -->
+        <div id="fullscreen-view" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; flex-direction:column; align-items:center; justify-content:center; backdrop-filter: blur(10px);">
+            <div style="position:absolute; top:20px; right:20px; z-index:10000; display:flex; gap:20px;">
+                <i class="fas fa-download" style="color:#fff; font-size:1.8rem; cursor:pointer; text-shadow: 0 0 10px rgba(255,255,255,0.5);" onclick="downloadCurrentMedia()"></i>
+                <i class="fas fa-times" style="color:#fff; font-size:1.8rem; cursor:pointer; text-shadow: 0 0 10px rgba(255,255,255,0.5);" onclick="closeFullScreen()"></i>
+            </div>
+            <img id="fs-img" style="display:none; max-width:100%; max-height:100%; object-fit:contain; animation: fadeIn 0.3s ease;">
+            <video id="fs-vid" style="display:none; max-width:100%; max-height:100%; object-fit:contain; animation: fadeIn 0.3s ease;" controls loop></video>
         </div>
 
         <div id="auth-view">
@@ -442,14 +445,20 @@
                         <div id="camera-container" style="display:none; position:relative; width:100%; border-radius:14px; overflow:hidden; margin-bottom:15px; background: #000; border: 2px solid var(--primary); box-shadow: 0 0 20px rgba(0,168,232,0.3);">
                             <video id="live-video" autoplay playsinline style="width:100%; display:block;"></video>
                             <canvas id="live-canvas" style="position:absolute; top:0; left:0; width:100%; height:100%;"></canvas>
-                            <div id="cam-timer-display" class="timer-display">5</div>
                             <i class="fas fa-sync" style="position:absolute; top:15px; left:15px; color:white; font-size:1.5rem; cursor:pointer; text-shadow: 0 0 10px var(--primary); z-index:10;" onclick="toggleCamera()"></i>
-                            <button id="dual-cam-btn" class="btn-secondary" style="position:absolute; top:15px; left:50%; transform:translateX(-50%); width:auto; padding:5px 15px; z-index:10; font-size:0.8rem;" onclick="toggleDualCam()">
+                            
+                            <!-- BEREAL MENU -->
+                            <button id="dual-cam-btn" class="btn-secondary" style="position:absolute; top:15px; left:50%; transform:translateX(-50%); width:auto; padding:5px 15px; z-index:10; font-size:0.8rem;" onclick="toggleDualCamMenu()">
                                 <i class="fas fa-camera"></i> Modo Dual (BeReal)
                             </button>
-                            <button class="btn-secondary" style="position:absolute; bottom:15px; left:5%; width: auto; z-index:10; opacity: 0.9; padding: 5px 10px; font-size: 0.8rem;" onclick="startTimerCapture()"><i class="fas fa-clock"></i> 5s</button>
-                            <button class="btn-secondary" style="position:absolute; bottom:15px; right:5%; width: auto; z-index:10; opacity: 0.9; padding: 5px 10px; font-size: 0.8rem;" onclick="expandCamera()"><i class="fas fa-expand"></i></button>
-                            <button class="btn-primary" style="position:absolute; bottom:15px; left:50%; transform:translateX(-50%); width: 50%; opacity: 0.9;" onclick="captureLiveCamera()"><i class="fas fa-camera"></i> <span id="t-cap-btn">Capturar</span></button>
+                            <div id="dual-cam-options" style="display:none; position:absolute; top:50px; left:50%; transform:translateX(-50%); z-index:10; background:rgba(0,0,0,0.8); padding:10px; border-radius:10px; flex-direction:column; gap:10px; text-align:center; backdrop-filter:blur(5px); border: 1px solid var(--primary);">
+                                <button class="btn-primary btn-small" onclick="startDualCam('front-rear')" style="margin:0; width:100%;">Frontal + Trasera</button>
+                                <button class="btn-secondary btn-small" onclick="startDualCam('front-front')" style="margin:0; width:100%;">Frontal x2 (5s)</button>
+                            </div>
+
+                            <div id="cam-countdown" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:5rem; color:white; font-weight:bold; z-index:20; text-shadow:0 0 20px var(--primary);"></div>
+
+                            <button class="btn-primary" style="position:absolute; bottom:15px; left:50%; transform:translateX(-50%); width: 80%; opacity: 0.9;" onclick="captureLiveCamera()"><i class="fas fa-camera"></i> <span id="t-cap-btn">Capturar</span></button>
                             <i class="fas fa-times" style="position:absolute; top:15px; right:15px; color:white; font-size:1.5rem; cursor:pointer; text-shadow: 0 0 10px var(--primary); z-index:10;" onclick="closeLiveCamera()"></i>
                         </div>
 
@@ -582,11 +591,6 @@
                 </div>
                 <div class="input-group"><label id="t-name">Nombre:</label><input type="text" id="edit-name"></div>
                 <div class="input-group"><label id="t-bio">Biografía:</label><textarea id="edit-bio" rows="3"></textarea></div>
-                
-                <!-- Redes sociales añadidas -->
-                <div class="input-group"><label><i class="fab fa-instagram" style="color: #E1306C;"></i> Instagram:</label><input type="text" id="edit-ig" placeholder="@usuario"></div>
-                <div class="input-group"><label><i class="fab fa-twitter" style="color: #1DA1F2;"></i> Twitter/X:</label><input type="text" id="edit-tw" placeholder="@usuario"></div>
-
                 <button class="btn-primary" onclick="saveProfileChanges()" id="t-save">Guardar Cambios</button>
             </div>
         </div>
@@ -624,6 +628,7 @@
 
         <div id="story-view-modal" class="story-view-modal">
             <div class="story-header">
+                <!-- REDIRECCIÓN AL PERFIL DESDE LA HISTORIA -->
                 <img id="sv-avatar" src="" style="cursor:pointer;" onclick="if(currentStoryId && viewingUserStories.length > 0){closeStory(); viewProfile(viewingUserStories[viewingStoryIndex].userId);}">
                 <div style="flex: 1; cursor:pointer;" onclick="if(currentStoryId && viewingUserStories.length > 0){closeStory(); viewProfile(viewingUserStories[viewingStoryIndex].userId);}">
                     <strong id="sv-name">Usuario</strong><br>
@@ -695,9 +700,16 @@
         let currentLang = 'es';
         let usingFrontCamera = true;
         
+        // Modal Media Variables
+        let currentFsSrc = "";
+        let currentFsIsVideo = false;
+
+        // BeReal Variables
         let isDualCamMode = false;
+        let dualCamType = ''; 
         let dualCamStep = 0; 
         let firstCamImage = null;
+        let countdownInterval = null;
 
         /* === DICCIONARIO TRADUCCIÓN === */
         const i18n = {
@@ -936,6 +948,41 @@
             };
         }
 
+        /* === FULL SCREEN & DESCARGAS === */
+        function openFullScreen(src, isVideo) {
+            currentFsSrc = src;
+            currentFsIsVideo = isVideo;
+            const modal = document.getElementById('fullscreen-view');
+            const img = document.getElementById('fs-img');
+            const vid = document.getElementById('fs-vid');
+            
+            if(isVideo) {
+                img.style.display = 'none';
+                vid.src = src;
+                vid.style.display = 'block';
+                vid.play();
+            } else {
+                vid.style.display = 'none';
+                img.src = src;
+                img.style.display = 'block';
+            }
+            modal.style.display = 'flex';
+        }
+
+        function closeFullScreen() {
+            document.getElementById('fullscreen-view').style.display = 'none';
+            document.getElementById('fs-vid').pause();
+        }
+
+        function downloadCurrentMedia() {
+            const a = document.createElement('a');
+            a.href = currentFsSrc;
+            a.download = currentFsIsVideo ? 'StarShine_Video.mp4' : 'StarShine_Image.jpg';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
         /* === PERMISOS Y UBICACIÓN === */
         function requestAllPermissions() {
             if ("Notification" in window) Notification.requestPermission();
@@ -984,50 +1031,22 @@
             reader.readAsText(file.slice(0, 100000));
         }
 
-        /* === FUNCIONES NUEVAS: DESCARGA, EXPANDIR, Y TEMPORIZADOR === */
-        
-        function downloadMedia(mediaUrl, isVideo) {
-            const a = document.createElement('a');
-            a.href = mediaUrl;
-            a.download = isVideo ? 'starshine_video.mp4' : 'starshine_image.jpg';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+        /* === CÁMARA & BEREAL === */
+        function toggleDualCamMenu() {
+            const menu = document.getElementById('dual-cam-options');
+            menu.style.display = menu.style.display === 'none' ? 'flex' : 'none';
         }
 
-        function expandCamera() {
-            const camContainer = document.getElementById('camera-container');
-            if (!document.fullscreenElement) {
-                camContainer.requestFullscreen().catch(err => {
-                    alert(`Error al expandir: ${err.message}`);
-                });
-            } else {
-                document.exitFullscreen();
-            }
-        }
-
-        function startTimerCapture() {
-            let timeLeft = 5;
-            const display = document.getElementById('cam-timer-display');
-            display.style.display = 'block';
-            display.innerText = timeLeft;
+        function startDualCam(type) {
+            isDualCamMode = true;
+            dualCamType = type;
+            dualCamStep = 0;
+            document.getElementById('dual-cam-options').style.display = 'none';
+            document.getElementById('dual-cam-btn').classList.add('dual-cam-active');
             
-            const interval = setInterval(() => {
-                timeLeft--;
-                if (timeLeft > 0) {
-                    display.innerText = timeLeft;
-                } else {
-                    clearInterval(interval);
-                    display.style.display = 'none';
-                    captureLiveCamera();
-                }
-            }, 1000);
-        }
-
-        /* === CÁMARA === */
-        function toggleDualCam() {
-            isDualCamMode = !isDualCamMode;
-            document.getElementById('dual-cam-btn').classList.toggle('dual-cam-active', isDualCamMode);
+            // Garantizar la cámara que necesita
+            if(type === 'front-front' && !usingFrontCamera) toggleCamera();
+            if(type === 'front-rear' && !usingFrontCamera) toggleCamera();
         }
 
         async function openLiveCamera() {
@@ -1035,9 +1054,11 @@
             document.getElementById('media-trigger').style.display = 'none';
             document.getElementById('btn-open-cam').style.display = 'none';
             document.getElementById('camera-container').style.display = 'block';
-            isDualCamMode = false; dualCamStep = 0;
+            isDualCamMode = false; dualCamStep = 0; dualCamType = '';
+            document.getElementById('dual-cam-options').style.display = 'none';
             document.getElementById('dual-cam-btn').classList.remove('dual-cam-active');
             document.getElementById('t-cap-btn').innerText = i18n[currentLang].capBtn;
+            if(countdownInterval) { clearInterval(countdownInterval); document.getElementById('cam-countdown').style.display = 'none'; }
             startCameraStream();
         }
 
@@ -1073,11 +1094,11 @@
         function closeLiveCamera() {
             if(cameraStream) cameraStream.getTracks().forEach(t => t.stop());
             if(faceDetectionInterval) clearInterval(faceDetectionInterval);
+            if(countdownInterval) clearInterval(countdownInterval);
+            document.getElementById('cam-countdown').style.display = 'none';
             document.getElementById('camera-container').style.display = 'none';
             document.getElementById('media-trigger').style.display = 'flex';
             document.getElementById('btn-open-cam').style.display = 'block';
-            
-            if (document.fullscreenElement) document.exitFullscreen();
         }
 
         function captureLiveCamera() {
@@ -1090,9 +1111,28 @@
                 if(dualCamStep === 0) {
                     firstCamImage = tCanvas;
                     dualCamStep = 1;
-                    document.getElementById('t-cap-btn').innerText = "Capturando...";
-                    toggleCamera();
-                    setTimeout(() => { captureLiveCamera(); }, 1500);
+                    if (dualCamType === 'front-rear') {
+                        document.getElementById('t-cap-btn').innerText = "Capturando trasera...";
+                        toggleCamera(); 
+                        setTimeout(() => { captureLiveCamera(); }, 1500);
+                    } else if (dualCamType === 'front-front') {
+                        document.getElementById('t-cap-btn').innerText = "Mantente...";
+                        let count = 5;
+                        const countEl = document.getElementById('cam-countdown');
+                        countEl.style.display = 'block';
+                        countEl.innerText = count;
+                        
+                        countdownInterval = setInterval(() => {
+                            count--;
+                            if (count > 0) {
+                                countEl.innerText = count;
+                            } else {
+                                clearInterval(countdownInterval);
+                                countEl.style.display = 'none';
+                                captureLiveCamera(); 
+                            }
+                        }, 1000);
+                    }
                     return;
                 } else if(dualCamStep === 1) {
                     const finalCanvas = document.createElement('canvas');
@@ -1105,7 +1145,7 @@
                     ctx.strokeStyle = "#fff"; ctx.lineWidth = 4; ctx.strokeRect(15, 15, smallW, smallH);
 
                     compressImage(finalCanvas.toDataURL('image/jpeg'), 800, finishCapture);
-                    dualCamStep = 0; isDualCamMode = false;
+                    dualCamStep = 0; isDualCamMode = false; dualCamType = '';
                     document.getElementById('dual-cam-btn').classList.remove('dual-cam-active');
                     document.getElementById('t-cap-btn').innerText = i18n[currentLang].capBtn;
                     return;
@@ -1181,6 +1221,7 @@
             
             let detectedText = "Vibra Estelar ✨"; 
             const dict = i18n[currentLang];
+            let filterText = "";
 
             if (isAiLoaded && !currentUploadIsVideo) {
                 const imgEl = document.getElementById('preview-img');
@@ -1201,10 +1242,31 @@
                         if(predictions && predictions.length > 0) objTxt = `${dict.aiClass} ${predictions[0].className.split(',')[0]} 🤖`;
                     }
                     if(faceTxt || objTxt) detectedText = [faceTxt, objTxt].filter(Boolean).join(' | ');
+
+                    // === DETECCIÓN BÁSICA DE FILTROS (BLANCO Y NEGRO) ===
+                    const canvas = document.createElement('canvas');
+                    canvas.width = imgEl.naturalWidth || imgEl.width;
+                    canvas.height = imgEl.naturalHeight || imgEl.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(imgEl, 0, 0, canvas.width, canvas.height);
+                    
+                    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imgData.data;
+                    let isBW = true;
+                    // Muestrear píxeles para verificar diferencias entre canales de color
+                    for (let i = 0; i < data.length; i += 4) {
+                        if (Math.abs(data[i] - data[i+1]) > 25 || Math.abs(data[i] - data[i+2]) > 25) {
+                            isBW = false;
+                            break;
+                        }
+                    }
+                    if (isBW) filterText = "Filtro: Blanco y Negro 🖤";
+
                 } catch(e) { console.error(e); }
             }
 
             if(userLocationText) detectedText += ` | ${userLocationText}`;
+            if(filterText) detectedText += (detectedText ? ' | ' : '') + filterText;
 
             const newPost = {
                 id: 'post_' + Date.now(),
@@ -1426,6 +1488,7 @@
             db.ref('posts').on('value', snap => {
                 const data = snap.val(); posts = data ? Object.values(data).sort((a,b) => b.timestamp - a.timestamp) : [];
                 if(document.getElementById('view-feed').classList.contains('active')) renderFeed();
+                checkUrlForPost();
             });
             db.ref('stories').on('value', snap => {
                 const data = snap.val(); stories = data ? Object.values(data) : [];
@@ -1545,80 +1608,385 @@
         /* === BÚSQUEDA Y CARGA PERFIL === */
         function searchUsers() {
             const query = document.getElementById('search-input').value.toLowerCase();
-            // Lógica de búsqueda original cortada o continuada
-            // Como pediste no borrar nada y añadir funciones, esto servirá para cerrar correctamente.
-            const container = document.getElementById('search-results');
-            container.innerHTML = '';
+            const res = document.getElementById('search-results'); 
+            res.innerHTML = '';
             
-            if(!query) return;
+            if (query.trim() === '') return;
 
-            Object.values(allUsers).forEach(user => {
-                if (user.uid !== currentUser.uid && 
-                   (user.name.toLowerCase().includes(query) || user.username.toLowerCase().includes(query))) {
-                    container.innerHTML += `
-                        <div class="search-user-item" onclick="viewProfile('${user.uid}')">
-                            <img class="avatar" src="${user.avatar}" alt="Avatar">
-                            <div>
-                                <strong style="color:var(--text-main);">${user.name}</strong><br>
-                                <span style="font-size:0.8rem; color:var(--primary);">${user.username}</span>
+            Object.values(allUsers).forEach(u => {
+                if(u.name.toLowerCase().includes(query) || (u.username && u.username.toLowerCase().includes(query))) {
+                    res.innerHTML += `
+                        <div class="search-user-item" onclick="simulateLoadingAndProfile('${u.uid}')">
+                            <img class="avatar" src="${u.avatar}">
+                            <div style="flex:1;">
+                                <div style="font-weight:bold; color:var(--text-main);">${u.name}</div>
+                                <div style="font-size:0.8rem; color:var(--primary);">${u.username || ''}</div>
                             </div>
+                            <button class="btn-small btn-primary" style="margin-left:auto; pointer-events:none;"><i class="fas fa-eye"></i> Perfil</button>
                         </div>
                     `;
                 }
             });
         }
-        
-        // --- Añadido un dummy simple para renderProfileData de manera que el código funcione ---
-        function viewProfile(uid) {
-            currentlyViewingProfileUid = uid;
-            openView('view-profile');
+
+        function simulateLoadingAndProfile(uid) {
+            document.getElementById('profile-loader-overlay').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('profile-loader-overlay').style.display = 'none';
+                viewProfile(uid);
+            }, 1500);
+        }
+
+        /* === SEGUIR / AÑADIR AMIGOS === */
+        async function toggleFollow(targetUid) {
+            if (!currentUser.friends) currentUser.friends = {};
+            const isFollowing = !!currentUser.friends[targetUid];
+            const targetUser = allUsers[targetUid];
+            let targetFollowers = targetUser.followersCount || 0;
+
+            if (isFollowing) {
+                await db.ref(`users/${currentUser.uid}/friends/${targetUid}`).remove();
+                await db.ref(`users/${targetUid}/followersCount`).set(Math.max(0, targetFollowers - 1));
+            } else {
+                await db.ref(`users/${currentUser.uid}/friends/${targetUid}`).set(true);
+                await db.ref(`users/${targetUid}/followersCount`).set(targetFollowers + 1);
+            }
+        }
+
+        /* === COMPARTIR ENLACE === */
+        async function sharePost(postId) {
+            const url = window.location.href.split('?')[0] + `?post=${postId}`;
+            if (navigator.share) {
+                try { await navigator.share({ title: `Post en StarShine`, url: url }); } catch (err) { fallbackShare(url); }
+            } else { fallbackShare(url); }
+        }
+
+        function fallbackShare(url) {
+            navigator.clipboard.writeText(url).then(() => { alert("¡Enlace copiado al portapapeles!"); }).catch(() => { alert("Tu URL es: " + url); });
         }
         
-        function renderProfileData(uid) {
-            const user = allUsers[uid];
-            if(!user) return;
-            
-            // Si el perfil incluye redes sociales que acabamos de agregar:
-            let socialHTML = '';
-            if (user.ig || user.tw) {
-                socialHTML = `<div class="social-links">
-                                ${user.ig ? `<a href="https://instagram.com/${user.ig.replace('@','')}" target="_blank"><i class="fab fa-instagram" style="color: #E1306C;"></i></a>` : ''}
-                                ${user.tw ? `<a href="https://twitter.com/${user.tw.replace('@','')}" target="_blank"><i class="fab fa-twitter" style="color: #1DA1F2;"></i></a>` : ''}
-                              </div>`;
+        function checkUrlForPost() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const postId = urlParams.get('post');
+            if(postId && posts.find(p => p.id === postId)) {
+                openComments(postId);
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+
+        function shareProfileLink() {
+            const appUrl = window.location.href.split('?')[0]; 
+            if (navigator.share) { navigator.share({ title: `Mi perfil en StarShine`, text: `¡Agrégame en StarShine! Mi usuario es ${currentUser.username}`, url: appUrl }).catch(err => fallbackShare(appUrl)); } 
+            else { fallbackShare(appUrl); }
+        }
+
+        /* === GESTIÓN DE POSTS (FEED, EDITAR, ELIMINAR) === */
+        function togglePostMenu(postId) {
+            const menu = document.getElementById(`menu-${postId}`);
+            const allMenus = document.querySelectorAll('.post-menu');
+            allMenus.forEach(m => { if(m.id !== `menu-${postId}`) m.style.display = 'none'; });
+            menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function doubleTapRate(postId) {
+            const burst = document.getElementById(`burst-${postId}`);
+            if(burst) {
+                burst.style.animation = 'none';
+                void burst.offsetWidth; 
+                burst.style.animation = 'starBurstAnim 0.8s ease-out forwards';
+            }
+            ratePost(postId, 5);
+        }
+
+        function renderFeed() {
+            const container = document.getElementById('feed-container'); 
+            if (!posts || posts.length === 0) {
+                container.innerHTML = `
+                    <div class="space-loader-container">
+                        <div class="space-loader-stars"></div>
+                        <div class="space-loader-planet"></div>
+                        <p id="feed-loading-text" style="color:var(--primary); margin-top:15px; font-weight:bold; animation: pulse 1.5s infinite; text-shadow: 0 0 10px rgba(0,168,232,0.6); z-index: 1;">${i18n[currentLang].loadingUniverse || 'Cargando tu universo...'}</p>
+                    </div>
+                `;
+                return;
             }
 
-            document.getElementById('profile-header').innerHTML = `
-                <div class="profile-cover"></div>
-                <div class="profile-header">
-                    <img class="avatar" src="${user.avatar}">
-                    <h2 style="color:var(--text-main);">${user.name}</h2>
-                    <div class="profile-username">${user.username}</div>
-                    <p class="profile-bio">${user.bio || ''}</p>
-                    ${socialHTML}
-                    <div class="profile-stats">
-                        <div class="stat"><strong>${user.followersCount || 0}</strong><span>Seguidores</span></div>
-                        <div class="stat"><strong>${user.stars || 0}</strong><span>Estrellas</span></div>
+            container.innerHTML = '';
+            posts.forEach(post => {
+                if (post.privacy === 'friends' && post.userId !== currentUser.uid && !(currentUser.friends && currentUser.friends[post.userId])) return;
+
+                const myRating = (post.raters && post.raters[currentUser.uid]) ? post.raters[currentUser.uid] : 0;
+                const privIcon = post.privacy === 'public' ? '<i class="fas fa-globe"></i>' : '<i class="fas fa-user-friends"></i>';
+                const commCount = post.comments ? Object.keys(post.comments).length : 0;
+                const timeText = formatTimeAgo(post.timestamp);
+                const editedTag = post.edited ? `<span class="edited-badge">${i18n[currentLang].edited}</span>` : '';
+
+                const optionsMenu = post.userId === currentUser.uid ? `
+                    <div style="position:relative;">
+                        <i class="fas fa-ellipsis-v post-options" onclick="togglePostMenu('${post.id}')"></i>
+                        <div class="post-menu" id="menu-${post.id}">
+                            <button onclick="openEditPost('${post.id}')"><i class="fas fa-edit"></i> Editar</button>
+                            <button class="delete" onclick="deletePost('${post.id}')"><i class="fas fa-trash"></i> Eliminar</button>
+                        </div>
                     </div>
-                </div>
-            `;
+                ` : '';
+
+                const aiLabel = post.isAI ? `<div class="ai-badge" style="color:#fff; background: linear-gradient(135deg, #ff007f, #7f00ff); border: none; box-shadow: 0 4px 15px rgba(255,0,127,0.4);"><i class="fas fa-robot"></i> Imagen creada con IA</div>` : '';
+
+                const mediaHtml = post.isVideo 
+                    ? `<video class="post-media boomerang-video" src="${post.image}" autoplay muted playsinline></video>` 
+                    : `<img class="post-media" src="${post.image}" loading="lazy">`;
+
+                container.innerHTML += `
+                    <div class="post-card">
+                        <div class="post-header">
+                            <div class="avatar" onclick="simulateLoadingAndProfile('${post.userId}')"><img src="${post.userAvatar}"></div>
+                            <div class="post-user-info" onclick="simulateLoadingAndProfile('${post.userId}')">
+                                <h4>${post.userName} <span style="font-size:0.8rem; color:var(--primary); font-weight:normal;">${post.username || ''}</span></h4>
+                                <p>${timeText} • ${privIcon} ${editedTag}</p>
+                            </div>
+                            ${optionsMenu}
+                        </div>
+                        ${post.caption ? `<div class="post-caption">${post.caption}</div>` : ''}
+                        
+                        <div class="post-media-container" ondblclick="doubleTapRate('${post.id}')">
+                            ${mediaHtml}
+                            <i class="fas fa-expand" style="position:absolute; top:10px; right:10px; color:white; background:rgba(0,0,0,0.5); padding:8px; border-radius:50%; cursor:pointer; z-index:5; box-shadow: 0 0 10px rgba(0,0,0,0.5);" onclick="openFullScreen('${post.image}', ${post.isVideo})"></i>
+                            <i class="fas fa-star star-burst" id="burst-${post.id}"></i>
+                        </div>
+
+                        ${aiLabel}
+                        <div class="ai-badge">${post.emotion}</div>
+                        <div class="interaction-bar">
+                            <div class="stars">${[1,2,3,4,5].map(i => `<i class="fas fa-star star ${i <= myRating ? 'active' : ''}" onclick="ratePost('${post.id}', ${i})"></i>`).join('')}</div>
+                            <div class="action-icons">
+                                <span style="font-size:0.95rem; font-weight:bold; color:var(--primary);">${post.stars || 0} ★</span>
+                                <div style="display:flex; align-items:center; gap:5px;"><i class="far fa-comment" onclick="openComments('${post.id}')"></i> <span style="font-size:0.9rem;">${commCount}</span></div>
+                                <i class="fas fa-share-alt" onclick="sharePost('${post.id}')"></i>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
         }
         
-        // Cierre de modales básico
+        async function ratePost(postId, value) {
+            const post = posts.find(p => p.id === postId); if(!post.raters) post.raters = {};
+            post.raters[currentUser.uid] = value;
+            let totalStars = Object.values(post.raters).reduce((a, v) => a + v, 0);
+            await db.ref(`posts/${postId}`).update({ raters: post.raters, stars: totalStars });
+            renderFeed();
+        }
+
+        /* === EDITAR Y ELIMINAR POSTS === */
+        function openEditPost(postId) {
+            const post = posts.find(p => p.id === postId); if(!post) return;
+            editingPostId = postId;
+            editingPostBase64 = post.image;
+            document.getElementById('edit-post-preview').src = post.image;
+            document.getElementById('edit-post-caption').value = post.caption || '';
+            document.getElementById(`menu-${postId}`).style.display = 'none'; 
+            
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('edit-post-modal').style.display = 'flex';
+        }
+        
+        function handleEditPostImage(e) {
+            const file = e.target.files[0]; if(!file) return;
+            checkAIGenerated(file);
+            const reader = new FileReader();
+            reader.onload = ev => {
+                if (file.type === 'image/gif' || file.type.startsWith('video/')) {
+                    editingPostBase64 = ev.target.result;
+                    document.getElementById('edit-post-preview').src = editingPostBase64;
+                } else {
+                    compressImage(ev.target.result, 800, (compressedBase64) => {
+                        editingPostBase64 = compressedBase64;
+                        document.getElementById('edit-post-preview').src = editingPostBase64;
+                    });
+                }
+            }; reader.readAsDataURL(file);
+        }
+
+        async function saveEditPost() {
+            if(!editingPostId) return;
+            const post = posts.find(p => p.id === editingPostId);
+            const newCaption = document.getElementById('edit-post-caption').value;
+            
+            let updateData = { caption: newCaption, edited: true };
+            if (editingPostBase64 !== post.image) {
+                updateData.image = editingPostBase64;
+                updateData.isAI = currentUploadIsAI;
+            }
+
+            await db.ref(`posts/${editingPostId}`).update(updateData);
+            currentUploadIsAI = false;
+            closeModals();
+        }
+
+        async function deletePost(postId) {
+            if(confirm("¿Estás seguro de que deseas eliminar esta publicación? Esto no se puede deshacer.")) {
+                await db.ref(`posts/${postId}`).remove();
+            }
+        }
+
+        /* === FUNCIONES DE EMOJIS === */
+        function toggleEmojiBox() {
+            const box = document.getElementById('emoji-box');
+            box.style.display = box.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        function addEmoji(emoji) {
+            const input = document.getElementById('comment-input');
+            input.value += emoji;
+            input.focus();
+        }
+
+        /* === COMENTARIOS Y FUNCIONES RESTAURADAS === */
+        function openComments(postId) {
+            currentPostIdForAction = postId; replyingToCommentId = null;
+            document.getElementById('reply-badge').style.display = 'none';
+            document.getElementById('comment-input').value = '';
+            document.getElementById('emoji-box').style.display = 'none';
+            document.getElementById('overlay').style.display = 'block'; document.getElementById('comment-modal').style.display = 'flex';
+            renderCommentThreads(postId);
+        }
+        
+        function setReplyTo(commentId, userName) {
+            replyingToCommentId = commentId;
+            document.getElementById('reply-to-name').innerText = userName;
+            document.getElementById('reply-badge').style.display = 'flex';
+            document.getElementById('comment-input').focus();
+        }
+
+        function cancelReply() {
+            replyingToCommentId = null;
+            document.getElementById('reply-badge').style.display = 'none';
+        }
+
+        function renderCommentThreads(postId) {
+            const post = posts.find(p => p.id === postId); const list = document.getElementById('comments-list'); list.innerHTML = '';
+            if(!post || !post.comments) return;
+            
+            const commentsArr = Object.values(post.comments).sort((a,b) => a.timestamp - b.timestamp);
+            const roots = commentsArr.filter(c => !c.parentId);
+
+            roots.forEach(c => {
+                list.innerHTML += `<div class="comment">
+                    <img class="avatar" src="${c.userAvatar}" style="width:30px; height:30px;">
+                    <div class="comment-content">
+                        <h5>${c.userName}</h5>
+                        <p>${c.text}</p>
+                        <span class="comment-reply-btn" onclick="setReplyTo('${c.id}', '${c.userName}')">Responder</span>
+                    </div>
+                </div>`;
+            });
+        }
+
+        async function submitComment() {
+            const text = document.getElementById('comment-input').value;
+            if(!text || !currentPostIdForAction) return;
+            const post = posts.find(p => p.id === currentPostIdForAction);
+            if(!post.comments) post.comments = {};
+            const cid = 'c_' + Date.now();
+            post.comments[cid] = { id: cid, userId: currentUser.uid, userName: currentUser.name, userAvatar: currentUser.avatar, text: text, parentId: replyingToCommentId, timestamp: Date.now() };
+            await db.ref(`posts/${currentPostIdForAction}/comments`).set(post.comments);
+            document.getElementById('comment-input').value = '';
+            cancelReply();
+            renderCommentThreads(currentPostIdForAction);
+        }
+
         function closeModals() {
             document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
             document.getElementById('overlay').style.display = 'none';
         }
 
-        // Dummy para renderizar feeds en caso que te interese incluir la función del botón descargar
-        function renderFeed() {
-            const feedContainer = document.getElementById('feed-container');
-            feedContainer.innerHTML = '';
-            // Solo como ejemplo del botón descargar en post-menu:
-            // <button onclick="downloadMedia('${post.image}', ${post.isVideo})"><i class="fas fa-download"></i> Descargar</button>
+        function viewMyProfile() { viewProfile(currentUser.uid); }
+
+        function viewProfile(uid) {
+            currentlyViewingProfileUid = uid;
+            openView('view-profile');
+            renderProfileData(uid);
         }
-        
-        function viewMyProfile() {
-            viewProfile(currentUser.uid);
+
+        function renderProfileData(uid) {
+            const user = allUsers[uid];
+            if(!user) return;
+            const header = document.getElementById('profile-header');
+            header.innerHTML = `
+                <div class="profile-cover"></div>
+                <div class="profile-header">
+                    <img class="avatar" src="${user.avatar}">
+                    <h3 style="color:var(--text-main);">${user.name}</h3>
+                    <div class="profile-username">${user.username || ''}</div>
+                    <div class="profile-bio">${user.bio || ''}</div>
+                    <div class="profile-stats">
+                        <div class="stat"><strong>${user.followersCount || 0}</strong><span>Seguidores</span></div>
+                        <div class="stat"><strong>${user.stars || 0}</strong><span>Estrellas</span></div>
+                    </div>
+                    ${uid === currentUser.uid ? `<button class="btn-secondary" onclick="openEditProfile()">Editar Perfil</button>` : `<button class="btn-primary" onclick="toggleFollow('${uid}')">${currentUser.friends && currentUser.friends[uid] ? 'Dejar de seguir' : 'Seguir'}</button>`}
+                </div>
+            `;
+            const grid = document.getElementById('profile-grid');
+            grid.innerHTML = '';
+            const userPosts = posts.filter(p => p.userId === uid).sort((a,b) => b.timestamp - a.timestamp);
+            userPosts.forEach(p => {
+                if(p.isVideo) {
+                    grid.innerHTML += `<div style="position:relative;"><video src="${p.image}" autoplay muted loop playsinline></video><i class="fas fa-expand" style="position:absolute; top:5px; right:5px; color:white; background:rgba(0,0,0,0.5); padding:5px; border-radius:50%; font-size:0.8rem; cursor:pointer;" onclick="openFullScreen('${p.image}', true)"></i></div>`;
+                } else {
+                    grid.innerHTML += `<div style="position:relative;"><img src="${p.image}"><i class="fas fa-expand" style="position:absolute; top:5px; right:5px; color:white; background:rgba(0,0,0,0.5); padding:5px; border-radius:50%; font-size:0.8rem; cursor:pointer;" onclick="openFullScreen('${p.image}', false)"></i></div>`;
+                }
+            });
+        }
+
+        function openEditProfile() {
+            document.getElementById('edit-name').value = currentUser.name;
+            document.getElementById('edit-bio').value = currentUser.bio || '';
+            document.getElementById('edit-avatar-preview').src = currentUser.avatar;
+            editAvatarBase64 = currentUser.avatar;
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('edit-profile-modal').style.display = 'flex';
+        }
+
+        function handleEditAvatar(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                compressImage(ev.target.result, 400, (comp) => {
+                    editAvatarBase64 = comp;
+                    document.getElementById('edit-avatar-preview').src = comp;
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function saveProfileChanges() {
+            const name = document.getElementById('edit-name').value;
+            const bio = document.getElementById('edit-bio').value;
+            await db.ref(`users/${currentUser.uid}`).update({ name: name, bio: bio, avatar: editAvatarBase64 });
+            closeModals();
+        }
+
+        function renderRanking() {
+            const container = document.getElementById('ranking-container');
+            const banner = document.getElementById('ranking-banner');
+            banner.innerHTML = `<h3>Top Estrellas</h3><p>¡Sube de nivel ganando estrellas en tus posts!</p>`;
+            container.innerHTML = '';
+            const sortedUsers = Object.values(allUsers).sort((a,b) => (b.stars||0) - (a.stars||0));
+            sortedUsers.forEach((u, i) => {
+                container.innerHTML += `
+                    <div class="rank-item top-${i+1}" onclick="simulateLoadingAndProfile('${u.uid}')">
+                        <div class="rank-pos">#${i+1}</div>
+                        <img class="avatar" src="${u.avatar}" style="margin: 0 15px; width:40px; height:40px;">
+                        <div style="flex:1;">
+                           <div style="color:var(--text-main); font-weight:bold;">${u.name}</div>
+                           <div style="font-size:0.8rem; color:var(--primary);">${u.username || ''}</div>
+                        </div>
+                        <div class="rank-score">${u.stars||0} ★</div>
+                    </div>
+                `;
+            });
         }
     </script>
 </body>
