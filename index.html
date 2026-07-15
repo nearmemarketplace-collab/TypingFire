@@ -958,7 +958,7 @@
             document.getElementById('theme-toggle').checked = (savedTheme === 'dark');
             document.getElementById('lang-select').value = currentLang;
             applyLanguage(currentLang);
-            IntersectionObserver();
+            initBoomerangLoopers();
         };
 
         function toggleTheme(isDark) {
@@ -1190,11 +1190,14 @@
             const canvas = document.getElementById('live-canvas');
             faceapi.matchDimensions(canvas, { width: video.videoWidth, height: video.videoHeight });
             if(faceDetectionInterval) clearInterval(faceDetectionInterval);
-          async function detectFacesLoop() {
-    if (video.paused || video.ended) return;
-    // ... tu lógica de detección ...
-    requestAnimationFrame(detectFacesLoop);
-}
+            faceDetectionInterval = setInterval(async () => {
+                if(video.paused || video.ended) return;
+                const detections = await faceapi.detectAllFaces(video).withFaceExpressions();
+                const resizedDetections = faceapi.resizeResults(detections, { width: video.clientWidth, height: video.clientHeight });
+                canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+                faceapi.draw.drawDetections(canvas, resizedDetections);
+            }, 300);
+        }
 
         function closeLiveCamera() {
             if(cameraStream) cameraStream.getTracks().forEach(t => t.stop());
@@ -1572,7 +1575,7 @@
 
         /* === INICIO APP === */
         function initApp(uid) {
-            db.ref('users/' + uid).on('value', snap => {
+            db.ref('users/' + uid).on('child_added', snap => {
                 currentUser = snap.val();
                 if(currentUser) {
                     document.getElementById('header-avatar').src = currentUser.avatar || '';
