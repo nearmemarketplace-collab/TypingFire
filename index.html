@@ -362,6 +362,8 @@
 
         <div id="fullscreen-view" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; flex-direction:column; align-items:center; justify-content:center; backdrop-filter: blur(10px);">
             <div style="position:absolute; top:20px; right:20px; z-index:10000; display:flex; gap:20px;">
+                <i class="fas fa-edit" id="fs-edit-btn" style="color:#fff; font-size:1.8rem; cursor:pointer; display:none;" onclick="editPostFromFS()"></i>
+                <i class="fas fa-trash" id="fs-delete-btn" style="color:#ff4d4d; font-size:1.8rem; cursor:pointer; display:none;" onclick="deletePostFromFS()"></i>
                 <i class="fas fa-download" style="color:#fff; font-size:1.8rem; cursor:pointer;" onclick="downloadCurrentMedia()"></i>
                 <i class="fas fa-times" style="color:#fff; font-size:1.8rem; cursor:pointer;" onclick="closeFullScreen()"></i>
             </div>
@@ -752,6 +754,7 @@
         // Modal Media Variables
         let currentFsSrc = "";
         let currentFsIsVideo = false;
+        let currentFsPostId = null;
 
         // BeReal Variables
         let isDualCamMode = false;
@@ -996,13 +999,43 @@
             };
         }
 
+        /* === CALCULAR ESTRELLAS TOTALES === */
+        // Asegura que las estrellas en Ranking y Perfil sean exactas según los likes
+        function getUserTotalStars(uid) {
+            let total = 0;
+            posts.forEach(p => {
+                if (p.userId === uid && p.raters) {
+                    Object.values(p.raters).forEach(r => total += r);
+                }
+            });
+            stories.forEach(s => {
+                if (s.userId === uid && s.raters) {
+                    Object.values(s.raters).forEach(r => total += r);
+                }
+            });
+            return total;
+        }
+
         /* === FULL SCREEN & DESCARGAS === */
-        function openFullScreen(src, isVideo) {
+        function openFullScreen(src, isVideo, postId = null, postUserId = null) {
             currentFsSrc = src;
             currentFsIsVideo = isVideo;
+            currentFsPostId = postId;
+
             const modal = document.getElementById('fullscreen-view');
             const img = document.getElementById('fs-img');
             const vid = document.getElementById('fs-vid');
+            
+            const editBtn = document.getElementById('fs-edit-btn');
+            const deleteBtn = document.getElementById('fs-delete-btn');
+            
+            if(postId && postUserId === currentUser.uid) {
+                editBtn.style.display = 'block';
+                deleteBtn.style.display = 'block';
+            } else {
+                editBtn.style.display = 'none';
+                deleteBtn.style.display = 'none';
+            }
             
             if(isVideo) {
                 img.style.display = 'none';
@@ -1029,6 +1062,24 @@
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
+        }
+        
+        function editPostFromFS() {
+            if(currentFsPostId) {
+                closeFullScreen();
+                openEditPostModal(currentFsPostId);
+            }
+        }
+
+        function deletePostFromFS() {
+            if(currentFsPostId && confirm("¿Eliminar publicación?")) {
+                db.ref('posts/' + currentFsPostId).remove();
+                closeFullScreen();
+                // Refrescar el perfil
+                if(document.getElementById('view-profile').classList.contains('active')) {
+                    renderProfileData(currentUser.uid);
+                }
+            }
         }
 
         /* === PERMISOS Y UBICACIÓN === */
@@ -1562,10 +1613,13 @@
                 if(document.getElementById('view-feed').classList.contains('active')) renderStories();
             });
         }
+        
         function openSettings() { 
             checkPermissionsOnLoad();
             document.getElementById('overlay').style.display = 'block'; document.getElementById('settings-modal').style.display = 'flex'; 
         }
+
+        function checkUrlForPost() {} // Placeholder para deep linking si se requiere luego
 
         /* === HISTORIAS === */
         function handleStoryUpload(e) {
@@ -1654,278 +1708,211 @@
 
         function nextStory() { if (viewingStoryIndex < viewingUserStories.length - 1) { viewingStoryIndex++; showStoryIndex(viewingStoryIndex); } else { closeStory(); } }
         function prevStory() { if (viewingStoryIndex > 0) { viewingStoryIndex--; showStoryIndex(viewingStoryIndex); } }
+        
         async function deleteCurrentStory() {
-            if(!currentStoryId) return;
-            if(confirm("¿Seguro que quieres eliminar esta historia?")) { await db.ref(`stories/${currentStoryId}`).remove(); closeStory(); }
-        }
-        function closeStory() { document.getElementById('story-view-modal').style.display = 'none'; currentStoryId = null; viewingUserStories = []; }
-        
-        async function rateStory(points) {
-            if(!currentStoryId) return;
-            const story = viewingUserStories[viewingStoryIndex];
-            if(!story.raters) story.raters = {};
-            story.raters[currentUser.uid] = points;
-            const totalScore = Object.values(story.raters).reduce((a, b) => a + b, 0);
-            const starElements = document.getElementById('story-stars-container').children;
-            for(let i=0; i<5; i++) {
-                if(i < points) starElements[i].classList.add('active');
-                else starElements[i].classList.remove('active');
+            if(confirm("¿Eliminar historia?")) {
+                await db.ref('stories/' + currentStoryId).remove();
+                closeStory();
             }
-            await db.ref(`stories/${currentStoryId}`).update({ raters: story.raters, score: totalScore });
-            setTimeout(() => { nextStory(); }, 400);
         }
 
-        /* === BÚSQUEDA Y CARGA PERFIL === */
-        function searchUsers() {
-            const query = document.getElementById('search-input').value.toLowerCase();
-            const res = document.getElementById('search-results'); 
-            res.innerHTML = '';
+        function closeStory() {
+            document.getElementById('story-view-modal').style.display = 'none';
+            currentStoryId = null;
+        }
+
+        async function rateStory(stars) {
+            if(!currentStoryId) return;
+            const s = stories.find(st => st.id === currentStoryId);
+            if(s) {
+                await db.ref(`stories/${currentStoryId}/raters/${currentUser.uid}`).set(stars);
+                showStoryIndex(viewingStoryIndex); // Actualizar estrellas visuales
+            }
+        }
+
+        /* === FEED & POSTS === */
+        function renderFeed() {
+            const container = document.getElementById('feed-container');
+            container.innerHTML = '';
+            const dict = i18n[currentLang];
             
-            if (query.trim() === '') return;
+            posts.forEach(p => {
+                if(p.privacy === 'friends' && p.userId !== currentUser.uid && !(currentUser.friends && currentUser.friends[p.userId])) return;
 
-            Object.values(allUsers).forEach(u => {
-                if(u.name.toLowerCase().includes(query) || (u.username && u.username.toLowerCase().includes(query))) {
-                    res.innerHTML += `
-                        <div class="search-user-item" onclick="simulateLoadingAndProfile('${u.uid}')">
-                            <img class="avatar" src="${u.avatar}">
-                            <div style="flex:1;">
-                                <div style="font-weight:bold; color:var(--text-main);">${u.name}</div>
-                                <div style="font-size:0.8rem; color:var(--primary);">${u.username || ''}</div>
-                            </div>
-                            <button class="btn-small btn-primary" style="margin-left:auto; pointer-events:none;"><i class="fas fa-eye"></i> Perfil</button>
-                        </div>
-                    `;
+                const isAuthor = p.userId === currentUser.uid;
+                const commentsCount = p.comments ? Object.keys(p.comments).length : 0;
+                
+                // Calcular estrellas de este post
+                let postStars = 0;
+                let myRating = 0;
+                if(p.raters) {
+                    Object.values(p.raters).forEach(r => postStars += r);
+                    if(p.raters[currentUser.uid]) myRating = p.raters[currentUser.uid];
                 }
+
+                let mediaHtml = '';
+                if(p.isVideo) {
+                    mediaHtml = `<video class="post-media boomerang-video" src="${p.image}" autoplay loop muted playsinline onclick="openFullScreen('${p.image}', true, '${p.id}', '${p.userId}')"></video>`;
+                } else {
+                    mediaHtml = `<img class="post-media" src="${p.image}" onclick="openFullScreen('${p.image}', false, '${p.id}', '${p.userId}')">`;
+                }
+
+                const starsHtml = [1,2,3,4,5].map(i => `<i class="fas fa-star star ${i <= myRating ? 'active' : ''}" onclick="ratePost('${p.id}', ${i})"></i>`).join('');
+                
+                container.innerHTML += `
+                    <div class="post-card" id="card-${p.id}">
+                        <div class="post-header">
+                            <img src="${p.userAvatar}" class="avatar" style="width:45px; height:45px;" onclick="simulateLoadingAndProfile('${p.userId}')">
+                            <div class="post-user-info" onclick="simulateLoadingAndProfile('${p.userId}')">
+                                <h4>${p.userName}</h4>
+                                <p>${p.username} • ${formatTimeAgo(p.timestamp)}</p>
+                            </div>
+                            <div style="position:relative;">
+                                <i class="fas fa-ellipsis-h post-options" onclick="togglePostMenu('${p.id}')"></i>
+                                <div class="post-menu" id="menu-${p.id}">
+                                    ${isAuthor ? `
+                                        <button onclick="openEditPostModal('${p.id}')"><i class="fas fa-edit"></i> Editar</button>
+                                        <button class="delete" onclick="deletePost('${p.id}')"><i class="fas fa-trash"></i> Eliminar</button>
+                                    ` : `<button onclick="alert('Reportado a los moderadores')"><i class="fas fa-flag"></i> Reportar</button>`}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="post-caption">
+                            ${p.caption}
+                            ${p.edited ? `<span class="edited-badge">${dict.edited}</span>` : ''}
+                        </div>
+                        
+                        ${p.emotion ? `<div class="ai-badge"><i class="fas fa-robot"></i> ${p.emotion}</div>` : ''}
+                        
+                        <div class="post-media-container" ondblclick="ratePost('${p.id}', 5)">
+                            ${mediaHtml}
+                            <i class="fas fa-star star-burst" id="burst-${p.id}"></i>
+                        </div>
+                        
+                        <div class="interaction-bar">
+                            <div class="stars">${starsHtml}</div>
+                            <div class="action-icons">
+                                <i class="far fa-comment" onclick="openCommentModal('${p.id}')"><span style="font-size:0.8rem; margin-left:5px; font-family:sans-serif;">${commentsCount}</span></i>
+                                <i class="fas fa-share" onclick="alert('¡Enlace copiado!')"></i>
+                            </div>
+                        </div>
+                    </div>
+                `;
             });
+            if(posts.length === 0) container.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No hay publicaciones aún. ¡Sé el primero!</p>`;
         }
 
-        function simulateLoadingAndProfile(uid) {
-            document.getElementById('profile-loader-overlay').style.display = 'flex';
-            setTimeout(() => {
-                document.getElementById('profile-loader-overlay').style.display = 'none';
-                viewProfile(uid);
-            }, 1500);
-        }
-
-        /* === SEGUIR / AÑADIR AMIGOS === */
-        async function toggleFollow(targetUid) {
-            if (!currentUser.friends) currentUser.friends = {};
-            const isFollowing = !!currentUser.friends[targetUid];
-            const targetUser = allUsers[targetUid];
-            let targetFollowers = targetUser.followersCount || 0;
-            let myFollowing = currentUser.followingCount || 0;
-
-            if (isFollowing) {
-                await db.ref(`users/${currentUser.uid}/friends/${targetUid}`).remove();
-                await db.ref(`users/${targetUid}/followersCount`).set(Math.max(0, targetFollowers - 1));
-                await db.ref(`users/${currentUser.uid}/followingCount`).set(Math.max(0, myFollowing - 1));
-            } else {
-                await db.ref(`users/${currentUser.uid}/friends/${targetUid}`).set(true);
-                await db.ref(`users/${targetUid}/followersCount`).set(targetFollowers + 1);
-                await db.ref(`users/${currentUser.uid}/followingCount`).set(myFollowing + 1);
-            }
-        }
-
-        /* === COMPARTIR ENLACE === */
-        async function sharePost(postId) {
-            const url = window.location.href.split('?')[0] + `?post=${postId}`;
-            if (navigator.share) {
-                try { await navigator.share({ title: `Post en StarShine`, url: url }); } catch (err) { fallbackShare(url); }
-            } else { fallbackShare(url); }
-        }
-
-        function fallbackShare(url) {
-            navigator.clipboard.writeText(url).then(() => { alert("¡Enlace copiado al portapapeles!"); }).catch(() => { alert("Tu URL es: " + url); });
-        }
-        
-        function checkUrlForPost() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const postId = urlParams.get('post');
-            if(postId && posts.find(p => p.id === postId)) {
-                openComments(postId);
-                window.history.replaceState({}, document.title, window.location.pathname);
-            }
-        }
-
-        function shareProfileLink() {
-            const appUrl = window.location.href.split('?')[0]; 
-            if (navigator.share) { navigator.share({ title: `Mi perfil en StarShine`, text: `¡Agrégame en StarShine! Mi usuario es ${currentUser.username}`, url: appUrl }).catch(err => fallbackShare(appUrl)); } 
-            else { fallbackShare(appUrl); }
-        }
-
-        /* === GESTIÓN DE POSTS (FEED, EDITAR, ELIMINAR) === */
-        function togglePostMenu(postId) {
-            const menu = document.getElementById(`menu-${postId}`);
-            const allMenus = document.querySelectorAll('.post-menu');
-            allMenus.forEach(m => { if(m.id !== `menu-${postId}`) m.style.display = 'none'; });
+        function togglePostMenu(id) {
+            document.querySelectorAll('.post-menu').forEach(m => { if(m.id !== `menu-${id}`) m.style.display = 'none'; });
+            const menu = document.getElementById(`menu-${id}`);
             menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
         }
 
-        function doubleTapRate(postId) {
-            const burst = document.getElementById(`burst-${postId}`);
-            if(burst) {
-                burst.style.animation = 'none';
-                void burst.offsetWidth; 
-                burst.style.animation = 'starBurstAnim 0.8s ease-out forwards';
+        async function ratePost(id, stars) {
+            if(!currentUser) return;
+            await db.ref(`posts/${id}/raters/${currentUser.uid}`).set(stars);
+            
+            if(stars === 5) {
+                const burst = document.getElementById(`burst-${id}`);
+                if(burst) {
+                    burst.style.animation = 'none';
+                    setTimeout(() => { burst.style.animation = 'starBurstAnim 0.8s ease forwards'; }, 10);
+                }
             }
-            ratePost(postId, 5);
         }
 
-        function renderFeed() {
-            const container = document.getElementById('feed-container'); 
-            if (!posts || posts.length === 0) {
-                container.innerHTML = `
-                    <div class="space-loader-container">
-                        <div class="space-loader-stars"></div>
-                        <div class="space-loader-planet"></div>
-                        <p id="feed-loading-text" style="color:var(--primary); margin-top:15px; font-weight:bold; animation: pulse 1.5s infinite; z-index: 1;">${i18n[currentLang].loadingUniverse || 'Cargando tu universo...'}</p>
-                    </div>
-                `;
-                return;
+        async function deletePost(id) {
+            if(confirm("¿Eliminar publicación permanentemente?")) {
+                await db.ref('posts/' + id).remove();
             }
+        }
 
-            container.innerHTML = '';
-            posts.forEach(post => {
-                if (post.privacy === 'friends' && post.userId !== currentUser.uid && !(currentUser.friends && currentUser.friends[post.userId])) return;
+        function openEditPostModal(id) {
+            const p = posts.find(post => post.id === id);
+            if(p) {
+                editingPostId = id;
+                document.getElementById('edit-post-caption').value = p.caption;
+                document.getElementById('edit-post-preview').src = p.image;
+                editingPostBase64 = p.image;
+                document.getElementById('overlay').style.display = 'block';
+                document.getElementById('edit-post-modal').style.display = 'flex';
+            }
+        }
+        
+        function handleEditPostImage(e) {
+            const file = e.target.files[0];
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    if (file.type === 'image/gif') {
+                        editingPostBase64 = ev.target.result;
+                        document.getElementById('edit-post-preview').src = editingPostBase64;
+                    } else {
+                        compressImage(ev.target.result, 800, comp => {
+                            editingPostBase64 = comp;
+                            document.getElementById('edit-post-preview').src = editingPostBase64;
+                        });
+                    }
+                }; reader.readAsDataURL(file);
+            }
+        }
 
-                const myRating = (post.raters && post.raters[currentUser.uid]) ? post.raters[currentUser.uid] : 0;
-                const privIcon = post.privacy === 'public' ? '<i class="fas fa-globe"></i>' : '<i class="fas fa-user-friends"></i>';
-                const commCount = post.comments ? Object.keys(post.comments).length : 0;
-                const timeText = formatTimeAgo(post.timestamp);
-                const editedTag = post.edited ? `<span class="edited-badge">${i18n[currentLang].edited}</span>` : '';
+        async function saveEditPost() {
+            if(editingPostId) {
+                const newCaption = document.getElementById('edit-post-caption').value;
+                await db.ref('posts/' + editingPostId).update({
+                    caption: newCaption,
+                    image: editingPostBase64,
+                    edited: true
+                });
+                closeModals();
+            }
+        }
 
-                const optionsMenu = post.userId === currentUser.uid ? `
-                    <div style="position:relative;">
-                        <i class="fas fa-ellipsis-v post-options" onclick="togglePostMenu('${post.id}')"></i>
-                        <div class="post-menu" id="menu-${post.id}">
-                            <button onclick="openEditPost('${post.id}')"><i class="fas fa-edit"></i> Editar</button>
-                            <button class="delete" onclick="deletePost('${post.id}')"><i class="fas fa-trash"></i> Eliminar</button>
-                        </div>
-                    </div>
-                ` : '';
+        /* === COMENTARIOS Y RESPUESTAS === */
+        function openCommentModal(id) {
+            currentPostIdForAction = id;
+            replyingToCommentId = null;
+            document.getElementById('reply-badge').style.display = 'none';
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('comment-modal').style.display = 'flex';
+            renderComments(id);
+        }
 
-                const aiLabel = post.isAI ? `<div class="ai-badge" style="color:#fff; background: linear-gradient(135deg, #ff007f, #7f00ff); border: none; box-shadow: 0 4px 15px rgba(255,0,127,0.4);"><i class="fas fa-robot"></i> Imagen creada con IA</div>` : '';
-
-                const mediaHtml = post.isVideo 
-                    ? `<video class="post-media boomerang-video" src="${post.image}" autoplay muted playsinline></video>` 
-                    : `<img class="post-media" src="${post.image}" loading="lazy">`;
-
-                container.innerHTML += `
-                    <div class="post-card">
-                        <div class="post-header">
-                            <div class="avatar" onclick="simulateLoadingAndProfile('${post.userId}')"><img src="${post.userAvatar}"></div>
-                            <div class="post-user-info" onclick="simulateLoadingAndProfile('${post.userId}')">
-                                <h4>${post.userName} <span style="font-size:0.8rem; color:var(--primary); font-weight:normal;">${post.username || ''}</span></h4>
-                                <p>${timeText} • ${privIcon} ${editedTag}</p>
-                            </div>
-                            ${optionsMenu}
-                        </div>
-                        ${post.caption ? `<div class="post-caption">${post.caption}</div>` : ''}
-                        
-                        <div class="post-media-container" ondblclick="doubleTapRate('${post.id}')">
-                            ${mediaHtml}
-                            <i class="fas fa-expand" style="position:absolute; top:10px; right:10px; color:white; background:rgba(0,0,0,0.5); padding:8px; border-radius:50%; cursor:pointer; z-index:5;" onclick="openFullScreen('${post.image}', ${post.isVideo})"></i>
-                            <i class="fas fa-star star-burst" id="burst-${post.id}"></i>
-                        </div>
-
-                        ${aiLabel}
-                        <div class="ai-badge">${post.emotion}</div>
-                        <div class="interaction-bar">
-                            <div class="stars">${[1,2,3,4,5].map(i => `<i class="fas fa-star star ${i <= myRating ? 'active' : ''}" onclick="ratePost('${post.id}', ${i})"></i>`).join('')}</div>
-                            <div class="action-icons">
-                                <span style="font-size:0.95rem; font-weight:bold; color:var(--primary);">${post.stars || 0} ★</span>
-                                <div style="display:flex; align-items:center; gap:5px;"><i class="far fa-comment" onclick="openComments('${post.id}')"></i> <span style="font-size:0.9rem;">${commCount}</span></div>
-                                <i class="fas fa-share-alt" onclick="sharePost('${post.id}')"></i>
-                            </div>
+        function renderComments(postId) {
+            const list = document.getElementById('comments-list');
+            list.innerHTML = '';
+            
+            const post = posts.find(p => p.id === postId);
+            if(!post || !post.comments) return;
+            
+            // Transformar objeto en array y ordenar por fecha
+            const commentsArray = Object.values(post.comments).sort((a,b) => a.timestamp - b.timestamp);
+            
+            commentsArray.forEach(c => {
+                let replyHTML = '';
+                if(c.replyTo) {
+                    const parent = commentsArray.find(p => p.id === c.replyTo);
+                    if(parent) replyHTML = `<div style="font-size:0.75rem; color:var(--primary); margin-bottom:5px;">↳ Respondiendo a ${parent.userName}</div>`;
+                }
+                
+                list.innerHTML += `
+                    <div class="comment">
+                        <div class="comment-content">
+                            ${replyHTML}
+                            <h5>${c.userName}</h5>
+                            <p>${c.text}</p>
+                            <span class="comment-reply-btn" onclick="prepareReply('${c.id}', '${c.userName}')">Responder</span>
                         </div>
                     </div>
                 `;
             });
-        }
-        
-        async function ratePost(postId, value) {
-            const post = posts.find(p => p.id === postId); if(!post.raters) post.raters = {};
-            post.raters[currentUser.uid] = value;
-            let totalStars = Object.values(post.raters).reduce((a, v) => a + v, 0);
-            await db.ref(`posts/${postId}`).update({ raters: post.raters, stars: totalStars });
-            renderFeed();
+            // Auto scroll al final de los comentarios
+            setTimeout(() => { list.scrollTop = list.scrollHeight; }, 100);
         }
 
-        /* === EDITAR Y ELIMINAR POSTS === */
-        function openEditPost(postId) {
-            const post = posts.find(p => p.id === postId); if(!post) return;
-            editingPostId = postId;
-            editingPostBase64 = post.image;
-            document.getElementById('edit-post-preview').src = post.image;
-            document.getElementById('edit-post-caption').value = post.caption || '';
-            document.getElementById(`menu-${postId}`).style.display = 'none'; 
-            
-            document.getElementById('overlay').style.display = 'block';
-            document.getElementById('edit-post-modal').style.display = 'flex';
-        }
-        
-        function handleEditPostImage(e) {
-            const file = e.target.files[0]; if(!file) return;
-            checkAIGenerated(file);
-            const reader = new FileReader();
-            reader.onload = ev => {
-                if (file.type === 'image/gif' || file.type.startsWith('video/')) {
-                    editingPostBase64 = ev.target.result;
-                    document.getElementById('edit-post-preview').src = editingPostBase64;
-                } else {
-                    compressImage(ev.target.result, 800, (compressedBase64) => {
-                        editingPostBase64 = compressedBase64;
-                        document.getElementById('edit-post-preview').src = editingPostBase64;
-                    });
-                }
-            }; reader.readAsDataURL(file);
-        }
-
-        async function saveEditPost() {
-            if(!editingPostId) return;
-            const post = posts.find(p => p.id === editingPostId);
-            const newCaption = document.getElementById('edit-post-caption').value;
-            
-            let updateData = { caption: newCaption, edited: true };
-            if (editingPostBase64 !== post.image) {
-                updateData.image = editingPostBase64;
-                updateData.isAI = currentUploadIsAI;
-            }
-
-            await db.ref(`posts/${editingPostId}`).update(updateData);
-            currentUploadIsAI = false;
-            closeModals();
-        }
-
-        async function deletePost(postId) {
-            if(confirm("¿Estás seguro de que deseas eliminar esta publicación? Esto no se puede deshacer.")) {
-                await db.ref(`posts/${postId}`).remove();
-            }
-        }
-
-        /* === FUNCIONES DE EMOJIS === */
-        function toggleEmojiBox() {
-            const box = document.getElementById('emoji-box');
-            box.style.display = box.style.display === 'none' ? 'flex' : 'none';
-        }
-
-        function addEmoji(emoji) {
-            const input = document.getElementById('comment-input');
-            input.value += emoji;
-            input.focus();
-        }
-
-        /* === COMENTARIOS Y FUNCIONES RESTAURADAS === */
-        function openComments(postId) {
-            currentPostIdForAction = postId; replyingToCommentId = null;
-            document.getElementById('reply-badge').style.display = 'none';
-            document.getElementById('comment-input').value = '';
-            document.getElementById('emoji-box').style.display = 'none';
-            document.getElementById('overlay').style.display = 'block'; document.getElementById('comment-modal').style.display = 'flex';
-            renderCommentThreads(postId);
-        }
-        
-        function setReplyTo(commentId, userName) {
+        function prepareReply(commentId, userName) {
             replyingToCommentId = commentId;
             document.getElementById('reply-to-name').innerText = userName;
             document.getElementById('reply-badge').style.display = 'flex';
@@ -1937,36 +1924,237 @@
             document.getElementById('reply-badge').style.display = 'none';
         }
 
-        function renderCommentThreads(postId) {
-            const post = posts.find(p => p.id === postId); const list = document.getElementById('comments-list'); list.innerHTML = '';
-            if(!post || !post.comments) return;
-            
-            const commentsArr = Object.values(post.comments).sort((a,b) => a.timestamp - b.timestamp);
-            const roots = commentsArr.filter(c => !c.parentId);
-
-            roots.forEach(c => {
-                list.innerHTML += `<div class="comment">
-                    <img class="avatar" src="${c.userAvatar}" style="width:30px; height:30px;">
-                    <div class="comment-content">
-                        <h5>${c.userName}</h5>
-                        <p>${c.text}</p>
-                        <span class="comment-reply-btn" onclick="setReplyTo('${c.id}', '${c.userName}')">Responder</span>
-                    </div>
-                </div>`;
-            });
-        }
-
         async function submitComment() {
             const text = document.getElementById('comment-input').value;
             if(!text || !currentPostIdForAction) return;
-            const post = posts.find(p => p.id === currentPostIdForAction);
-            if(!post.comments) post.comments = {};
-            const cid = 'c_' + Date.now();
-            post.comments[cid] = { id: cid, userId: currentUser.uid, userName: currentUser.name, userAvatar: currentUser.avatar, text: text, parentId: replyingToCommentId, timestamp: Date.now() };
-            await db.ref(`posts/${currentPostIdForAction}/comments`).set(post.comments);
+            
+            const newComment = {
+                id: 'comment_' + Date.now(),
+                userId: currentUser.uid,
+                userName: currentUser.name,
+                text: text,
+                timestamp: Date.now(),
+                replyTo: replyingToCommentId || null
+            };
+            
+            await db.ref(`posts/${currentPostIdForAction}/comments/${newComment.id}`).set(newComment);
+            
             document.getElementById('comment-input').value = '';
             cancelReply();
-            renderCommentThreads(currentPostIdForAction);
+            renderComments(currentPostIdForAction);
+        }
+
+        function toggleEmojiBox() {
+            const box = document.getElementById('emoji-box');
+            box.style.display = box.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        function addEmoji(emoji) {
+            document.getElementById('comment-input').value += emoji;
+            toggleEmojiBox();
+        }
+
+        /* === PERFIL === */
+        function viewMyProfile() {
+            simulateLoadingAndProfile(currentUser.uid);
+            openView('view-profile');
+        }
+
+        function simulateLoadingAndProfile(uid) {
+            document.getElementById('profile-loader-overlay').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('profile-loader-overlay').style.display = 'none';
+                currentlyViewingProfileUid = uid;
+                openView('view-profile');
+                renderProfileData(uid);
+            }, 800);
+        }
+
+        function renderProfileData(uid) {
+            const user = allUsers[uid] || currentUser;
+            if(!user) return;
+            
+            const dict = i18n[currentLang];
+            const isMe = user.uid === currentUser.uid;
+            const isFollowing = currentUser.friends && currentUser.friends[uid];
+            
+            // Calculamos sus estrellas totales basadas en todo su contenido
+            const totalEstrellasReales = getUserTotalStars(uid);
+
+            let actionBtnHtml = '';
+            if(isMe) {
+                actionBtnHtml = `<button class="btn-secondary" style="width:auto; padding: 8px 20px;" onclick="openEditProfile()"><i class="fas fa-edit"></i> Editar</button>`;
+            } else {
+                actionBtnHtml = `<button class="${isFollowing ? 'btn-secondary' : 'btn-primary'}" style="width:auto; padding: 8px 20px;" onclick="toggleFollow('${uid}')">${isFollowing ? dict.unfollow : dict.follow}</button>`;
+            }
+
+            const totalPostsCount = posts.filter(p => p.userId === uid).length;
+
+            let socialLinks = '';
+            if(user.social) {
+                if(user.social.wa) socialLinks += `<a href="https://wa.me/${user.social.wa}" target="_blank" class="social-icon"><i class="fab fa-whatsapp"></i></a>`;
+                if(user.social.ig) socialLinks += `<a href="https://instagram.com/${user.social.ig}" target="_blank" class="social-icon"><i class="fab fa-instagram"></i></a>`;
+                if(user.social.snap) socialLinks += `<a href="https://snapchat.com/add/${user.social.snap}" target="_blank" class="social-icon"><i class="fab fa-snapchat-ghost"></i></a>`;
+                if(user.social.yt) socialLinks += `<a href="${user.social.yt.includes('http') ? user.social.yt : 'https://youtube.com/'+user.social.yt}" target="_blank" class="social-icon"><i class="fab fa-youtube"></i></a>`;
+                if(user.social.tt) socialLinks += `<a href="https://tiktok.com/@${user.social.tt}" target="_blank" class="social-icon"><i class="fab fa-tiktok"></i></a>`;
+                if(user.social.x) socialLinks += `<a href="https://twitter.com/${user.social.x}" target="_blank" class="social-icon"><i class="fab fa-twitter"></i></a>`;
+                if(user.social.web) socialLinks += `<a href="${user.social.web}" target="_blank" class="social-icon"><i class="fas fa-globe"></i></a>`;
+            }
+
+            const header = document.getElementById('profile-header');
+            header.innerHTML = `
+                <div class="profile-cover"></div>
+                <div class="profile-header">
+                    <img src="${user.avatar}" class="avatar">
+                    <h2>${user.name}</h2>
+                    <div class="profile-username">${user.username}</div>
+                    <div class="profile-bio">${user.bio || ''}</div>
+                    ${socialLinks ? `<div class="social-icons-container">${socialLinks}</div>` : ''}
+                    <div class="profile-stats">
+                        <div class="stat"><strong>${totalPostsCount}</strong><span>${dict.postsLabel || 'Posts'}</span></div>
+                        <div class="stat"><strong>${user.followersCount || 0}</strong><span>${dict.followers}</span></div>
+                        <div class="stat"><strong>${user.followingCount || 0}</strong><span>${dict.following}</span></div>
+                        <div class="stat"><strong>${totalEstrellasReales}</strong><span><i class="fas fa-star" style="color:#FFD700;"></i></span></div>
+                    </div>
+                    ${actionBtnHtml}
+                </div>
+            `;
+
+            const grid = document.getElementById('profile-grid');
+            grid.innerHTML = '';
+            posts.filter(p => p.userId === uid).forEach(p => {
+                let mediaHtml = p.isVideo 
+                    ? `<video src="${p.image}" onclick="openFullScreen('${p.image}', true, '${p.id}', '${p.userId}')" muted></video>` 
+                    : `<img src="${p.image}" onclick="openFullScreen('${p.image}', false, '${p.id}', '${p.userId}')">`;
+                grid.innerHTML += mediaHtml;
+            });
+        }
+
+        async function toggleFollow(uid) {
+            const isFollowing = currentUser.friends && currentUser.friends[uid];
+            if(isFollowing) {
+                await db.ref(`users/${currentUser.uid}/friends/${uid}`).remove();
+                await db.ref(`users/${currentUser.uid}/followingCount`).set((currentUser.followingCount || 1) - 1);
+                await db.ref(`users/${uid}/followersCount`).set((allUsers[uid].followersCount || 1) - 1);
+            } else {
+                await db.ref(`users/${currentUser.uid}/friends/${uid}`).set(true);
+                await db.ref(`users/${currentUser.uid}/followingCount`).set((currentUser.followingCount || 0) + 1);
+                await db.ref(`users/${uid}/followersCount`).set((allUsers[uid].followersCount || 0) + 1);
+            }
+            renderProfileData(uid);
+        }
+
+        /* === EDITAR PERFIL === */
+        function openEditProfile() {
+            document.getElementById('edit-avatar-preview').src = currentUser.avatar;
+            document.getElementById('edit-name').value = currentUser.name;
+            document.getElementById('edit-bio').value = currentUser.bio || '';
+            editAvatarBase64 = currentUser.avatar;
+            
+            const s = currentUser.social || {};
+            document.getElementById('edit-wa').value = s.wa || '';
+            document.getElementById('edit-ig').value = s.ig || '';
+            document.getElementById('edit-snap').value = s.snap || '';
+            document.getElementById('edit-yt').value = s.yt || '';
+            document.getElementById('edit-tt').value = s.tt || '';
+            document.getElementById('edit-x').value = s.x || '';
+            document.getElementById('edit-web').value = s.web || '';
+
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('edit-profile-modal').style.display = 'flex';
+        }
+
+        function handleEditAvatar(e) {
+            const file = e.target.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                if (file.type === 'image/gif') {
+                    editAvatarBase64 = ev.target.result;
+                    document.getElementById('edit-avatar-preview').src = editAvatarBase64;
+                } else {
+                    compressImage(ev.target.result, 400, comp => {
+                        editAvatarBase64 = comp;
+                        document.getElementById('edit-avatar-preview').src = editAvatarBase64;
+                    });
+                }
+            }; reader.readAsDataURL(file);
+        }
+
+        async function saveProfileChanges() {
+            await db.ref('users/' + currentUser.uid).update({
+                name: document.getElementById('edit-name').value,
+                bio: document.getElementById('edit-bio').value,
+                avatar: editAvatarBase64,
+                social: {
+                    wa: document.getElementById('edit-wa').value.trim(),
+                    ig: document.getElementById('edit-ig').value.trim(),
+                    snap: document.getElementById('edit-snap').value.trim(),
+                    yt: document.getElementById('edit-yt').value.trim(),
+                    tt: document.getElementById('edit-tt').value.trim(),
+                    x: document.getElementById('edit-x').value.trim(),
+                    web: document.getElementById('edit-web').value.trim()
+                }
+            });
+            closeModals();
+            renderProfileData(currentUser.uid);
+        }
+
+        /* === RANKING TOP ESTRELLAS === */
+        function renderRanking() {
+            const container = document.getElementById('ranking-container');
+            const banner = document.getElementById('ranking-banner');
+            container.innerHTML = '';
+            
+            // Calculamos el ranking de TODOS los usuarios basado en sus estrellas totales en tiempo real
+            let userRankings = Object.values(allUsers).map(u => {
+                return { ...u, realStars: getUserTotalStars(u.uid) };
+            });
+
+            // Ordenamos descendente por estrellas
+            userRankings.sort((a,b) => b.realStars - a.realStars);
+
+            const miPos = userRankings.findIndex(u => u.uid === currentUser.uid);
+            const myRankMsg = (miPos === 0) ? i18n[currentLang].rank1 : (miPos === 1 ? i18n[currentLang].rank2 : (miPos === 2 ? i18n[currentLang].rank3 : (miPos < 10 ? i18n[currentLang].rank4 : i18n[currentLang].rank5)));
+            
+            banner.innerHTML = `<h3>🏆 Top Estrellas</h3><p style="font-size:0.85rem; margin-top:5px; opacity:0.9;">Tu posición: #${miPos + 1}</p><p style="font-size:0.75rem; margin-top:5px; font-weight:bold;">${myRankMsg}</p>`;
+
+            userRankings.forEach((u, idx) => {
+                let badge = `#${idx + 1}`;
+                if(idx === 0) badge = '👑'; else if(idx === 1) badge = '🥈'; else if(idx === 2) badge = '🥉';
+                
+                container.innerHTML += `
+                    <div class="rank-item top-${idx+1}" onclick="simulateLoadingAndProfile('${u.uid}')">
+                        <div class="rank-pos">${badge}</div>
+                        <img src="${u.avatar}" class="avatar" style="margin-right:15px; width:45px; height:45px;">
+                        <div>
+                            <strong style="color:var(--text-main);">${u.name}</strong><br>
+                            <span style="font-size:0.75rem; color:var(--text-muted);">${u.username}</span>
+                        </div>
+                        <div class="rank-score"><i class="fas fa-star"></i> ${u.realStars}</div>
+                    </div>
+                `;
+            });
+        }
+
+        /* === BÚSQUEDA === */
+        function searchUsers() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const res = document.getElementById('search-results');
+            res.innerHTML = '';
+            
+            Object.values(allUsers).forEach(u => {
+                if(u.uid !== currentUser.uid && (u.name.toLowerCase().includes(query) || u.username.toLowerCase().includes(query))) {
+                    res.innerHTML += `
+                        <div class="search-user-item" onclick="simulateLoadingAndProfile('${u.uid}')">
+                            <img src="${u.avatar}" class="avatar">
+                            <div>
+                                <strong style="color:var(--text-main);">${u.name}</strong><br>
+                                <span style="color:var(--text-muted); font-size:0.8rem;">${u.username}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
         }
 
         function closeModals() {
@@ -1974,128 +2162,6 @@
             document.getElementById('overlay').style.display = 'none';
         }
 
-        function viewMyProfile() { viewProfile(currentUser.uid); }
-
-        function viewProfile(uid) {
-            currentlyViewingProfileUid = uid;
-            openView('view-profile');
-            renderProfileData(uid);
-        }
-
-        function renderProfileData(uid) {
-            const user = allUsers[uid];
-            if(!user) return;
-            const header = document.getElementById('profile-header');
-            
-            let linksHTML = '<div class="social-icons-container">';
-            if(user.wa) linksHTML += `<a href="https://wa.me/${user.wa.replace(/\D/g,'')}" target="_blank" class="social-icon"><i class="fab fa-whatsapp"></i></a>`;
-            if(user.ig) linksHTML += `<a href="https://instagram.com/${user.ig.replace('@','')}" target="_blank" class="social-icon"><i class="fab fa-instagram"></i></a>`;
-            if(user.snap) linksHTML += `<a href="https://snapchat.com/add/${user.snap}" target="_blank" class="social-icon"><i class="fab fa-snapchat-ghost"></i></a>`;
-            if(user.yt) linksHTML += `<a href="${user.yt.startsWith('http') ? user.yt : 'https://youtube.com/'+user.yt}" target="_blank" class="social-icon"><i class="fab fa-youtube"></i></a>`;
-            if(user.tt) linksHTML += `<a href="https://tiktok.com/@${user.tt.replace('@','')}" target="_blank" class="social-icon"><i class="fab fa-tiktok"></i></a>`;
-            if(user.x) linksHTML += `<a href="https://x.com/${user.x.replace('@','')}" target="_blank" class="social-icon"><i class="fab fa-twitter"></i></a>`;
-            if(user.web) linksHTML += `<a href="${user.web.startsWith('http') ? user.web : 'https://'+user.web}" target="_blank" class="social-icon"><i class="fas fa-link"></i></a>`;
-            linksHTML += '</div>';
-
-            header.innerHTML = `
-                <div class="profile-cover"></div>
-                <div class="profile-header">
-                    <img class="avatar" src="${user.avatar}">
-                    <h3 style="color:var(--text-main);">${user.name}</h3>
-                    <div class="profile-username">${user.username || ''}</div>
-                    <div class="profile-bio">${user.bio || ''}</div>
-                    <div class="profile-stats">
-                        <div class="stat"><strong>${user.followersCount || 0}</strong><span>Seguidores</span></div>
-                        <div class="stat"><strong>${user.followingCount || 0}</strong><span>Siguiendo</span></div>
-                        <div class="stat"><strong>${user.stars || 0}</strong><span>Estrellas</span></div>
-                    </div>
-                    ${linksHTML}
-                    <div style="margin-top: 15px;">
-                        ${uid === currentUser.uid ? `<button class="btn-secondary" onclick="openEditProfile()">Editar Perfil</button>` : `<button class="btn-primary" onclick="toggleFollow('${uid}')">${currentUser.friends && currentUser.friends[uid] ? 'Dejar de seguir' : 'Seguir'}</button>`}
-                    </div>
-                </div>
-            `;
-            const grid = document.getElementById('profile-grid');
-            grid.innerHTML = '';
-            const userPosts = posts.filter(p => p.userId === uid).sort((a,b) => b.timestamp - a.timestamp);
-            userPosts.forEach(p => {
-                if(p.isVideo) {
-                    grid.innerHTML += `<div style="position:relative;"><video src="${p.image}" autoplay muted loop playsinline></video><i class="fas fa-expand" style="position:absolute; top:5px; right:5px; color:white; background:rgba(0,0,0,0.5); padding:5px; border-radius:50%; font-size:0.8rem; cursor:pointer;" onclick="openFullScreen('${p.image}', true)"></i></div>`;
-                } else {
-                    grid.innerHTML += `<div style="position:relative;"><img src="${p.image}"><i class="fas fa-expand" style="position:absolute; top:5px; right:5px; color:white; background:rgba(0,0,0,0.5); padding:5px; border-radius:50%; font-size:0.8rem; cursor:pointer;" onclick="openFullScreen('${p.image}', false)"></i></div>`;
-                }
-            });
-        }
-
-        function openEditProfile() {
-            document.getElementById('edit-name').value = currentUser.name || '';
-            document.getElementById('edit-bio').value = currentUser.bio || '';
-            document.getElementById('edit-avatar-preview').src = currentUser.avatar || '';
-            
-            document.getElementById('edit-wa').value = currentUser.wa || '';
-            document.getElementById('edit-ig').value = currentUser.ig || '';
-            document.getElementById('edit-snap').value = currentUser.snap || '';
-            document.getElementById('edit-yt').value = currentUser.yt || '';
-            document.getElementById('edit-tt').value = currentUser.tt || '';
-            document.getElementById('edit-x').value = currentUser.x || '';
-            document.getElementById('edit-web').value = currentUser.web || '';
-
-            editAvatarBase64 = currentUser.avatar;
-            document.getElementById('overlay').style.display = 'block';
-            document.getElementById('edit-profile-modal').style.display = 'flex';
-        }
-
-        function handleEditAvatar(e) {
-            const file = e.target.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = ev => {
-                compressImage(ev.target.result, 400, (comp) => {
-                    editAvatarBase64 = comp;
-                    document.getElementById('edit-avatar-preview').src = comp;
-                });
-            };
-            reader.readAsDataURL(file);
-        }
-
-        async function saveProfileChanges() {
-            const name = document.getElementById('edit-name').value;
-            const bio = document.getElementById('edit-bio').value;
-            const wa = document.getElementById('edit-wa').value;
-            const ig = document.getElementById('edit-ig').value;
-            const snap = document.getElementById('edit-snap').value;
-            const yt = document.getElementById('edit-yt').value;
-            const tt = document.getElementById('edit-tt').value;
-            const x = document.getElementById('edit-x').value;
-            const web = document.getElementById('edit-web').value;
-
-            await db.ref(`users/${currentUser.uid}`).update({ 
-                name: name, bio: bio, avatar: editAvatarBase64,
-                wa: wa, ig: ig, snap: snap, yt: yt, tt: tt, x: x, web: web
-            });
-            closeModals();
-        }
-
-        function renderRanking() {
-            const container = document.getElementById('ranking-container');
-            const banner = document.getElementById('ranking-banner');
-            banner.innerHTML = `<h3>Top Estrellas</h3><p>¡Sube de nivel ganando estrellas en tus posts!</p>`;
-            container.innerHTML = '';
-            const sortedUsers = Object.values(allUsers).sort((a,b) => (b.stars||0) - (a.stars||0));
-            sortedUsers.forEach((u, i) => {
-                container.innerHTML += `
-                    <div class="rank-item top-${i+1}" onclick="simulateLoadingAndProfile('${u.uid}')">
-                        <div class="rank-pos">#${i+1}</div>
-                        <img class="avatar" src="${u.avatar}" style="margin: 0 15px; width:40px; height:40px;">
-                        <div style="flex:1;">
-                           <div style="color:var(--text-main); font-weight:bold;">${u.name}</div>
-                           <div style="font-size:0.8rem; color:var(--primary);">${u.username || ''}</div>
-                        </div>
-                        <div class="rank-score">${u.stars||0} ★</div>
-                    </div>
-                `;
-            });
-        }
     </script>
 </body>
 </html>
