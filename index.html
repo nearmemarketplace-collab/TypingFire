@@ -1190,13 +1190,14 @@
             const canvas = document.getElementById('live-canvas');
             faceapi.matchDimensions(canvas, { width: video.videoWidth, height: video.videoHeight });
             if(faceDetectionInterval) clearInterval(faceDetectionInterval);
-            faceDetectionInterval = setInterval(async () => {
+            async function detectFacesLoop() {
                 if(video.paused || video.ended) return;
                 const detections = await faceapi.detectAllFaces(video).withFaceExpressions();
                 const resizedDetections = faceapi.resizeResults(detections, { width: video.clientWidth, height: video.clientHeight });
                 canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
                 faceapi.draw.drawDetections(canvas, resizedDetections);
-            }, 300);
+                requestAnimationFrame(detectFacesLoop);
+            }, 
         }
 
         function closeLiveCamera() {
@@ -1575,7 +1576,7 @@
 
         /* === INICIO APP === */
         function initApp(uid) {
-            db.ref('users/' + uid).on('child_added', snap => {
+            db.ref('users/' + uid).on('value', snap => {
                 currentUser = snap.val();
                 if(currentUser) {
                     document.getElementById('header-avatar').src = currentUser.avatar || '';
@@ -1584,7 +1585,7 @@
                     }
                 }
             });
-            db.ref('users').on('child_added', snap => { 
+            db.ref('users').on('value', snap => { 
                 allUsers = snap.val() || {}; 
                 if(document.getElementById('view-search').classList.contains('active')) searchUsers(); 
                 if(document.getElementById('view-profile').classList.contains('active') && currentlyViewingProfileUid) {
@@ -1592,7 +1593,7 @@
                 }
                 if(document.getElementById('view-ranking').classList.contains('active')) renderRanking();
             });
-            db.ref('posts').on('child_added', snap => {
+            db.ref('posts').on('value', snap => {
                 const data = snap.val(); posts = data ? Object.values(data).sort((a,b) => b.timestamp - a.timestamp) : [];
                 if(document.getElementById('view-feed').classList.contains('active')) renderFeed();
                 if(document.getElementById('view-profile').classList.contains('active') && currentlyViewingProfileUid) {
@@ -1600,7 +1601,7 @@
                 }
                 checkUrlForPost();
             });
-            db.ref('stories').on('child_added', snap => {
+            db.ref('stories').on('value', snap => {
                 const data = snap.val(); stories = data ? Object.values(data) : [];
                 if(document.getElementById('view-feed').classList.contains('active')) renderStories();
             });
