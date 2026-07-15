@@ -15,7 +15,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
     <style>
         /* === VARIABLES & TEMAS === */
@@ -719,7 +718,6 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.database();
-        const storage = firebase.storage();
 
         /* === ESTADO GLOBAL === */
         let currentUser = null;
@@ -729,9 +727,9 @@
         let notifications = [];
         let isAiLoaded = false;
         
-        let uploadBlob = null; 
-        let regAvatarBlob = null; 
-        let editAvatarBlob = null; 
+        let uploadBase64 = null;
+        let regAvatarBase64 = null;
+        let editAvatarBase64 = null;
         let currentUploadIsVideo = false;
         
         let currentPostIdForAction = null; 
@@ -739,7 +737,7 @@
         let currentStoryId = null;
         
         let editingPostId = null;
-        let editingPostBlob = null; 
+        let editingPostBase64 = null;
 
         let currentlyViewingProfileUid = null; 
         let currentUploadIsAI = false;
@@ -982,20 +980,11 @@
             if (seconds >= 3600) return `${d.ago}${Math.floor(seconds/3600)} ${d.h}`;
             return `${d.ago}${Math.floor(seconds/60)} ${d.m}`;
         }
-        
-        /* === HELPER FIREBASE STORAGE === */
-        async function uploadBlobToStorage(blob, folder, userId) {
-            if(typeof blob === 'string') return blob; 
-            const filename = `${folder}/${userId}_${Date.now()}`;
-            const ref = storage.ref().child(filename);
-            await ref.put(blob);
-            return await ref.getDownloadURL();
-        }
 
-        /* === COMPRESIÓN DE IMÁGENES A BLOB === */
-        function compressImageToBlob(fileOrUrl, maxWidth, callback) {
+        /* === COMPRESIÓN DE IMÁGENES === */
+        function compressImage(base64Str, maxWidth, callback) {
             let img = new Image();
-            img.src = typeof fileOrUrl === 'string' ? fileOrUrl : URL.createObjectURL(fileOrUrl);
+            img.src = base64Str;
             img.onload = () => {
                 let canvas = document.createElement('canvas');
                 let width = img.width;
@@ -1008,9 +997,7 @@
                 canvas.height = height;
                 let ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                canvas.toBlob((blob) => {
-                    callback(blob);
-                }, 'image/jpeg', 0.8);
+                callback(canvas.toDataURL('image/jpeg', 0.8));
             };
         }
 
@@ -1265,25 +1252,25 @@
                     ctx.drawImage(firstCamImage, 15, 15, smallW, smallH);
                     ctx.strokeStyle = "#fff"; ctx.lineWidth = 4; ctx.strokeRect(15, 15, smallW, smallH);
 
-                    finalCanvas.toBlob(blob => compressImageToBlob(blob, 800, finishCapture), 'image/jpeg');
+                    compressImage(finalCanvas.toDataURL('image/jpeg'), 800, finishCapture);
                     dualCamStep = 0; isDualCamMode = false; dualCamType = '';
                     document.getElementById('dual-cam-btn').classList.remove('dual-cam-active');
                     document.getElementById('t-cap-btn').innerText = i18n[currentLang].capBtn;
                     return;
                 }
             } else {
-                tCanvas.toBlob(blob => compressImageToBlob(blob, 800, finishCapture), 'image/jpeg');
+                compressImage(tCanvas.toDataURL('image/jpeg'), 800, finishCapture);
             }
         }
         
-        function finishCapture(compressedBlob) {
-            uploadBlob = compressedBlob;
+        function finishCapture(compressedBase64) {
+            uploadBase64 = compressedBase64;
             currentUploadIsAI = false; 
             currentUploadIsVideo = false;
             closeLiveCamera();
             document.getElementById('preview-vid').style.display = 'none';
             const img = document.getElementById('preview-img');
-            img.src = URL.createObjectURL(uploadBlob); img.style.display = 'block';
+            img.src = uploadBase64; img.style.display = 'block';
             document.getElementById('btn-publish').style.display = 'block';
         }
 
@@ -1301,39 +1288,42 @@
             
             if(!currentUploadIsVideo) checkAIGenerated(file);
 
-            const processMedia = (blob) => {
-                uploadBlob = blob;
-                const tempUrl = URL.createObjectURL(blob);
-                if(currentUploadIsVideo) {
-                    document.getElementById('preview-img').style.display = 'none';
-                    const vid = document.getElementById('preview-vid');
-                    vid.src = tempUrl;
-                    vid.style.display = 'block';
-                } else {
-                    document.getElementById('preview-vid').style.display = 'none';
-                    const img = document.getElementById('preview-img');
-                    img.src = tempUrl; 
-                    img.style.display = 'block';
-                }
-                
-                setTimeout(() => {
-                    btnPub.disabled = false;
-                    btnPub.innerHTML = `<i class="fas fa-magic"></i> ${i18n[currentLang].btnPub || 'Analizar y Publicar'}`;
-                    if(currentUploadIsAI && !currentUploadIsVideo) {
-                        document.getElementById('ai-pre-detect-alert').style.display = 'block';
+            const reader = new FileReader();
+            reader.onload = ev => {
+                const processMedia = (base64) => {
+                    uploadBase64 = base64;
+                    if(currentUploadIsVideo) {
+                        document.getElementById('preview-img').style.display = 'none';
+                        const vid = document.getElementById('preview-vid');
+                        vid.src = uploadBase64;
+                        vid.style.display = 'block';
+                    } else {
+                        document.getElementById('preview-vid').style.display = 'none';
+                        const img = document.getElementById('preview-img');
+                        img.src = uploadBase64; 
+                        img.style.display = 'block';
                     }
-                }, 1000);
-            };
+                    
+                    setTimeout(() => {
+                        btnPub.disabled = false;
+                        btnPub.innerHTML = `<i class="fas fa-magic"></i> ${i18n[currentLang].btnPub || 'Analizar y Publicar'}`;
+                        if(currentUploadIsAI && !currentUploadIsVideo) {
+                            document.getElementById('ai-pre-detect-alert').style.display = 'block';
+                        }
+                    }, 1000);
+                };
 
-            if (currentUploadIsVideo || file.type === 'image/gif') {
-                processMedia(file);
-            } else {
-                compressImageToBlob(file, 800, processMedia);
-            }
+                if (currentUploadIsVideo || file.type === 'image/gif') {
+                    processMedia(ev.target.result);
+                } else {
+                    compressImage(ev.target.result, 800, processMedia);
+                }
+            }; 
+            reader.readAsDataURL(file);
         }
 
         async function analyzeAndPublish() {
-            if(!uploadBlob) return;
+            if(!uploadBase64) return;
             const btn = document.getElementById('btn-publish');
             btn.disabled = true; btn.innerHTML = i18n[currentLang].analyzing;
             
@@ -1385,16 +1375,13 @@
             if(userLocationText) detectedText += ` | ${userLocationText}`;
             if(filterText) detectedText += (detectedText ? ' | ' : '') + filterText;
 
-            // Subimos el Blob al Storage
-            const finalImageUrl = await uploadBlobToStorage(uploadBlob, 'posts', currentUser.uid);
-
             const newPost = {
                 id: 'post_' + Date.now(),
                 userId: currentUser.uid, 
                 userName: currentUser.name || "Usuario", 
                 userAvatar: currentUser.avatar || "", 
                 username: currentUser.username || "",
-                image: finalImageUrl, 
+                image: uploadBase64 || "", 
                 isVideo: currentUploadIsVideo,
                 caption: document.getElementById('post-caption').value || "", 
                 emotion: detectedText || "",
@@ -1416,7 +1403,7 @@
             currentUploadIsVideo = false;
 
             userLocationText = ""; document.getElementById('location-display').innerText = "";
-            uploadBlob = null; btn.style.display = 'none'; btn.disabled = false;
+            uploadBase64 = null; btn.style.display = 'none'; btn.disabled = false;
             btn.innerHTML = `<i class="fas fa-magic"></i> ${dict.btnPub}`;
             openView('view-feed');
         }
@@ -1526,19 +1513,23 @@
         function handleRegAvatar(e) {
             const file = e.target.files[0]; 
             if(!file) return;
-            if (file.type === 'image/gif') {
-                regAvatarBlob = file;
-                document.getElementById('reg-avatar-preview').src = URL.createObjectURL(file); 
-                document.getElementById('reg-avatar-preview').style.display = 'block'; 
-                document.getElementById('reg-avatar-icon').style.display = 'none'; 
-            } else {
-                compressImageToBlob(file, 400, (compBlob) => {
-                    regAvatarBlob = compBlob; 
-                    document.getElementById('reg-avatar-preview').src = URL.createObjectURL(compBlob); 
+            const reader = new FileReader();
+            reader.onload = ev => { 
+                if (file.type === 'image/gif') {
+                    regAvatarBase64 = ev.target.result;
+                    document.getElementById('reg-avatar-preview').src = regAvatarBase64; 
                     document.getElementById('reg-avatar-preview').style.display = 'block'; 
                     document.getElementById('reg-avatar-icon').style.display = 'none'; 
-                });
-            }
+                } else {
+                    compressImage(ev.target.result, 400, (comp) => {
+                        regAvatarBase64 = comp; 
+                        document.getElementById('reg-avatar-preview').src = regAvatarBase64; 
+                        document.getElementById('reg-avatar-preview').style.display = 'block'; 
+                        document.getElementById('reg-avatar-icon').style.display = 'none'; 
+                    });
+                }
+            };
+            if(file) reader.readAsDataURL(file);
         }
 
         async function register() {
@@ -1546,7 +1537,7 @@
             const errorLabel = document.getElementById('auth-error');
             errorLabel.style.color = "#ff4d4d";
             
-            if(!name || !email || !pass || !regAvatarBlob) return errorLabel.innerText = i18n[currentLang].reqPic;
+            if(!name || !email || !pass || !regAvatarBase64) return errorLabel.innerText = i18n[currentLang].reqPic;
             if(pass.length < 6) return errorLabel.innerText = "La contraseña debe tener al menos 6 caracteres";
             
             const autoUsername = '@' + name.replace(/\s+/g, '').toLowerCase() + Math.floor(Math.random() * 1000);
@@ -1554,10 +1545,8 @@
             document.getElementById('btn-register').disabled = true;
             try {
                 const cred = await auth.createUserWithEmailAndPassword(email, pass);
-                const avatarUrl = await uploadBlobToStorage(regAvatarBlob, 'avatars', cred.user.uid);
-
                 await cred.user.sendEmailVerification();
-                await db.ref('users/' + cred.user.uid).set({ uid: cred.user.uid, name: name, username: autoUsername, stars: 0, bio: "¡Hola! Uso StarShine ✨", avatar: avatarUrl, followersCount: 0, followingCount: 0 });
+                await db.ref('users/' + cred.user.uid).set({ uid: cred.user.uid, name: name, username: autoUsername, stars: 0, bio: "¡Hola! Uso StarShine ✨", avatar: regAvatarBase64, followersCount: 0, followingCount: 0 });
                 await auth.signOut();
                 
                 errorLabel.style.color = "var(--primary)";
@@ -1624,22 +1613,22 @@
         /* === HISTORIAS === */
         function handleStoryUpload(e) {
             const file = e.target.files[0]; if(!file) return;
-            const processStoryBlob = async (blob) => {
-                const storyUrl = await uploadBlobToStorage(blob, 'stories', currentUser.uid);
-                const newStory = { id: 'story_' + Date.now(), userId: currentUser.uid, userName: currentUser.name, userAvatar: currentUser.avatar, image: storyUrl, timestamp: Date.now(), score: 0 };
-                await db.ref('stories/' + newStory.id).set(newStory);
-            };
-
-            if (file.type === 'image/gif') {
-                processStoryBlob(file);
-            } else {
-                compressImageToBlob(file, 800, processStoryBlob);
-            }
+            const reader = new FileReader();
+            reader.onload = async ev => {
+                if (file.type === 'image/gif') {
+                    const newStory = { id: 'story_' + Date.now(), userId: currentUser.uid, userName: currentUser.name, userAvatar: currentUser.avatar, image: ev.target.result, timestamp: Date.now(), score: 0 };
+                    await db.ref('stories/' + newStory.id).set(newStory);
+                } else {
+                    compressImage(ev.target.result, 800, async (compressed) => {
+                        const newStory = { id: 'story_' + Date.now(), userId: currentUser.uid, userName: currentUser.name, userAvatar: currentUser.avatar, image: compressed, timestamp: Date.now(), score: 0 };
+                        await db.ref('stories/' + newStory.id).set(newStory);
+                    });
+                }
+            }; reader.readAsDataURL(file);
         }
         
         function renderStories() {
-            const container = document.getElementById('friends-stories'); 
-            
+            const container = document.getElementById('friends-stories'); container.innerHTML = '';
             const now = Date.now(); const oneDay = 24 * 60 * 60 * 1000;
             
             let grouped = {};
@@ -1657,7 +1646,6 @@
                 return 0;
             });
 
-            let htmlBuilder = '';
             userIds.forEach(uid => {
                 let userStories = grouped[uid];
                 userStories.sort((a,b) => a.timestamp - b.timestamp); 
@@ -1665,16 +1653,13 @@
                 
                 let nameDisplay = (uid === currentUser.uid) ? (i18n[currentLang].yourStory || "Tu Historia") : latestStory.userName.split(' ')[0];
 
-                htmlBuilder += `
+                container.innerHTML += `
                     <div>
                         <div class="story-circle" onclick="viewUserStories('${uid}')"><img src="${latestStory.image}"></div>
                         <div class="story-username">${nameDisplay}</div>
                     </div>
                 `;
             });
-            
-            // Optimizamos la inyección para que se haga una sola vez
-            container.innerHTML = htmlBuilder;
         }
 
         function viewUserStories(uid) {
@@ -1737,16 +1722,13 @@
         function searchUsers() {
             const query = document.getElementById('search-input').value.toLowerCase();
             const res = document.getElementById('search-results'); 
+            res.innerHTML = '';
             
-            if (query.trim() === '') {
-                res.innerHTML = '';
-                return;
-            }
+            if (query.trim() === '') return;
 
-            let htmlBuilder = '';
             Object.values(allUsers).forEach(u => {
                 if(u.name.toLowerCase().includes(query) || (u.username && u.username.toLowerCase().includes(query))) {
-                    htmlBuilder += `
+                    res.innerHTML += `
                         <div class="search-user-item" onclick="simulateLoadingAndProfile('${u.uid}')">
                             <img class="avatar" src="${u.avatar}">
                             <div style="flex:1;">
@@ -1758,9 +1740,6 @@
                     `;
                 }
             });
-            
-            // Inyectamos todo el HTML de búsqueda de una vez
-            res.innerHTML = htmlBuilder;
         }
 
         function simulateLoadingAndProfile(uid) {
@@ -1848,8 +1827,7 @@
                 return;
             }
 
-            let htmlBuilder = '';
-            
+            container.innerHTML = '';
             posts.forEach(post => {
                 if (post.privacy === 'friends' && post.userId !== currentUser.uid && !(currentUser.friends && currentUser.friends[post.userId])) return;
 
@@ -1875,7 +1853,7 @@
                     ? `<video class="post-media boomerang-video" src="${post.image}" autoplay muted playsinline></video>` 
                     : `<img class="post-media" src="${post.image}" loading="lazy">`;
 
-                htmlBuilder += `
+                container.innerHTML += `
                     <div class="post-card">
                         <div class="post-header">
                             <div class="avatar" onclick="simulateLoadingAndProfile('${post.userId}')"><img src="${post.userAvatar}"></div>
@@ -1906,9 +1884,6 @@
                     </div>
                 `;
             });
-            
-            // Asignamos el HTML al contenedor una sola vez (súper rápido)
-            container.innerHTML = htmlBuilder;
         }
         
         async function ratePost(postId, value) {
@@ -1917,6 +1892,7 @@
             let totalStars = Object.values(post.raters).reduce((a, v) => a + v, 0);
             await db.ref(`posts/${postId}`).update({ raters: post.raters, stars: totalStars });
             
+            // Re-calcular estrellas totales en la cuenta global del autor del post y actualizar DB en tiempo real
             const authorPosts = posts.filter(p => p.userId === post.userId);
             let authorTotalStars = 0;
             authorPosts.forEach(p => {
@@ -1934,7 +1910,7 @@
         function openEditPost(postId) {
             const post = posts.find(p => p.id === postId); if(!post) return;
             editingPostId = postId;
-            editingPostBlob = post.image; 
+            editingPostBase64 = post.image;
             document.getElementById('edit-post-preview').src = post.image;
             document.getElementById('edit-post-caption').value = post.caption || '';
             const menu = document.getElementById(`menu-${postId}`);
@@ -1947,15 +1923,18 @@
         function handleEditPostImage(e) {
             const file = e.target.files[0]; if(!file) return;
             checkAIGenerated(file);
-            if (file.type === 'image/gif' || file.type.startsWith('video/')) {
-                editingPostBlob = file;
-                document.getElementById('edit-post-preview').src = URL.createObjectURL(file);
-            } else {
-                compressImageToBlob(file, 800, (compressedBlob) => {
-                    editingPostBlob = compressedBlob;
-                    document.getElementById('edit-post-preview').src = URL.createObjectURL(compressedBlob);
-                });
-            }
+            const reader = new FileReader();
+            reader.onload = ev => {
+                if (file.type === 'image/gif' || file.type.startsWith('video/')) {
+                    editingPostBase64 = ev.target.result;
+                    document.getElementById('edit-post-preview').src = editingPostBase64;
+                } else {
+                    compressImage(ev.target.result, 800, (compressedBase64) => {
+                        editingPostBase64 = compressedBase64;
+                        document.getElementById('edit-post-preview').src = editingPostBase64;
+                    });
+                }
+            }; reader.readAsDataURL(file);
         }
 
         async function saveEditPost() {
@@ -1964,9 +1943,8 @@
             const newCaption = document.getElementById('edit-post-caption').value;
             
             let updateData = { caption: newCaption, edited: true };
-            if (editingPostBlob !== post.image) {
-                const newUrl = await uploadBlobToStorage(editingPostBlob, 'posts', currentUser.uid);
-                updateData.image = newUrl;
+            if (editingPostBase64 !== post.image) {
+                updateData.image = editingPostBase64;
                 updateData.isAI = currentUploadIsAI;
             }
 
@@ -1981,6 +1959,7 @@
                 const targetUserId = postToDelete ? postToDelete.userId : currentUser.uid;
                 await db.ref(`posts/${postId}`).remove();
                 
+                // Actualizar y descontar estrellas eliminadas del perfil al instante
                 setTimeout(async () => {
                     const remainingPosts = posts.filter(p => p.userId === targetUserId && p.id !== postId);
                     let recalculatedStars = remainingPosts.reduce((acc, p) => acc + (p.stars || 0), 0);
@@ -2024,19 +2003,14 @@
         }
 
         function renderCommentThreads(postId) {
-            const post = posts.find(p => p.id === postId); const list = document.getElementById('comments-list'); 
-            if(!post || !post.comments) {
-                list.innerHTML = '';
-                return;
-            }
+            const post = posts.find(p => p.id === postId); const list = document.getElementById('comments-list'); list.innerHTML = '';
+            if(!post || !post.comments) return;
             
             const commentsArr = Object.values(post.comments).sort((a,b) => a.timestamp - b.timestamp);
             const roots = commentsArr.filter(c => !c.parentId);
 
-            let htmlBuilder = '';
-
             roots.forEach(c => {
-                htmlBuilder += `<div class="comment">
+                list.innerHTML += `<div class="comment">
                     <img class="avatar" src="${c.userAvatar}" style="width:30px; height:30px;">
                     <div class="comment-content">
                         <h5>${c.userName}</h5>
@@ -2045,9 +2019,10 @@
                     </div>
                 </div>`;
                 
+                // Pintar las respuestas ligadas a este comentario
                 const replies = commentsArr.filter(reply => reply.parentId === c.id);
                 replies.forEach(r => {
-                    htmlBuilder += `<div class="comment" style="margin-left: 35px; margin-top: -5px;">
+                    list.innerHTML += `<div class="comment" style="margin-left: 35px; margin-top: -5px;">
                         <img class="avatar" src="${r.userAvatar}" style="width:24px; height:24px;">
                         <div class="comment-content" style="background: rgba(0,168,232,0.1);">
                             <h5>${r.userName} <span style="font-size:0.7rem; color:var(--text-muted);">respondió</span></h5>
@@ -2057,9 +2032,6 @@
                     </div>`;
                 });
             });
-            
-            // Inyectar HTML una sola vez
-            list.innerHTML = htmlBuilder;
         }
 
         async function submitComment() {
@@ -2122,20 +2094,15 @@
                 </div>
             `;
             const grid = document.getElementById('profile-grid');
-            
+            grid.innerHTML = '';
             const userPosts = posts.filter(p => p.userId === uid).sort((a,b) => b.timestamp - a.timestamp);
-            let gridHtmlBuilder = '';
-            
             userPosts.forEach(p => {
                 if(p.isVideo) {
-                    gridHtmlBuilder += `<div style="position:relative;"><video src="${p.image}" autoplay muted loop playsinline></video><i class="fas fa-expand" style="position:absolute; top:5px; right:5px; color:white; background:rgba(0,0,0,0.5); padding:5px; border-radius:50%; font-size:0.8rem; cursor:pointer;" onclick="openFullScreen('${p.image}', true, '${p.id}')"></i></div>`;
+                    grid.innerHTML += `<div style="position:relative;"><video src="${p.image}" autoplay muted loop playsinline></video><i class="fas fa-expand" style="position:absolute; top:5px; right:5px; color:white; background:rgba(0,0,0,0.5); padding:5px; border-radius:50%; font-size:0.8rem; cursor:pointer;" onclick="openFullScreen('${p.image}', true, '${p.id}')"></i></div>`;
                 } else {
-                    gridHtmlBuilder += `<div style="position:relative;"><img src="${p.image}"><i class="fas fa-expand" style="position:absolute; top:5px; right:5px; color:white; background:rgba(0,0,0,0.5); padding:5px; border-radius:50%; font-size:0.8rem; cursor:pointer;" onclick="openFullScreen('${p.image}', false, '${p.id}')"></i></div>`;
+                    grid.innerHTML += `<div style="position:relative;"><img src="${p.image}"><i class="fas fa-expand" style="position:absolute; top:5px; right:5px; color:white; background:rgba(0,0,0,0.5); padding:5px; border-radius:50%; font-size:0.8rem; cursor:pointer;" onclick="openFullScreen('${p.image}', false, '${p.id}')"></i></div>`;
                 }
             });
-            
-            // Inyectamos el grid compilado 
-            grid.innerHTML = gridHtmlBuilder;
         }
 
         function openEditProfile() {
@@ -2151,7 +2118,7 @@
             document.getElementById('edit-x').value = currentUser.x || '';
             document.getElementById('edit-web').value = currentUser.web || '';
 
-            editAvatarBlob = currentUser.avatar; 
+            editAvatarBase64 = currentUser.avatar;
             document.getElementById('overlay').style.display = 'block';
             document.getElementById('edit-profile-modal').style.display = 'flex';
         }
@@ -2159,10 +2126,14 @@
         function handleEditAvatar(e) {
             const file = e.target.files[0];
             if(!file) return;
-            compressImageToBlob(file, 400, (compBlob) => {
-                editAvatarBlob = compBlob;
-                document.getElementById('edit-avatar-preview').src = URL.createObjectURL(compBlob);
-            });
+            const reader = new FileReader();
+            reader.onload = ev => {
+                compressImage(ev.target.result, 400, (comp) => {
+                    editAvatarBase64 = comp;
+                    document.getElementById('edit-avatar-preview').src = comp;
+                });
+            };
+            reader.readAsDataURL(file);
         }
 
         async function saveProfileChanges() {
@@ -2176,13 +2147,8 @@
             const x = document.getElementById('edit-x').value;
             const web = document.getElementById('edit-web').value;
 
-            let newAvatarUrl = currentUser.avatar;
-            if(editAvatarBlob !== currentUser.avatar) {
-                newAvatarUrl = await uploadBlobToStorage(editAvatarBlob, 'avatars', currentUser.uid);
-            }
-
             await db.ref(`users/${currentUser.uid}`).update({ 
-                name: name, bio: bio, avatar: newAvatarUrl,
+                name: name, bio: bio, avatar: editAvatarBase64,
                 wa: wa, ig: ig, snap: snap, yt: yt, tt: tt, x: x, web: web
             });
             closeModals();
@@ -2192,12 +2158,10 @@
             const container = document.getElementById('ranking-container');
             const banner = document.getElementById('ranking-banner');
             banner.innerHTML = `<h3>Top Estrellas</h3><p>¡Sube de nivel ganando estrellas en tus posts!</p>`;
-            
+            container.innerHTML = '';
             const sortedUsers = Object.values(allUsers).sort((a,b) => (b.stars||0) - (a.stars||0));
-            let htmlBuilder = '';
-            
             sortedUsers.forEach((u, i) => {
-                htmlBuilder += `
+                container.innerHTML += `
                     <div class="rank-item top-${i+1}" onclick="simulateLoadingAndProfile('${u.uid}')">
                         <div class="rank-pos">#${i+1}</div>
                         <img class="avatar" src="${u.avatar}" style="margin: 0 15px; width:40px; height:40px;">
@@ -2209,9 +2173,6 @@
                     </div>
                 `;
             });
-            
-            // Inyectamos todo el ranking de una sola vez
-            container.innerHTML = htmlBuilder;
         }
     </script>
 </body>
