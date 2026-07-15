@@ -1190,14 +1190,11 @@
             const canvas = document.getElementById('live-canvas');
             faceapi.matchDimensions(canvas, { width: video.videoWidth, height: video.videoHeight });
             if(faceDetectionInterval) clearInterval(faceDetectionInterval);
-            faceDetectionInterval = setInterval(async () => {
-                if(video.paused || video.ended) return;
-                const detections = await faceapi.detectAllFaces(video).withFaceExpressions();
-                const resizedDetections = faceapi.resizeResults(detections, { width: video.clientWidth, height: video.clientHeight });
-                canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-                faceapi.draw.drawDetections(canvas, resizedDetections);
-            }, 300);
-        }
+          async function detectFacesLoop() {
+    if (video.paused || video.ended) return;
+    // ... tu lógica de detección ...
+    requestAnimationFrame(detectFacesLoop);
+}
 
         function closeLiveCamera() {
             if(cameraStream) cameraStream.getTracks().forEach(t => t.stop());
