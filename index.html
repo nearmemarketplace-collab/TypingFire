@@ -173,7 +173,7 @@
         .story-circle { min-width: 65px; height: 65px; width: 65px; border-radius: 50%; border: 3px solid var(--primary); padding: 2px; position: relative; cursor: pointer; box-shadow: 0 0 10px rgba(0,168,232,0.3); display: flex; justify-content: center; align-items: center;}
         .story-circle img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; aspect-ratio: 1 / 1; }
         .story-add { border: 3px dashed var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--primary); background: rgba(0,168,232,0.05); }
-        .story-username { font-size: 0.7rem; text-align: center; margin-top: 5px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 65px; font-weight: 600;}
+        .story-username { font-size: 0.7rem; text-align: center; margin-top: 5px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 65px; font-weight: 600; cursor: pointer;}
         
         .story-view-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; flex-direction: column; animation: storyZoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes storyZoomIn { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -224,6 +224,15 @@
         .post-media { width: 100%; display: block; object-fit: cover; max-height: 500px; transition: transform 0.5s ease;}
         .post-media-container:hover .post-media { transform: scale(1.03); }
         
+        .post-media-overlay {
+            position: absolute; top: 10px; right: 10px; z-index: 5;
+            display: flex; gap: 10px; background: rgba(0,0,0,0.6); 
+            padding: 8px 12px; border-radius: 12px; color: white;
+            backdrop-filter: blur(5px);
+        }
+        .post-media-overlay i { cursor: pointer; font-size: 1.2rem; transition: 0.3s; }
+        .post-media-overlay i:hover { color: var(--primary); transform: scale(1.1); }
+
         .star-burst { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); color: #FFD700; font-size: 5rem; text-shadow: 0 0 30px rgba(255,215,0,0.8); opacity: 0; pointer-events: none; z-index: 10;}
         @keyframes starBurstAnim {
             0% { transform: translate(-50%, -50%) scale(0.5) rotate(-15deg); opacity: 0; }
@@ -317,8 +326,22 @@
         .search-user-item:hover { transform: scale(1.02); border-color: var(--primary); }
         .search-user-item .avatar { width: 40px; height: 40px; margin-right: 15px; }
 
-        /* Dual Cam Button */
+        /* Dual Cam Button & Elegance */
         .dual-cam-active { background: var(--star-active) !important; color: #000 !important; box-shadow: 0 0 15px rgba(255, 215, 0, 0.8) !important; border-color: #FFD700 !important;}
+        
+        .fullscreen-cam {
+            position: fixed !important;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 9999 !important;
+            border-radius: 0 !important; border: none !important; margin: 0 !important;
+            background: #000; display: flex; flex-direction: column; justify-content: center;
+        }
+
+        .cam-timer-overlay {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 6rem; font-weight: bold; color: white; text-shadow: 0 0 20px var(--primary);
+            z-index: 3000; display: none;
+        }
     </style>
 </head>
 <body>
@@ -433,14 +456,25 @@
                         <button class="btn-secondary" id="btn-open-cam" onclick="openLiveCamera()"><i class="fas fa-camera"></i> <span id="t-open-cam">Abrir Cámara con IA</span></button>
                         
                         <div id="camera-container" style="display:none; position:relative; width:100%; border-radius:14px; overflow:hidden; margin-bottom:15px; background: #000; border: 2px solid var(--primary); box-shadow: 0 0 20px rgba(0,168,232,0.3);">
-                            <video id="live-video" autoplay playsinline style="width:100%; display:block;"></video>
-                            <canvas id="live-canvas" style="position:absolute; top:0; left:0; width:100%; height:100%;"></canvas>
-                            <i class="fas fa-sync" style="position:absolute; top:15px; left:15px; color:white; font-size:1.5rem; cursor:pointer; text-shadow: 0 0 10px var(--primary); z-index:10;" onclick="toggleCamera()"></i>
-                            <button id="dual-cam-btn" class="btn-secondary" style="position:absolute; top:15px; left:50%; transform:translateX(-50%); width:auto; padding:5px 15px; z-index:10; font-size:0.8rem;" onclick="toggleDualCam()">
-                                <i class="fas fa-camera"></i> Modo Dual (BeReal)
-                            </button>
-                            <button class="btn-primary" style="position:absolute; bottom:15px; left:50%; transform:translateX(-50%); width: 80%; opacity: 0.9;" onclick="captureLiveCamera()"><i class="fas fa-camera"></i> <span id="t-cap-btn">Capturar</span></button>
-                            <i class="fas fa-times" style="position:absolute; top:15px; right:15px; color:white; font-size:1.5rem; cursor:pointer; text-shadow: 0 0 10px var(--primary); z-index:10;" onclick="closeLiveCamera()"></i>
+                            <video id="live-video" autoplay playsinline style="width:100%; display:block; object-fit: cover; height: 100%;"></video>
+                            <canvas id="live-canvas" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events: none;"></canvas>
+                            <div id="cam-timer" class="cam-timer-overlay">5</div>
+                            
+                            <!-- Botones superpuestos en cámara -->
+                            <div id="cam-controls">
+                                <i class="fas fa-sync" style="position:absolute; top:15px; left:15px; color:white; font-size:1.5rem; cursor:pointer; text-shadow: 0 0 10px var(--primary); z-index:10;" onclick="toggleCamera()"></i>
+                                <button id="dual-cam-btn" class="btn-secondary" style="position:absolute; top:15px; left:50%; transform:translateX(-50%); width:auto; padding:5px 15px; z-index:10; font-size:0.8rem; background:rgba(0,0,0,0.5); border:1px solid #fff; color:#fff;" onclick="toggleDualCam()">
+                                    <i class="fas fa-camera"></i> Modo Dual (BeReal)
+                                </button>
+                                <button id="btn-capture-cam" class="btn-primary" style="position:absolute; bottom:15px; left:50%; transform:translateX(-50%); width: 80%; opacity: 0.9;" onclick="captureLiveCamera()"><i class="fas fa-camera"></i> <span id="t-cap-btn">Capturar</span></button>
+                                <i class="fas fa-times" style="position:absolute; top:15px; right:15px; color:white; font-size:1.5rem; cursor:pointer; text-shadow: 0 0 10px var(--primary); z-index:10;" onclick="closeLiveCamera()"></i>
+                            </div>
+
+                            <!-- Botón Listo post-captura -->
+                            <div id="cam-done-controls" style="display:none; position:absolute; bottom:15px; left:0; width:100%; text-align:center; z-index:10;">
+                                <button class="btn-primary" style="width: 80%; margin: 0 auto; box-shadow: 0 0 20px var(--primary);" onclick="acceptCameraCapture()"><i class="fas fa-check"></i> Listo</button>
+                                <button class="btn-secondary" style="width: 80%; margin: 10px auto 0; background:rgba(0,0,0,0.5); color:#fff; border:none;" onclick="retakeLiveCamera()"><i class="fas fa-redo"></i> Reintentar</button>
+                            </div>
                         </div>
 
                         <div class="input-group" style="margin-top: 15px;">
@@ -560,7 +594,7 @@
             </div>
         </div>
 
-        <div id="edit-profile-modal" class="modal small">
+        <div id="edit-profile-modal" class="modal">
             <div class="modal-header">
                 <span id="t-edit-prof">Editar Perfil</span>
                 <i class="fas fa-times" style="cursor:pointer;" onclick="closeModals()"></i>
@@ -572,6 +606,14 @@
                 </div>
                 <div class="input-group"><label id="t-name">Nombre:</label><input type="text" id="edit-name"></div>
                 <div class="input-group"><label id="t-bio">Biografía:</label><textarea id="edit-bio" rows="3"></textarea></div>
+                
+                <h4 style="margin-top: 15px; color: var(--primary); margin-bottom: 10px;">Redes Sociales</h4>
+                <div class="input-group"><label>WhatsApp (Número):</label><input type="text" id="edit-ws" placeholder="Ej: 123456789"></div>
+                <div class="input-group"><label>Instagram (Usuario):</label><input type="text" id="edit-ig" placeholder="Ej: mi_usuario"></div>
+                <div class="input-group"><label>Facebook (Enlace):</label><input type="text" id="edit-fb" placeholder="Enlace completo"></div>
+                <div class="input-group"><label>YouTube (Enlace):</label><input type="text" id="edit-yt" placeholder="Enlace a tu canal"></div>
+                <div class="input-group"><label>Snapchat (Usuario o Enlace):</label><input type="text" id="edit-snap" placeholder="Ej: snap_user"></div>
+                
                 <button class="btn-primary" onclick="saveProfileChanges()" id="t-save">Guardar Cambios</button>
             </div>
         </div>
@@ -683,6 +725,8 @@
         let isDualCamMode = false;
         let dualCamStep = 0; 
         let firstCamImage = null;
+        
+        let rawCameraCanvas = null; // for "Retake" logic in fullscreen AI Cam
 
         /* === DICCIONARIO TRADUCCIÓN === */
         const i18n = {
@@ -867,7 +911,7 @@
             trySetText('nav-top', dict.navTop);
             trySetText('nav-profile', dict.navProfile);
             trySetText('story-add-text', dict.storyAdd);
-            trySetText('feed-loading-text', dict.loadingUniverse);
+            if(document.getElementById('feed-loading-text')) trySetText('feed-loading-text', dict.loadingUniverse);
         }
 
         /* === INICIO & IDIOMAS === */
@@ -901,7 +945,7 @@
             return `${d.ago}${Math.floor(seconds/60)} ${d.m}`;
         }
 
-        /* === COMPRESIÓN DE IMÁGENES === */
+        /* === COMPRESIÓN Y DESCARGA === */
         function compressImage(base64Str, maxWidth, callback) {
             let img = new Image();
             img.src = base64Str;
@@ -919,6 +963,21 @@
                 ctx.drawImage(img, 0, 0, width, height);
                 callback(canvas.toDataURL('image/jpeg', 0.8));
             };
+        }
+
+        function downloadMedia(url, isVideo) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = isVideo ? 'starshine_video.mp4' : 'starshine_image.jpg';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function openFullscreenMode(elem) {
+            if (elem.requestFullscreen) { elem.requestFullscreen(); }
+            else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); }
+            else if (elem.msRequestFullscreen) { elem.msRequestFullscreen(); }
         }
 
         /* === PERMISOS Y UBICACIÓN === */
@@ -969,7 +1028,7 @@
             reader.readAsText(file.slice(0, 100000));
         }
 
-        /* === CÁMARA === */
+        /* === CÁMARA ELEGANTE Y DUAL === */
         function toggleDualCam() {
             isDualCamMode = !isDualCamMode;
             document.getElementById('dual-cam-btn').classList.toggle('dual-cam-active', isDualCamMode);
@@ -977,17 +1036,23 @@
 
         async function openLiveCamera() {
             if(!isAiLoaded) { alert(i18n[currentLang].aiLoading); return; }
-            document.getElementById('media-trigger').style.display = 'none';
-            document.getElementById('btn-open-cam').style.display = 'none';
-            document.getElementById('camera-container').style.display = 'block';
+            document.getElementById('camera-container').classList.add('fullscreen-cam');
+            document.getElementById('camera-container').style.display = 'flex';
+            document.getElementById('cam-controls').style.display = 'block';
+            document.getElementById('cam-done-controls').style.display = 'none';
+            
             isDualCamMode = false; dualCamStep = 0;
             document.getElementById('dual-cam-btn').classList.remove('dual-cam-active');
-            document.getElementById('t-cap-btn').innerText = i18n[currentLang].capBtn;
+            document.getElementById('btn-capture-cam').style.display = 'block';
+            document.getElementById('btn-capture-cam').innerHTML = `<i class="fas fa-camera"></i> <span>Capturar</span>`;
+            document.getElementById('cam-timer').style.display = 'none';
+            
             startCameraStream();
         }
 
         async function startCameraStream() {
             const video = document.getElementById('live-video');
+            video.style.display = 'block';
             if(cameraStream) cameraStream.getTracks().forEach(t => t.stop());
             try {
                 const constraints = { video: { facingMode: (usingFrontCamera ? "user" : "environment") } };
@@ -1019,8 +1084,8 @@
             if(cameraStream) cameraStream.getTracks().forEach(t => t.stop());
             if(faceDetectionInterval) clearInterval(faceDetectionInterval);
             document.getElementById('camera-container').style.display = 'none';
-            document.getElementById('media-trigger').style.display = 'flex';
-            document.getElementById('btn-open-cam').style.display = 'block';
+            document.getElementById('camera-container').classList.remove('fullscreen-cam');
+            document.getElementById('cam-timer').style.display = 'none';
         }
 
         function captureLiveCamera() {
@@ -1033,40 +1098,95 @@
                 if(dualCamStep === 0) {
                     firstCamImage = tCanvas;
                     dualCamStep = 1;
-                    document.getElementById('t-cap-btn').innerText = "Capturando...";
-                    toggleCamera();
-                    setTimeout(() => { captureLiveCamera(); }, 1500);
-                    return;
-                } else if(dualCamStep === 1) {
-                    const finalCanvas = document.createElement('canvas');
-                    finalCanvas.width = tCanvas.width; finalCanvas.height = tCanvas.height;
-                    const ctx = finalCanvas.getContext('2d');
                     
-                    ctx.drawImage(tCanvas, 0, 0);
-                    const smallW = tCanvas.width * 0.35; const smallH = tCanvas.height * 0.35;
-                    ctx.drawImage(firstCamImage, 15, 15, smallW, smallH);
-                    ctx.strokeStyle = "#fff"; ctx.lineWidth = 4; ctx.strokeRect(15, 15, smallW, smallH);
+                    document.getElementById('cam-controls').style.display = 'none';
+                    const timerEl = document.getElementById('cam-timer');
+                    timerEl.style.display = 'block';
+                    
+                    // Toggle camera visually
+                    toggleCamera();
+                    
+                    let timeLeft = 5;
+                    timerEl.innerText = timeLeft;
+                    
+                    const timerInt = setInterval(() => {
+                        timeLeft--;
+                        if(timeLeft > 0) {
+                            timerEl.innerText = timeLeft;
+                        } else {
+                            clearInterval(timerInt);
+                            timerEl.style.display = 'none';
+                            // Proceed to capture second image
+                            const tCanvas2 = document.createElement('canvas');
+                            tCanvas2.width = video.videoWidth; tCanvas2.height = video.videoHeight;
+                            tCanvas2.getContext('2d').drawImage(video, 0, 0);
+                            
+                            const finalCanvas = document.createElement('canvas');
+                            finalCanvas.width = tCanvas2.width; finalCanvas.height = tCanvas2.height;
+                            const ctx = finalCanvas.getContext('2d');
+                            ctx.drawImage(tCanvas2, 0, 0);
+                            
+                            const smallW = tCanvas2.width * 0.35; const smallH = tCanvas2.height * 0.35;
+                            ctx.drawImage(firstCamImage, 15, 15, smallW, smallH);
+                            ctx.strokeStyle = "#fff"; ctx.lineWidth = 4; ctx.strokeRect(15, 15, smallW, smallH);
 
-                    compressImage(finalCanvas.toDataURL('image/jpeg'), 800, finishCapture);
-                    dualCamStep = 0; isDualCamMode = false;
-                    document.getElementById('dual-cam-btn').classList.remove('dual-cam-active');
-                    document.getElementById('t-cap-btn').innerText = i18n[currentLang].capBtn;
+                            rawCameraCanvas = finalCanvas;
+                            dualCamStep = 0; isDualCamMode = false;
+                            showCameraDonePreview(finalCanvas.toDataURL('image/jpeg'));
+                        }
+                    }, 1000);
                     return;
                 }
             } else {
-                compressImage(tCanvas.toDataURL('image/jpeg'), 800, finishCapture);
+                rawCameraCanvas = tCanvas;
+                showCameraDonePreview(tCanvas.toDataURL('image/jpeg'));
             }
         }
         
-        function finishCapture(compressedBase64) {
-            uploadBase64 = compressedBase64;
-            currentUploadIsAI = false; 
-            currentUploadIsVideo = false;
-            closeLiveCamera();
-            document.getElementById('preview-vid').style.display = 'none';
-            const img = document.getElementById('preview-img');
-            img.src = uploadBase64; img.style.display = 'block';
-            document.getElementById('btn-publish').style.display = 'block';
+        function showCameraDonePreview(base64) {
+            // Detener el video y mostrar el frame en el mismo espacio
+            if(cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+            document.getElementById('cam-controls').style.display = 'none';
+            document.getElementById('cam-done-controls').style.display = 'block';
+            
+            // Reemplazar src de video temporalmente
+            const video = document.getElementById('live-video');
+            video.style.display = 'none';
+            
+            const canvas = document.getElementById('live-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            let preImg = new Image();
+            preImg.src = base64;
+            preImg.onload = () => {
+                canvas.width = preImg.width;
+                canvas.height = preImg.height;
+                ctx.drawImage(preImg, 0, 0, canvas.width, canvas.height);
+            };
+        }
+        
+        function retakeLiveCamera() {
+            document.getElementById('cam-controls').style.display = 'block';
+            document.getElementById('cam-done-controls').style.display = 'none';
+            document.getElementById('live-video').style.display = 'block';
+            startCameraStream();
+        }
+        
+        function acceptCameraCapture() {
+            compressImage(rawCameraCanvas.toDataURL('image/jpeg'), 800, (compressedBase64) => {
+                uploadBase64 = compressedBase64;
+                currentUploadIsAI = false; 
+                currentUploadIsVideo = false;
+                closeLiveCamera();
+                
+                document.getElementById('media-trigger').style.display = 'flex'; // Volvemos al flow normal
+                document.getElementById('preview-vid').style.display = 'none';
+                const img = document.getElementById('preview-img');
+                img.src = uploadBase64; img.style.display = 'block';
+                document.getElementById('btn-publish').style.display = 'block';
+                document.getElementById('ai-pre-detect-alert').style.display = 'none';
+            });
         }
 
         function handleImageUpload(e) {
@@ -1227,7 +1347,7 @@
         }
         function goBack() { if (viewHistory.length > 0) { const previousView = viewHistory.pop(); openView(previousView, true); } }
 
-        /* === AUTH, VERIFICACIÓN Y USERNAME === */
+        /* === AUTH Y VERIFICACIÓN === */
         function checkPasswordStrength(val) {
             const container = document.getElementById('pass-strength-container');
             const bar = document.getElementById('pass-strength-bar');
@@ -1348,7 +1468,7 @@
             }
         }
 
-        /* === INICIO APP === */
+        /* === INICIO APP Y RENDERIZADO === */
         function initApp(uid) {
             db.ref('users/' + uid).on('value', snap => {
                 currentUser = snap.val();
@@ -1369,510 +1489,468 @@
             db.ref('posts').on('value', snap => {
                 const data = snap.val(); posts = data ? Object.values(data).sort((a,b) => b.timestamp - a.timestamp) : [];
                 if(document.getElementById('view-feed').classList.contains('active')) renderFeed();
-                checkUrlForPost();
+                if(document.getElementById('view-ranking').classList.contains('active')) renderRanking();
             });
             db.ref('stories').on('value', snap => {
-                const data = snap.val(); stories = data ? Object.values(data) : [];
+                const data = snap.val(); stories = data ? Object.values(data).sort((a,b) => b.timestamp - a.timestamp) : [];
+                // Filtrar historias expiradas (24h)
+                const now = Date.now();
+                stories = stories.filter(s => now - s.timestamp < 86400000);
                 if(document.getElementById('view-feed').classList.contains('active')) renderStories();
+                if(document.getElementById('view-ranking').classList.contains('active')) renderRanking();
             });
-        }
-        function openSettings() { document.getElementById('overlay').style.display = 'block'; document.getElementById('settings-modal').style.display = 'flex'; }
-
-        /* === HISTORIAS === */
-        function handleStoryUpload(e) {
-            const file = e.target.files[0]; if(!file) return;
-            const reader = new FileReader();
-            reader.onload = async ev => {
-                if (file.type === 'image/gif') {
-                    const newStory = { id: 'story_' + Date.now(), userId: currentUser.uid, userName: currentUser.name, userAvatar: currentUser.avatar, image: ev.target.result, timestamp: Date.now(), score: 0 };
-                    await db.ref('stories/' + newStory.id).set(newStory);
-                } else {
-                    compressImage(ev.target.result, 800, async (compressed) => {
-                        const newStory = { id: 'story_' + Date.now(), userId: currentUser.uid, userName: currentUser.name, userAvatar: currentUser.avatar, image: compressed, timestamp: Date.now(), score: 0 };
-                        await db.ref('stories/' + newStory.id).set(newStory);
-                    });
-                }
-            }; reader.readAsDataURL(file);
-        }
-        
-        function renderStories() {
-            const container = document.getElementById('friends-stories'); container.innerHTML = '';
-            const now = Date.now(); const oneDay = 24 * 60 * 60 * 1000;
-            
-            let grouped = {};
-            stories.forEach(s => {
-                if (now - s.timestamp > oneDay) { db.ref('stories/' + s.id).remove(); return; } 
-                if (s.userId !== currentUser.uid && !(currentUser.friends && currentUser.friends[s.userId])) return;
-
-                if (!grouped[s.userId]) grouped[s.userId] = [];
-                grouped[s.userId].push(s);
+            db.ref('notifications/' + uid).on('value', snap => {
+                const data = snap.val(); notifications = data ? Object.values(data).sort((a,b) => b.timestamp - a.timestamp) : [];
+                const unread = notifications.filter(n => !n.read).length;
+                const badge = document.getElementById('notif-badge');
+                if(unread > 0) { badge.style.display = 'block'; badge.innerText = unread; } else { badge.style.display = 'none'; }
+                if(document.getElementById('view-notifications').classList.contains('active')) renderNotifications();
             });
-
-            const userIds = Object.keys(grouped).sort((a, b) => {
-                if (a === currentUser.uid) return -1;
-                if (b === currentUser.uid) return 1;
-                return 0;
-            });
-
-            userIds.forEach(uid => {
-                let userStories = grouped[uid];
-                userStories.sort((a,b) => a.timestamp - b.timestamp); 
-                let latestStory = userStories[userStories.length - 1]; 
-                
-                let nameDisplay = (uid === currentUser.uid) ? (i18n[currentLang].yourStory || "Tu Historia") : latestStory.userName.split(' ')[0];
-
-                container.innerHTML += `
-                    <div>
-                        <div class="story-circle" onclick="viewUserStories('${uid}')"><img src="${latestStory.image}"></div>
-                        <div class="story-username">${nameDisplay}</div>
-                    </div>
-                `;
-            });
-        }
-
-        function viewUserStories(uid) {
-            const now = Date.now(); const oneDay = 24 * 60 * 60 * 1000;
-            viewingUserStories = stories.filter(s => s.userId === uid && (now - s.timestamp <= oneDay)).sort((a,b) => a.timestamp - b.timestamp);
-            if(viewingUserStories.length === 0) return;
-            viewingStoryIndex = 0;
-            showStoryIndex(viewingStoryIndex);
-            document.getElementById('story-view-modal').style.display = 'flex';
-        }
-
-        function showStoryIndex(index) {
-            const story = viewingUserStories[index];
-            currentStoryId = story.id;
-            
-            const imgEl = document.getElementById('sv-img');
-            imgEl.src = ""; 
-            setTimeout(() => { imgEl.src = story.image; }, 10);
-            
-            document.getElementById('sv-avatar').src = story.userAvatar;
-            document.getElementById('sv-name').innerText = story.userName;
-            document.getElementById('sv-time').innerText = `${i18n[currentLang].published || "Publicado: "}${new Date(story.timestamp).toLocaleString()}`;
-            document.getElementById('story-counter').innerText = `${index + 1}/${viewingUserStories.length}`;
-
-            if(story.userId === currentUser.uid) {
-                document.getElementById('story-delete-btn').style.display = 'inline-block';
-            } else {
-                document.getElementById('story-delete-btn').style.display = 'none';
-            }
-
-            const myStoryRating = (story.raters && story.raters[currentUser.uid]) ? story.raters[currentUser.uid] : 0;
-            const starsHTML = [1,2,3,4,5].map(i => `<i class="fas fa-star star ${i <= myStoryRating ? 'active' : ''}" onclick="rateStory(${i})" style="transition:0.3s; margin: 0 5px;"></i>`).join('');
-            document.getElementById('story-stars-container').innerHTML = starsHTML;
-        }
-
-        function nextStory() { if (viewingStoryIndex < viewingUserStories.length - 1) { viewingStoryIndex++; showStoryIndex(viewingStoryIndex); } else { closeStory(); } }
-        function prevStory() { if (viewingStoryIndex > 0) { viewingStoryIndex--; showStoryIndex(viewingStoryIndex); } }
-        async function deleteCurrentStory() {
-            if(!currentStoryId) return;
-            if(confirm("¿Seguro que quieres eliminar esta historia?")) { await db.ref(`stories/${currentStoryId}`).remove(); closeStory(); }
-        }
-        function closeStory() { document.getElementById('story-view-modal').style.display = 'none'; currentStoryId = null; viewingUserStories = []; }
-        
-        async function rateStory(points) {
-            if(!currentStoryId) return;
-            const story = viewingUserStories[viewingStoryIndex];
-            if(!story.raters) story.raters = {};
-            story.raters[currentUser.uid] = points;
-            const totalScore = Object.values(story.raters).reduce((a, b) => a + b, 0);
-            const starElements = document.getElementById('story-stars-container').children;
-            for(let i=0; i<5; i++) {
-                if(i < points) starElements[i].classList.add('active');
-                else starElements[i].classList.remove('active');
-            }
-            await db.ref(`stories/${currentStoryId}`).update({ raters: story.raters, score: totalScore });
-            setTimeout(() => { nextStory(); }, 400);
-        }
-
-        /* === BÚSQUEDA Y CARGA PERFIL === */
-        function searchUsers() {
-            const query = document.getElementById('search-input').value.toLowerCase();
-            const res = document.getElementById('search-results'); 
-            res.innerHTML = '';
-            
-            if (query.trim() === '') return;
-
-            Object.values(allUsers).forEach(u => {
-                if(u.name.toLowerCase().includes(query) || (u.username && u.username.toLowerCase().includes(query))) {
-                    res.innerHTML += `
-                        <div class="search-user-item" onclick="simulateLoadingAndProfile('${u.uid}')">
-                            <img class="avatar" src="${u.avatar}">
-                            <div style="flex:1;">
-                                <div style="font-weight:bold; color:var(--text-main);">${u.name}</div>
-                                <div style="font-size:0.8rem; color:var(--primary);">${u.username || ''}</div>
-                            </div>
-                            <button class="btn-small btn-primary" style="margin-left:auto; pointer-events:none;"><i class="fas fa-eye"></i> Perfil</button>
-                        </div>
-                    `;
-                }
-            });
-        }
-
-        function simulateLoadingAndProfile(uid) {
-            document.getElementById('profile-loader-overlay').style.display = 'flex';
-            setTimeout(() => {
-                document.getElementById('profile-loader-overlay').style.display = 'none';
-                viewProfile(uid);
-            }, 1500);
-        }
-
-        /* === SEGUIR / AÑADIR AMIGOS === */
-        async function toggleFollow(targetUid) {
-            if (!currentUser.friends) currentUser.friends = {};
-            const isFollowing = !!currentUser.friends[targetUid];
-            const targetUser = allUsers[targetUid];
-            let targetFollowers = targetUser.followersCount || 0;
-
-            if (isFollowing) {
-                await db.ref(`users/${currentUser.uid}/friends/${targetUid}`).remove();
-                await db.ref(`users/${targetUid}/followersCount`).set(Math.max(0, targetFollowers - 1));
-            } else {
-                await db.ref(`users/${currentUser.uid}/friends/${targetUid}`).set(true);
-                await db.ref(`users/${targetUid}/followersCount`).set(targetFollowers + 1);
-            }
-        }
-
-        /* === COMPARTIR ENLACE === */
-        async function sharePost(postId) {
-            const url = window.location.href.split('?')[0] + `?post=${postId}`;
-            if (navigator.share) {
-                try { await navigator.share({ title: `Post en StarShine`, url: url }); } catch (err) { fallbackShare(url); }
-            } else { fallbackShare(url); }
-        }
-
-        function fallbackShare(url) {
-            navigator.clipboard.writeText(url).then(() => { alert("¡Enlace copiado al portapapeles!"); }).catch(() => { alert("Tu URL es: " + url); });
-        }
-        
-        function checkUrlForPost() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const postId = urlParams.get('post');
-            if(postId && posts.find(p => p.id === postId)) {
-                openComments(postId);
-                window.history.replaceState({}, document.title, window.location.pathname);
-            }
-        }
-
-        function shareProfileLink() {
-            const appUrl = window.location.href.split('?')[0]; 
-            if (navigator.share) { navigator.share({ title: `Mi perfil en StarShine`, text: `¡Agrégame en StarShine! Mi usuario es ${currentUser.username}`, url: appUrl }).catch(err => fallbackShare(appUrl)); } 
-            else { fallbackShare(appUrl); }
-        }
-
-        /* === GESTIÓN DE POSTS (FEED, EDITAR, ELIMINAR) === */
-        function togglePostMenu(postId) {
-            const menu = document.getElementById(`menu-${postId}`);
-            const allMenus = document.querySelectorAll('.post-menu');
-            allMenus.forEach(m => { if(m.id !== `menu-${postId}`) m.style.display = 'none'; });
-            menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
-        }
-
-        function doubleTapRate(postId) {
-            const burst = document.getElementById(`burst-${postId}`);
-            if(burst) {
-                burst.style.animation = 'none';
-                void burst.offsetWidth; 
-                burst.style.animation = 'starBurstAnim 0.8s ease-out forwards';
-            }
-            ratePost(postId, 5);
         }
 
         function renderFeed() {
-            const container = document.getElementById('feed-container'); 
-            if (!posts || posts.length === 0) {
-                container.innerHTML = `
-                    <div class="space-loader-container">
-                        <div class="space-loader-stars"></div>
-                        <div class="space-loader-planet"></div>
-                        <p id="feed-loading-text" style="color:var(--primary); margin-top:15px; font-weight:bold; animation: pulse 1.5s infinite; text-shadow: 0 0 10px rgba(0,168,232,0.6); z-index: 1;">${i18n[currentLang].loadingUniverse || 'Cargando tu universo...'}</p>
-                    </div>
-                `;
+            const feed = document.getElementById('feed-container');
+            feed.innerHTML = '';
+            
+            if(posts.length === 0) {
+                feed.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No hay publicaciones aún. ¡Sé el primero en brillar!</p>`;
                 return;
             }
 
-            container.innerHTML = '';
             posts.forEach(post => {
-                if (post.privacy === 'friends' && post.userId !== currentUser.uid && !(currentUser.friends && currentUser.friends[post.userId])) return;
+                const userObj = allUsers[post.userId] || { name: post.userName, avatar: post.userAvatar, username: post.username };
+                const isOwner = post.userId === currentUser.uid;
+                
+                const mediaTag = post.isVideo ? 
+                    `<video src="${post.image}" class="post-media boomerang-video" autoplay muted loop playsinline></video>` : 
+                    `<img src="${post.image}" class="post-media">`;
 
-                const myRating = (post.raters && post.raters[currentUser.uid]) ? post.raters[currentUser.uid] : 0;
-                const privIcon = post.privacy === 'public' ? '<i class="fas fa-globe"></i>' : '<i class="fas fa-user-friends"></i>';
-                const commCount = post.comments ? Object.keys(post.comments).length : 0;
-                const timeText = formatTimeAgo(post.timestamp);
-                const editedTag = post.edited ? `<span class="edited-badge">${i18n[currentLang].edited}</span>` : '';
-
-                const optionsMenu = post.userId === currentUser.uid ? `
+                let aiBadgeHtml = "";
+                if(post.isAI) aiBadgeHtml = `<div class="ai-badge"><i class="fas fa-robot"></i> Imagen Generada por IA</div>`;
+                else if(post.emotion) aiBadgeHtml = `<div class="ai-badge"><i class="fas fa-magic"></i> ${post.emotion}</div>`;
+                
+                let editedHtml = post.edited ? `<span class="edited-badge">${i18n[currentLang].edited}</span>` : "";
+                
+                const menuHtml = isOwner ? `
                     <div style="position:relative;">
                         <i class="fas fa-ellipsis-v post-options" onclick="togglePostMenu('${post.id}')"></i>
                         <div class="post-menu" id="menu-${post.id}">
-                            <button onclick="openEditPost('${post.id}')"><i class="fas fa-edit"></i> Editar</button>
+                            <button onclick="openEditPost('${post.id}')"><i class="fas fa-pen"></i> Editar</button>
                             <button class="delete" onclick="deletePost('${post.id}')"><i class="fas fa-trash"></i> Eliminar</button>
                         </div>
                     </div>
-                ` : '';
+                ` : ``;
 
-                const aiLabel = post.isAI ? `<div class="ai-badge" style="color:#fff; background: linear-gradient(135deg, #ff007f, #7f00ff); border: none; box-shadow: 0 4px 15px rgba(255,0,127,0.4);"><i class="fas fa-robot"></i> Imagen creada con IA</div>` : '';
-
-                const mediaHtml = post.isVideo 
-                    ? `<video class="post-media boomerang-video" src="${post.image}" autoplay muted playsinline></video>` 
-                    : `<img class="post-media" src="${post.image}" loading="lazy" ondblclick="doubleTapRate('${post.id}')">`;
-
-                container.innerHTML += `
-                    <div class="post-card">
+                feed.innerHTML += `
+                    <div class="post-card" id="${post.id}">
                         <div class="post-header">
-                            <div class="avatar" onclick="simulateLoadingAndProfile('${post.userId}')"><img src="${post.userAvatar}"></div>
-                            <div class="post-user-info" onclick="simulateLoadingAndProfile('${post.userId}')">
-                                <h4>${post.userName} <span style="font-size:0.8rem; color:var(--primary); font-weight:normal;">${post.username || ''}</span></h4>
-                                <p>${timeText} • ${privIcon} ${editedTag}</p>
+                            <img src="${userObj.avatar}" class="avatar" onclick="viewProfile('${post.userId}')">
+                            <div class="post-user-info" onclick="viewProfile('${post.userId}')">
+                                <h4>${userObj.name}</h4>
+                                <p>${userObj.username} • ${formatTimeAgo(post.timestamp)} ${editedHtml}</p>
                             </div>
-                            ${optionsMenu}
+                            ${menuHtml}
                         </div>
-                        ${post.caption ? `<div class="post-caption">${post.caption}</div>` : ''}
-                        
-                        <div class="post-media-container" ondblclick="doubleTapRate('${post.id}')">
-                            ${mediaHtml}
-                            <i class="fas fa-star star-burst" id="burst-${post.id}"></i>
+                        <p class="post-caption">${post.caption}</p>
+                        ${aiBadgeHtml}
+                        <div class="post-media-container" ondblclick="ratePost('${post.id}', 1, event)">
+                            <div class="post-media-overlay">
+                                <i class="fas fa-expand" onclick="openFullscreenMode(this.parentElement.nextElementSibling)"></i>
+                                <i class="fas fa-download" onclick="downloadMedia('${post.image}', ${post.isVideo})"></i>
+                            </div>
+                            ${mediaTag}
+                            <div class="star-burst" id="burst-${post.id}"><i class="fas fa-star"></i></div>
                         </div>
-
-                        ${aiLabel}
-                        <div class="ai-badge">${post.emotion}</div>
                         <div class="interaction-bar">
-                            <div class="stars">${[1,2,3,4,5].map(i => `<i class="fas fa-star star ${i <= myRating ? 'active' : ''}" onclick="ratePost('${post.id}', ${i})"></i>`).join('')}</div>
+                            <div class="stars">
+                                <i class="fas fa-star ${post.stars > 0 ? 'active' : ''}" onclick="ratePost('${post.id}', 1, event)"></i>
+                                <span style="font-size:1rem; font-weight:bold; color:var(--text-main); margin-left:5px;">${post.stars || 0}</span>
+                            </div>
                             <div class="action-icons">
-                                <span style="font-size:0.95rem; font-weight:bold; color:var(--primary);">${post.stars || 0} ★</span>
-                                <div style="display:flex; align-items:center; gap:5px;"><i class="far fa-comment" onclick="openComments('${post.id}')"></i> <span style="font-size:0.9rem;">${commCount}</span></div>
-                                <i class="fas fa-share-alt" onclick="sharePost('${post.id}')"></i>
+                                <i class="far fa-comment" onclick="openComments('${post.id}')"></i>
+                                <i class="fas fa-share" onclick="sharePost('${post.id}')"></i>
                             </div>
                         </div>
                     </div>
                 `;
             });
         }
-        
-        async function ratePost(postId, value) {
-            const post = posts.find(p => p.id === postId); if(!post.raters) post.raters = {};
-            post.raters[currentUser.uid] = value;
-            let totalStars = Object.values(post.raters).reduce((a, v) => a + v, 0);
-            await db.ref(`posts/${postId}`).update({ raters: post.raters, stars: totalStars });
-            renderFeed();
+
+        /* === POSTS Y FUNCIONES === */
+        function togglePostMenu(postId) {
+            const m = document.getElementById('menu-'+postId);
+            if(m) m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
         }
 
-        /* === EDITAR Y ELIMINAR POSTS === */
+        function deletePost(postId) {
+            if(confirm("¿Estás seguro de eliminar esta publicación?")) {
+                db.ref('posts/' + postId).remove();
+            }
+        }
+
         function openEditPost(postId) {
-            const post = posts.find(p => p.id === postId); if(!post) return;
+            const post = posts.find(p => p.id === postId);
+            if(!post) return;
             editingPostId = postId;
             editingPostBase64 = post.image;
+            currentUploadIsVideo = post.isVideo;
             document.getElementById('edit-post-preview').src = post.image;
-            document.getElementById('edit-post-caption').value = post.caption || '';
-            document.getElementById(`menu-${postId}`).style.display = 'none'; 
+            document.getElementById('edit-post-caption').value = post.caption;
             
             document.getElementById('overlay').style.display = 'block';
             document.getElementById('edit-post-modal').style.display = 'flex';
+            togglePostMenu(postId);
         }
-        
+
         function handleEditPostImage(e) {
-            const file = e.target.files[0]; if(!file) return;
-            checkAIGenerated(file);
+            const file = e.target.files[0];
+            if(!file) return;
+            currentUploadIsVideo = file.type.startsWith('video/');
             const reader = new FileReader();
             reader.onload = ev => {
-                if (file.type === 'image/gif' || file.type.startsWith('video/')) {
+                if(currentUploadIsVideo || file.type === 'image/gif') {
                     editingPostBase64 = ev.target.result;
                     document.getElementById('edit-post-preview').src = editingPostBase64;
                 } else {
-                    compressImage(ev.target.result, 800, (compressedBase64) => {
-                        editingPostBase64 = compressedBase64;
+                    compressImage(ev.target.result, 800, comp => {
+                        editingPostBase64 = comp;
                         document.getElementById('edit-post-preview').src = editingPostBase64;
                     });
                 }
-            }; reader.readAsDataURL(file);
+            };
+            reader.readAsDataURL(file);
         }
 
-        async function saveEditPost() {
+        function saveEditPost() {
             if(!editingPostId) return;
-            const post = posts.find(p => p.id === editingPostId);
-            const newCaption = document.getElementById('edit-post-caption').value;
-            
-            let updateData = { caption: newCaption, edited: true };
-            if (editingPostBase64 !== post.image) {
-                updateData.image = editingPostBase64;
-                updateData.isAI = currentUploadIsAI;
-            }
-
-            await db.ref(`posts/${editingPostId}`).update(updateData);
-            currentUploadIsAI = false;
+            db.ref('posts/' + editingPostId).update({
+                caption: document.getElementById('edit-post-caption').value,
+                image: editingPostBase64,
+                isVideo: currentUploadIsVideo,
+                edited: true
+            });
             closeModals();
         }
 
-        async function deletePost(postId) {
-            if(confirm("¿Estás seguro de que deseas eliminar esta publicación? Esto no se puede deshacer.")) {
-                await db.ref(`posts/${postId}`).remove();
+        function ratePost(postId, val, e) {
+            const post = posts.find(p => p.id === postId);
+            if(!post) return;
+            let currentStars = post.stars || 0;
+            currentStars += val;
+            db.ref('posts/' + postId).update({ stars: currentStars });
+            
+            if(e) {
+                const burst = document.getElementById('burst-' + postId);
+                if(burst) {
+                    burst.style.animation = 'none';
+                    burst.offsetHeight; 
+                    burst.style.animation = 'starBurstAnim 0.8s ease-out forwards';
+                }
+            }
+            if(post.userId !== currentUser.uid) {
+                sendNotification(post.userId, `${currentUser.name} le dio una estrella a tu post!`, 'star', postId);
             }
         }
 
-        /* === FUNCIONES DE EMOJIS === */
-        function toggleEmojiBox() {
-            const box = document.getElementById('emoji-box');
-            box.style.display = box.style.display === 'none' ? 'flex' : 'none';
+        function sharePost(postId) {
+            if(navigator.share) {
+                navigator.share({ title: 'StarShine', text: 'Mira este post increíble', url: window.location.href });
+            } else { alert("Función de compartir no disponible."); }
         }
 
-        function addEmoji(emoji) {
-            const input = document.getElementById('comment-input');
-            input.value += emoji;
-            input.focus();
-        }
-
-        /* === COMENTARIOS Y HILOS (REPLIES) === */
+        /* === COMENTARIOS === */
         function openComments(postId) {
-            currentPostIdForAction = postId; replyingToCommentId = null;
+            currentPostIdForAction = postId;
+            replyingToCommentId = null;
             document.getElementById('reply-badge').style.display = 'none';
             document.getElementById('comment-input').value = '';
-            document.getElementById('emoji-box').style.display = 'none';
-            document.getElementById('overlay').style.display = 'block'; document.getElementById('comment-modal').style.display = 'flex';
-            renderCommentThreads(postId);
-        }
-        
-        function setReplyTo(commentId, userName) {
-            replyingToCommentId = commentId;
-            document.getElementById('reply-to-name').innerText = userName;
-            document.getElementById('reply-badge').style.display = 'flex';
-            document.getElementById('comment-input').focus();
+            
+            const list = document.getElementById('comments-list');
+            list.innerHTML = '';
+            
+            db.ref('comments/' + postId).once('value', snap => {
+                const data = snap.val();
+                if(data) {
+                    const comms = Object.values(data).sort((a,b) => a.timestamp - b.timestamp);
+                    comms.forEach(c => {
+                        list.innerHTML += `
+                            <div class="comment">
+                                <img src="${c.userAvatar}" class="avatar" style="width:30px; height:30px;">
+                                <div class="comment-content">
+                                    <h5>${c.userName}</h5>
+                                    <p>${c.text}</p>
+                                    <span class="comment-reply-btn" onclick="startReply('${c.id}', '${c.userName}')">${i18n[currentLang].reply}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    list.innerHTML = `<p style="text-align:center; color:var(--text-muted);">Sin comentarios aún.</p>`;
+                }
+            });
+            
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('comment-modal').style.display = 'flex';
         }
 
+        function startReply(commentId, userName) {
+            replyingToCommentId = commentId;
+            document.getElementById('reply-badge').style.display = 'flex';
+            document.getElementById('reply-to-name').innerText = userName;
+            document.getElementById('comment-input').focus();
+        }
         function cancelReply() {
             replyingToCommentId = null;
             document.getElementById('reply-badge').style.display = 'none';
         }
-
-        function renderCommentThreads(postId) {
-            const post = posts.find(p => p.id === postId); const list = document.getElementById('comments-list'); list.innerHTML = '';
-            if(!post || !post.comments) return;
-            
-            const commentsArr = Object.values(post.comments).sort((a,b) => a.timestamp - b.timestamp);
-            const roots = commentsArr.filter(c => !c.parentId);
-            const replies = commentsArr.filter(c => c.parentId);
-
-            roots.forEach(c => {
-                list.innerHTML += buildCommentHTML(c, false);
-                replies.filter(r => r.parentId === c.id).forEach(r => {
-                    list.innerHTML += buildCommentHTML(r, true);
-                });
-            });
-            
-            setTimeout(() => { list.scrollTop = list.scrollHeight; }, 100);
+        function toggleEmojiBox() {
+            const box = document.getElementById('emoji-box');
+            box.style.display = box.style.display === 'none' ? 'flex' : 'none';
+        }
+        function addEmoji(e) {
+            const i = document.getElementById('comment-input');
+            i.value += e; toggleEmojiBox();
         }
 
-        function buildCommentHTML(c, isReply) {
-            const margin = isReply ? 'margin-left: 30px; border-left: 2px solid var(--primary); padding-left: 10px;' : '';
-            const parentToPass = isReply ? c.parentId : c.id;
-
-            return `
-                <div class="comment" style="${margin}">
-                    <div class="avatar" style="width:32px; height:32px; flex-shrink:0;"><img src="${c.userAvatar}"></div>
-                    <div class="comment-content">
-                        <h5>${c.userName} <span style="font-size:0.7rem; color:var(--text-muted); font-weight:normal;">${formatTimeAgo(c.timestamp)}</span></h5>
-                        <p>${c.text}</p>
-                        <span class="comment-reply-btn" onclick="setReplyTo('${parentToPass}', '${c.userName}')">Responder</span>
-                    </div>
-                </div>
-            `;
-        }
-
-        async function submitComment() {
+        function submitComment() {
             if(!currentPostIdForAction) return;
-            const input = document.getElementById('comment-input');
-            const text = input.value.trim();
+            const text = document.getElementById('comment-input').value.trim();
             if(!text) return;
-
-            let finalText = text;
             
+            let finalTxt = text;
             if(replyingToCommentId) {
-                const replyName = document.getElementById('reply-to-name').innerText;
-                finalText = `<strong>@${replyName}</strong> ` + text;
+                finalTxt = `<strong>@${document.getElementById('reply-to-name').innerText}</strong> ` + text;
             }
 
-            const newComment = {
-                id: 'comm_' + Date.now(),
+            const newC = {
+                id: 'c_' + Date.now(),
                 userId: currentUser.uid,
                 userName: currentUser.name,
                 userAvatar: currentUser.avatar,
-                text: finalText,
-                timestamp: Date.now(),
-                parentId: replyingToCommentId || null
+                text: finalTxt,
+                timestamp: Date.now()
             };
-
-            const postRef = db.ref(`posts/${currentPostIdForAction}/comments/${newComment.id}`);
-            await postRef.set(newComment);
-
-            input.value = '';
-            cancelReply();
-            document.getElementById('emoji-box').style.display = 'none';
-            renderCommentThreads(currentPostIdForAction);
+            db.ref('comments/' + currentPostIdForAction + '/' + newC.id).set(newC);
+            
+            const post = posts.find(p => p.id === currentPostIdForAction);
+            if(post && post.userId !== currentUser.uid) {
+                sendNotification(post.userId, `${currentUser.name} comentó en tu post.`, 'comment', currentPostIdForAction);
+            }
+            
+            document.getElementById('comment-input').value = '';
+            cancelReply(); openComments(currentPostIdForAction);
         }
 
-        /* === PERFIL === */
-        function closeModals() {
-            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-            document.getElementById('overlay').style.display = 'none';
+        /* === HISTORIAS === */
+        function renderStories() {
+            const container = document.getElementById('friends-stories');
+            container.innerHTML = '';
+            
+            // Agrupar por usuario
+            let grouped = {};
+            stories.forEach(s => {
+                if(!grouped[s.userId]) grouped[s.userId] = [];
+                grouped[s.userId].push(s);
+            });
+            
+            for(let uid in grouped) {
+                if(uid === currentUser.uid) continue;
+                const userObj = allUsers[uid] || {name: "Usuario", avatar: grouped[uid][0].userAvatar};
+                container.innerHTML += `
+                    <div>
+                        <div class="story-circle" onclick="viewProfile('${uid}')">
+                            <img src="${userObj.avatar}" onclick="event.stopPropagation(); openUserStory('${uid}')">
+                        </div>
+                        <div class="story-username" onclick="viewProfile('${uid}')">${userObj.name.split(' ')[0]}</div>
+                    </div>
+                `;
+            }
+            
+            // Mi historia
+            const myStories = stories.filter(s => s.userId === currentUser.uid);
+            const myAddText = document.getElementById('story-add-text');
+            if(myStories.length > 0) {
+                myAddText.innerText = i18n[currentLang].yourStory;
+                myAddText.onclick = () => openUserStory(currentUser.uid);
+                document.querySelector('.story-add').innerHTML = `<img src="${myStories[0].image}" onclick="openUserStory('${currentUser.uid}')" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+            } else {
+                myAddText.innerText = i18n[currentLang].storyAdd;
+                myAddText.onclick = null;
+                document.querySelector('.story-add').innerHTML = `<i class="fas fa-plus"></i><input type="file" id="story-input" accept="image/*,image/gif" style="display:none;" onchange="handleStoryUpload(event)">`;
+            }
         }
+
+        function handleStoryUpload(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                const process = (b64) => {
+                    const newS = {
+                        id: 'story_' + Date.now(),
+                        userId: currentUser.uid,
+                        userName: currentUser.name,
+                        userAvatar: currentUser.avatar,
+                        image: b64,
+                        timestamp: Date.now(),
+                        stars: 0
+                    };
+                    db.ref('stories/' + newS.id).set(newS);
+                };
+                if(file.type === 'image/gif' || file.type.startsWith('video/')) {
+                    process(ev.target.result);
+                } else {
+                    compressImage(ev.target.result, 800, process);
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function openUserStory(uid) {
+            viewingUserStories = stories.filter(s => s.userId === uid).sort((a,b)=>a.timestamp-b.timestamp);
+            if(viewingUserStories.length === 0) return;
+            viewingStoryIndex = 0;
+            showCurrentStoryView();
+            document.getElementById('story-view-modal').style.display = 'flex';
+        }
+
+        function showCurrentStoryView() {
+            const s = viewingUserStories[viewingStoryIndex];
+            if(!s) return;
+            currentStoryId = s.id;
+            
+            const u = allUsers[s.userId] || {name: s.userName, avatar: s.userAvatar};
+            document.getElementById('sv-avatar').src = u.avatar;
+            document.getElementById('sv-name').innerText = u.name;
+            document.getElementById('sv-time').innerText = formatTimeAgo(s.timestamp);
+            document.getElementById('sv-img').src = s.image;
+            document.getElementById('story-counter').innerText = `${viewingStoryIndex + 1}/${viewingUserStories.length}`;
+            
+            if(s.userId === currentUser.uid) {
+                document.getElementById('story-delete-btn').style.display = 'block';
+                document.getElementById('story-stars-container').innerHTML = `
+                    <span style="color:#fff; font-size:1rem; align-self:center;">⭐ ${s.stars || 0}</span>
+                `;
+            } else {
+                document.getElementById('story-delete-btn').style.display = 'none';
+                document.getElementById('story-stars-container').innerHTML = `
+                    <i class="fas fa-star" onclick="rateStory('${s.id}')"></i>
+                    <i class="fas fa-star" onclick="rateStory('${s.id}')"></i>
+                    <i class="fas fa-star" onclick="rateStory('${s.id}')"></i>
+                `;
+            }
+        }
+
+        function rateStory(storyId) {
+            const s = stories.find(st => st.id === storyId);
+            if(!s) return;
+            db.ref('stories/' + storyId).update({ stars: (s.stars || 0) + 1 });
+            if(s.userId !== currentUser.uid) {
+                sendNotification(s.userId, `${currentUser.name} reaccionó a tu historia!`, 'star', null);
+            }
+            // Pequeña animación
+            const starCont = document.getElementById('story-stars-container');
+            starCont.style.transform = "scale(1.2)";
+            setTimeout(()=> starCont.style.transform = "scale(1)", 200);
+        }
+
+        function nextStory() {
+            if(viewingStoryIndex < viewingUserStories.length - 1) { viewingStoryIndex++; showCurrentStoryView(); }
+            else { closeStory(); }
+        }
+        function prevStory() {
+            if(viewingStoryIndex > 0) { viewingStoryIndex--; showCurrentStoryView(); }
+        }
+        function closeStory() { document.getElementById('story-view-modal').style.display = 'none'; currentStoryId = null; }
+
+        function deleteCurrentStory() {
+            if(!currentStoryId) return;
+            if(confirm("¿Eliminar esta historia?")) {
+                db.ref('stories/' + currentStoryId).remove();
+                closeStory();
+            }
+        }
+
+        /* === PERFIL Y AJUSTES === */
+        function viewMyProfile() { viewProfile(currentUser.uid); }
 
         function viewProfile(uid) {
             currentlyViewingProfileUid = uid;
-            renderProfileData(uid);
-            openView('view-profile');
-        }
-
-        function viewMyProfile() {
-            viewProfile(currentUser.uid);
+            document.getElementById('profile-loader-overlay').style.display = 'flex';
+            setTimeout(() => {
+                renderProfileData(uid);
+                openView('view-profile');
+                document.getElementById('profile-loader-overlay').style.display = 'none';
+            }, 800);
         }
 
         function renderProfileData(uid) {
-            const user = allUsers[uid];
-            if(!user) return;
-            
-            const isMe = (uid === currentUser.uid);
+            const user = allUsers[uid] || currentUser;
+            const isMe = uid === currentUser.uid;
             const userPosts = posts.filter(p => p.userId === uid);
-            const totalStars = userPosts.reduce((acc, p) => acc + (p.stars || 0), 0);
             
-            const followersCount = user.followersCount || 0;
-            const followingCount = user.friends ? Object.keys(user.friends).length : 0;
-            const isFollowing = currentUser.friends && currentUser.friends[uid];
+            let btnHtml = '';
+            if(isMe) {
+                btnHtml = `<button class="btn-secondary" style="width: auto; padding: 8px 20px;" onclick="openEditProfile()">Editar Perfil</button>`;
+            } else {
+                let isFollowing = currentUser.following && currentUser.following[uid];
+                btnHtml = isFollowing ? 
+                    `<button class="btn-secondary" style="width: auto; padding: 8px 20px;" onclick="toggleFollow('${uid}')">${i18n[currentLang].unfollow}</button>` :
+                    `<button class="btn-primary" style="width: auto; padding: 8px 20px;" onclick="toggleFollow('${uid}')">${i18n[currentLang].follow}</button>`;
+            }
 
-            const followBtnHtml = !isMe ? `
-                <button class="btn-${isFollowing ? 'secondary' : 'primary'}" onclick="toggleFollow('${uid}')" style="margin-top: 10px; width: auto; padding: 8px 25px; border-radius: 20px;">
-                    <i class="fas fa-user-${isFollowing ? 'minus' : 'plus'}"></i> 
-                    ${isFollowing ? (i18n[currentLang].unfollow || 'Dejar de seguir') : (i18n[currentLang].follow || 'Seguir')}
-                </button>
-            ` : '';
+            // REDES SOCIALES
+            let socialsHtml = `<div style="display:flex; justify-content:center; gap:15px; margin-top:10px; font-size:1.5rem;">`;
+            if(user.socials) {
+                if(user.socials.ws) socialsHtml += `<a href="https://wa.me/${user.socials.ws}" target="_blank" style="color:#25D366;"><i class="fab fa-whatsapp"></i></a>`;
+                if(user.socials.ig) socialsHtml += `<a href="https://instagram.com/${user.socials.ig}" target="_blank" style="color:#E1306C;"><i class="fab fa-instagram"></i></a>`;
+                if(user.socials.fb) socialsHtml += `<a href="${user.socials.fb}" target="_blank" style="color:#1877F2;"><i class="fab fa-facebook"></i></a>`;
+                if(user.socials.yt) socialsHtml += `<a href="${user.socials.yt}" target="_blank" style="color:#FF0000;"><i class="fab fa-youtube"></i></a>`;
+                if(user.socials.snap) socialsHtml += `<a href="${user.socials.snap.includes('http') ? user.socials.snap : 'https://snapchat.com/add/'+user.socials.snap}" target="_blank" style="color:#FFFC00; text-shadow:0 0 2px #000;"><i class="fab fa-snapchat"></i></a>`;
+            }
+            socialsHtml += `</div>`;
 
-            const header = document.getElementById('profile-header');
-            header.innerHTML = `
+            let followersCount = user.followersCount || 0;
+            let followingCount = user.following ? Object.keys(user.following).length : 0;
+
+            document.getElementById('profile-header').innerHTML = `
                 <div class="profile-cover"></div>
                 <div class="profile-header">
-                    <div class="avatar"><img src="${user.avatar}"></div>
+                    <img src="${user.avatar}" class="avatar">
                     <h2 style="color:var(--text-main);">${user.name}</h2>
                     <p class="profile-username">${user.username}</p>
-                    <p class="profile-bio">${user.bio || 'Sin biografía'}</p>
-                    ${followBtnHtml}
+                    <p class="profile-bio">${user.bio || ''}</p>
+                    
                     <div class="profile-stats">
-                        <div class="stat"><strong>${userPosts.length}</strong><span>${i18n[currentLang].postsLabel || 'Posts'}</span></div>
-                        <div class="stat"><strong>${followersCount}</strong><span>${i18n[currentLang].followers || 'Seguidores'}</span></div>
-                        <div class="stat"><strong>${followingCount}</strong><span>${i18n[currentLang].following || 'Siguiendo'}</span></div>
-                        <div class="stat"><strong>${totalStars}</strong><span>★ Estrellas</span></div>
+                        <div class="stat"><strong>${userPosts.length}</strong><span>${i18n[currentLang].postsLabel}</span></div>
+                        <div class="stat"><strong>${followersCount}</strong><span>${i18n[currentLang].followers}</span></div>
+                        <div class="stat"><strong>${followingCount}</strong><span>${i18n[currentLang].following}</span></div>
                     </div>
-                    ${isMe ? '<button class="btn-secondary" onclick="openEditProfile()"><i class="fas fa-edit"></i> Editar Perfil</button>' : ''}
+                    ${btnHtml}
+                    ${socialsHtml}
                 </div>
             `;
 
             const grid = document.getElementById('profile-grid');
             grid.innerHTML = '';
             userPosts.forEach(p => {
-                if(p.isVideo) {
-                    grid.innerHTML += `<video src="${p.image}" class="boomerang-video" muted playsinline style="object-fit:cover; aspect-ratio:1;" onclick="openComments('${p.id}')"></video>`;
-                } else {
-                    grid.innerHTML += `<img src="${p.image}" onclick="openComments('${p.id}')">`;
-                }
+                if(p.isVideo) grid.innerHTML += `<video src="${p.image}" onclick="window.scrollTo(0,0); openView('view-feed');"></video>`;
+                else grid.innerHTML += `<img src="${p.image}" onclick="window.scrollTo(0,0); openView('view-feed');">`;
             });
+        }
+
+        function toggleFollow(uid) {
+            let isFollowing = currentUser.following && currentUser.following[uid];
+            let targetFollowers = (allUsers[uid].followersCount || 0);
+            
+            if(isFollowing) {
+                db.ref(`users/${currentUser.uid}/following/${uid}`).remove();
+                db.ref(`users/${uid}/followersCount`).set(Math.max(0, targetFollowers - 1));
+            } else {
+                db.ref(`users/${currentUser.uid}/following/${uid}`).set(true);
+                db.ref(`users/${uid}/followersCount`).set(targetFollowers + 1);
+                sendNotification(uid, `${currentUser.name} comenzó a seguirte!`, 'user', null);
+            }
         }
 
         function openEditProfile() {
@@ -1881,19 +1959,28 @@
             document.getElementById('edit-avatar-preview').src = currentUser.avatar;
             editAvatarBase64 = currentUser.avatar;
             
+            if(currentUser.socials) {
+                document.getElementById('edit-ws').value = currentUser.socials.ws || '';
+                document.getElementById('edit-ig').value = currentUser.socials.ig || '';
+                document.getElementById('edit-fb').value = currentUser.socials.fb || '';
+                document.getElementById('edit-yt').value = currentUser.socials.yt || '';
+                document.getElementById('edit-snap').value = currentUser.socials.snap || '';
+            }
+            
             document.getElementById('overlay').style.display = 'block';
             document.getElementById('edit-profile-modal').style.display = 'flex';
         }
 
         function handleEditAvatar(e) {
-            const file = e.target.files[0]; if(!file) return;
+            const file = e.target.files[0];
+            if(!file) return;
             const reader = new FileReader();
             reader.onload = ev => {
-                if (file.type === 'image/gif') {
+                if(file.type === 'image/gif') {
                     editAvatarBase64 = ev.target.result;
                     document.getElementById('edit-avatar-preview').src = editAvatarBase64;
                 } else {
-                    compressImage(ev.target.result, 400, (comp) => {
+                    compressImage(ev.target.result, 400, comp => {
                         editAvatarBase64 = comp;
                         document.getElementById('edit-avatar-preview').src = editAvatarBase64;
                     });
@@ -1906,53 +1993,143 @@
             const name = document.getElementById('edit-name').value;
             const bio = document.getElementById('edit-bio').value;
             
-            const updates = {};
-            updates[`users/${currentUser.uid}/name`] = name;
-            updates[`users/${currentUser.uid}/bio`] = bio;
-            updates[`users/${currentUser.uid}/avatar`] = editAvatarBase64;
-            
-            const myPosts = posts.filter(p => p.userId === currentUser.uid);
-            myPosts.forEach(p => {
-                updates[`posts/${p.id}/userName`] = name;
-                updates[`posts/${p.id}/userAvatar`] = editAvatarBase64;
-            });
+            const ws = document.getElementById('edit-ws').value;
+            const ig = document.getElementById('edit-ig').value;
+            const fb = document.getElementById('edit-fb').value;
+            const yt = document.getElementById('edit-yt').value;
+            const snap = document.getElementById('edit-snap').value;
 
-            await db.ref().update(updates);
+            await db.ref('users/' + currentUser.uid).update({
+                name, bio, avatar: editAvatarBase64,
+                socials: { ws, ig, fb, yt, snap }
+            });
+            
             closeModals();
+            if(currentlyViewingProfileUid === currentUser.uid) renderProfileData(currentUser.uid);
+        }
+
+        function openSettings() {
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('settings-modal').style.display = 'flex';
+        }
+
+        function closeModals() {
+            document.getElementById('overlay').style.display = 'none';
+            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+        }
+
+        /* === BÚSQUEDA Y RANKING === */
+        function searchUsers() {
+            const term = (document.getElementById('search-input').value || "").toLowerCase();
+            const res = document.getElementById('search-results');
+            res.innerHTML = '';
+            
+            Object.values(allUsers).forEach(u => {
+                if(u.uid === currentUser.uid) return;
+                if(u.name.toLowerCase().includes(term) || u.username.toLowerCase().includes(term)) {
+                    res.innerHTML += `
+                        <div class="search-user-item" onclick="viewProfile('${u.uid}')">
+                            <img src="${u.avatar}" class="avatar">
+                            <div>
+                                <strong style="color:var(--text-main);">${u.name}</strong><br>
+                                <span style="font-size:0.8rem; color:var(--text-muted);">${u.username}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
         }
 
         function renderRanking() {
-            const container = document.getElementById('ranking-container');
-            const usersArr = Object.values(allUsers).map(u => {
-                const uPosts = posts.filter(p => p.userId === u.uid);
-                const tStars = uPosts.reduce((acc, p) => acc + (p.stars || 0), 0);
-                return { ...u, totalStars: tStars };
-            }).sort((a,b) => b.totalStars - a.totalStars);
-
-            container.innerHTML = '';
-            usersArr.forEach((u, index) => {
-                const isTop = index < 3 ? `top-${index+1}` : '';
-                container.innerHTML += `
-                    <div class="rank-item ${isTop}" onclick="simulateLoadingAndProfile('${u.uid}')">
-                        <div class="rank-pos">#${index + 1}</div>
-                        <div class="avatar" style="margin:0 15px;"><img src="${u.avatar}"></div>
+            const rCont = document.getElementById('ranking-container');
+            rCont.innerHTML = '';
+            
+            let userScores = {};
+            Object.values(allUsers).forEach(u => userScores[u.uid] = 0);
+            
+            // Post stars (1 point)
+            posts.forEach(p => { if(userScores[p.userId] !== undefined) userScores[p.userId] += (p.stars || 0); });
+            // Story stars (0.5 point)
+            stories.forEach(s => { if(userScores[s.userId] !== undefined) userScores[s.userId] += (s.stars || 0) * 0.5; });
+            
+            let arr = Object.values(allUsers).map(u => ({...u, score: userScores[u.uid] || 0})).sort((a,b) => b.score - a.score);
+            
+            arr.forEach((u, index) => {
+                let rankClass = index === 0 ? 'top-1' : (index === 1 ? 'top-2' : (index === 2 ? 'top-3' : ''));
+                rCont.innerHTML += `
+                    <div class="rank-item ${rankClass}" onclick="viewProfile('${u.uid}')">
+                        <div class="rank-pos">#${index+1}</div>
+                        <img src="${u.avatar}" class="avatar" style="margin: 0 15px;">
                         <div>
-                            <div style="font-weight:bold; color:var(--text-main);">${u.name}</div>
-                            <div style="font-size:0.8rem; color:var(--text-muted);">${u.username}</div>
+                            <strong style="color:var(--text-main);">${u.name}</strong><br>
+                            <span style="font-size:0.75rem; color:var(--text-muted);">${u.username}</span>
                         </div>
-                        <div class="rank-score">${u.totalStars} ★</div>
+                        <div class="rank-score"><i class="fas fa-star" style="color:var(--star-active);"></i> ${u.score}</div>
+                    </div>
+                `;
+                
+                if(u.uid === currentUser.uid && index < 5) {
+                    const dict = i18n[currentLang];
+                    let msg = "";
+                    if(index === 0) msg = dict.rank1;
+                    else if(index === 1) msg = dict.rank2;
+                    else if(index === 2) msg = dict.rank3;
+                    else if(index === 3) msg = dict.rank4;
+                    else msg = dict.rank5;
+                    
+                    document.getElementById('ranking-banner').innerHTML = `
+                        <h2>Mi Posición: #${index+1}</h2>
+                        <p style="font-size:0.9rem; margin-top:5px;">${msg}</p>
+                    `;
+                }
+            });
+        }
+
+        /* === NOTIFICACIONES === */
+        function sendNotification(targetUid, text, type, refId) {
+            if(targetUid === currentUser.uid) return;
+            const notif = {
+                id: 'n_' + Date.now(),
+                text: text,
+                type: type, // 'star', 'comment', 'user'
+                refId: refId || '',
+                timestamp: Date.now(),
+                read: false
+            };
+            db.ref('notifications/' + targetUid + '/' + notif.id).set(notif);
+        }
+
+        function renderNotifications() {
+            const cont = document.getElementById('notifications-container');
+            cont.innerHTML = '';
+            
+            if(notifications.length === 0) {
+                cont.innerHTML = `<p style="text-align:center; color:var(--text-muted);">No tienes notificaciones.</p>`;
+                return;
+            }
+
+            notifications.forEach(n => {
+                let icon = 'fa-bell';
+                if(n.type === 'star') icon = 'fa-star';
+                if(n.type === 'comment') icon = 'fa-comment';
+                if(n.type === 'user') icon = 'fa-user';
+                
+                cont.innerHTML += `
+                    <div style="background: ${n.read ? 'rgba(255,255,255,0.02)' : 'rgba(0,168,232,0.1)'}; padding: 15px; border-radius: 12px; margin-bottom: 10px; display:flex; gap:15px; align-items:center; border:1px solid rgba(0,168,232,0.2); cursor:pointer;" onclick="markNotifRead('${n.id}'); if('${n.refId}' && '${n.type}'!=='user'){openView('view-feed'); setTimeout(()=>document.getElementById('${n.refId}').scrollIntoView(), 500);}">
+                        <i class="fas ${icon}" style="color:var(--primary); font-size:1.5rem;"></i>
+                        <div>
+                            <p style="color:var(--text-main); font-size:0.9rem;">${n.text}</p>
+                            <span style="font-size:0.75rem; color:var(--text-muted);">${formatTimeAgo(n.timestamp)}</span>
+                        </div>
                     </div>
                 `;
             });
-
-            const myRank = usersArr.findIndex(u => u.uid === currentUser.uid) + 1;
-            const banner = document.getElementById('ranking-banner');
-            const d = i18n[currentLang];
-            if(myRank === 1) banner.innerHTML = `<h2>${d.rank1}</h2>`;
-            else if(myRank === 2) banner.innerHTML = `<h2>${d.rank2}</h2>`;
-            else if(myRank <= 5) banner.innerHTML = `<h2>${d.rank3}</h2>`;
-            else banner.innerHTML = `<h2>${d.rank5}</h2>`;
         }
+
+        function markNotifRead(nid) {
+            db.ref('notifications/' + currentUser.uid + '/' + nid).update({read: true});
+        }
+
     </script>
 </body>
 </html>
