@@ -296,15 +296,12 @@
         
         .comment { display: flex; gap: 8px; margin-bottom: 12px; }
         .comment-content { background: var(--input-bg); padding: 10px 12px; border-radius: 12px; flex: 1; color: var(--text-main); }
-        .comment-content h5 { margin-bottom: 2px; font-size: 0.8rem; color: var(--primary); }
+        .comment-content h5 { margin-bottom: 2px; font-size: 0.8rem; color: var(--primary); cursor: pointer; }
         .comment-content p { font-size: 0.85rem; }
-        .comment-reply-btn { font-size: 0.72rem; color: var(--text-muted); cursor: pointer; font-weight: bold; }
         
         .comment-input-area { padding: 12px; border-top: 1px solid var(--border-color); display: flex; flex-direction: column; }
         .comment-input-row { display: flex; gap: 8px; align-items: center;}
         .comment-input-row input { flex: 1; border: 1px solid var(--border-color); background: var(--input-bg); padding: 10px; border-radius: 20px; color: var(--text-main); outline: none; }
-        
-        #reply-badge { display: none; align-items: center; justify-content: space-between; background: rgba(0,168,232,0.1); padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; }
         
         #overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--modal-bg); z-index: 998; backdrop-filter: blur(4px); }
         
@@ -346,7 +343,7 @@
 
         .dual-cam-active { background: var(--star-active) !important; color: #000 !important; border-color: #FFD700 !important;}
 
-        /* CAMARA SIN ESCÁNER (LIGERA Y FLEXIBLE) */
+        /* CAMARA SIN ESCÁNER */
         .camera-hud {
             position: absolute; bottom: 15px; left: 15px; color: var(--primary); font-family: monospace; font-size: 0.75rem; z-index: 5; font-weight: bold; background: rgba(0,0,0,0.5); padding: 2px 6px; border-radius: 4px;
         }
@@ -355,6 +352,37 @@
             0% { box-shadow: 0 0 0 0 rgba(0,168,232,0.8); }
             70% { box-shadow: 0 0 0 10px rgba(0,168,232,0); }
             100% { box-shadow: 0 0 0 0 rgba(0,168,232,0); }
+        }
+
+        /* === NUEVAS TABS DE PUBLICACIÓN === */
+        .upload-tabs {
+            display: flex;
+            background: var(--input-bg);
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 10px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .tab-btn.active {
+            background: var(--primary-gradient);
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(0, 168, 232, 0.25);
         }
 
     </style>
@@ -412,7 +440,11 @@
             <header>
                 <div style="display: flex; align-items: center;">
                     <i class="fas fa-chevron-left" id="back-btn" onclick="goBack()"></i>
-                    <div id="header-logo"><h1 class="epic-logo header-logo-text" onclick="openView('view-feed')" style="cursor:pointer;"><span style="color:#d4af37;">Star</span><span style="color:#00A8E8;">Shine</span></h1></div>
+                    <div id="header-logo">
+                        <h1 class="epic-logo header-logo-text" onclick="openView('view-feed')" style="cursor:pointer;"><span style="color:#d4af37;">Star</span><span style="color:#00A8E8;">Shine</span></h1>
+                    </div>
+                    <!-- Icono para actualizar feed con IA / random -->
+                    <i class="fas fa-redo-alt" id="btn-refresh-ia" style="cursor: pointer; color:var(--primary); font-size:1.15rem; margin-left: 15px;" onclick="triggerAiRefresh()" title="Actualizar Feed con IA"></i>
                 </div>
                 <div class="header-icons">
                     <i class="fas fa-cog" style="cursor: pointer; color:var(--primary); font-size:1.15rem;" onclick="openSettings()"></i>
@@ -454,66 +486,124 @@
                     <div id="search-results"></div>
                 </div>
 
-                <!-- VIEW UPLOAD -->
+                <!-- VIEW UPLOAD (CON TABS: POST, ENCUESTA, RETO/VERSUS) -->
                 <div id="view-upload" class="view">
                     <div style="background: var(--surface-card); backdrop-filter: blur(10px); padding: 20px; border-radius: 20px; border: 1px solid var(--border-color); box-shadow: var(--shadow);">
-                        <h2 id="t-create-post" style="color: var(--text-main); margin-bottom: 15px;">Crear Publicación</h2>
                         
-                        <div id="ai-pre-detect-alert" style="display:none; color:#fff; background: linear-gradient(135deg, #ff007f, #7f00ff); padding: 10px; border-radius: 10px; margin-bottom: 15px; font-weight: bold; text-align: center; box-shadow: 0 4px 15px rgba(255,0,127,0.4);"><i class="fas fa-robot"></i> ¡Imagen de IA detectada!</div>
-
-                        <div id="media-trigger" style="width: 100%; height: 180px; background: rgba(0,168,232,0.02); border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--primary); cursor: pointer; position: relative; margin-bottom: 10px; border: 2px dashed var(--primary); overflow: hidden;" onclick="document.getElementById('file-input').click()">
-                            <i class="fas fa-image" style="font-size: 2.5rem; margin-bottom: 8px;"></i>
-                            <span id="t-upload-tap" style="font-weight:bold; font-size:0.9rem;">Tocar para subir foto o video</span>
-                            <input type="file" id="file-input" accept="image/*,video/*,image/gif" style="display:none;" onchange="handleImageUpload(event)">
-                            <img id="preview-img" style="width: 100%; height: 100%; object-fit: cover; position: absolute; z-index: 2; display: none;">
-                            <video id="preview-vid" style="width: 100%; height: 100%; object-fit: cover; position: absolute; z-index: 2; display: none;" autoplay muted loop playsinline></video>
+                        <!-- TAB SELECTOR -->
+                        <div class="upload-tabs">
+                            <button class="tab-btn active" id="tab-media-btn" onclick="switchUploadTab('media')"><i class="fas fa-image"></i> <span id="t-tab-media">Foto/Video</span></button>
+                            <button class="tab-btn" id="tab-poll-btn" onclick="switchUploadTab('poll')"><i class="fas fa-poll-h"></i> <span id="t-tab-poll">Encuestas</span></button>
+                            <button class="tab-btn" id="tab-versus-btn" onclick="switchUploadTab('versus')"><i class="fas fa-bolt"></i> <span id="t-tab-versus">Reto Versus</span></button>
                         </div>
 
-                        <button class="btn-secondary" id="btn-open-cam" onclick="openLiveCamera()"><i class="fas fa-camera"></i> <span id="t-open-cam">Abrir Cámara Real</span></button>
-                        
-                        <div id="camera-container" style="display:none; position:relative; width:100%; border-radius:14px; overflow:hidden; margin-bottom:15px; background: #000; border: 1px solid var(--primary);">
-                            <div class="camera-hud">LIVE CAM</div>
-                            <video id="live-video" autoplay playsinline style="width:100%; display:block; z-index:1;"></video>
-                            <i class="fas fa-sync" style="position:absolute; top:15px; left:15px; color:white; font-size:1.5rem; cursor:pointer; z-index:10;" onclick="toggleCamera()"></i>
-                            
-                            <button id="dual-cam-btn" class="btn-secondary" style="position:absolute; top:15px; left:50%; transform:translateX(-50%); width:auto; padding:5px 15px; z-index:10; font-size:0.8rem;" onclick="toggleDualCamMenu()">
-                                <i class="fas fa-camera"></i> Modo Dual (BeReal)
-                            </button>
-                            <div id="dual-cam-options" style="display:none; position:absolute; top:50px; left:50%; transform:translateX(-50%); z-index:10; background:rgba(0,0,0,0.85); padding:10px; border-radius:10px; flex-direction:column; gap:8px; text-align:center; border: 1px solid var(--primary);">
-                                <button class="btn-primary btn-small" onclick="startDualCam('front-rear')" style="margin:0; width:100%;">Frontal + Trasera</button>
-                                <button class="btn-secondary btn-small" onclick="startDualCam('front-front')" style="margin:0; width:100%;">Frontal x2 (5s)</button>
+                        <!-- FORMULARIO 1: FOTO O VIDEO STANDARD -->
+                        <div id="form-upload-media">
+                            <h2 id="t-create-post" style="color: var(--text-main); margin-bottom: 15px;">Crear Publicación</h2>
+                            <div id="ai-pre-detect-alert" style="display:none; color:#fff; background: linear-gradient(135deg, #ff007f, #7f00ff); padding: 10px; border-radius: 10px; margin-bottom: 15px; font-weight: bold; text-align: center; box-shadow: 0 4px 15px rgba(255,0,127,0.4);"><i class="fas fa-robot"></i> ¡Imagen de IA detectada!</div>
+
+                            <div id="media-trigger" style="width: 100%; height: 180px; background: rgba(0,168,232,0.02); border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--primary); cursor: pointer; position: relative; margin-bottom: 10px; border: 2px dashed var(--primary); overflow: hidden;" onclick="document.getElementById('file-input').click()">
+                                <i class="fas fa-image" style="font-size: 2.5rem; margin-bottom: 8px;"></i>
+                                <span id="t-upload-tap" style="font-weight:bold; font-size:0.9rem;">Tocar para subir foto o video</span>
+                                <input type="file" id="file-input" accept="image/*,video/*,image/gif" style="display:none;" onchange="handleImageUpload(event)">
+                                <img id="preview-img" style="width: 100%; height: 100%; object-fit: cover; position: absolute; z-index: 2; display: none;">
+                                <video id="preview-vid" style="width: 100%; height: 100%; object-fit: cover; position: absolute; z-index: 2; display: none;" autoplay muted loop playsinline></video>
                             </div>
 
-                            <div id="cam-countdown" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:4.5rem; color:white; font-weight:bold; z-index:20; text-shadow: 0 0 20px rgba(0,0,0,0.8);"></div>
+                            <button class="btn-secondary" id="btn-open-cam" onclick="openLiveCamera()"><i class="fas fa-camera"></i> <span id="t-open-cam">Abrir Cámara Real</span></button>
+                            
+                            <div id="camera-container" style="display:none; position:relative; width:100%; border-radius:14px; overflow:hidden; margin-bottom:15px; background: #000; border: 1px solid var(--primary);">
+                                <div class="camera-hud">LIVE CAM</div>
+                                <video id="live-video" autoplay playsinline style="width:100%; display:block; z-index:1;"></video>
+                                <i class="fas fa-sync" style="position:absolute; top:15px; left:15px; color:white; font-size:1.5rem; cursor:pointer; z-index:10;" onclick="toggleCamera()"></i>
+                                
+                                <button id="dual-cam-btn" class="btn-secondary" style="position:absolute; top:15px; left:50%; transform:translateX(-50%); width:auto; padding:5px 15px; z-index:10; font-size:0.8rem;" onclick="toggleDualCamMenu()">
+                                    <i class="fas fa-camera"></i> Modo Dual (BeReal)
+                                </button>
+                                <div id="dual-cam-options" style="display:none; position:absolute; top:50px; left:50%; transform:translateX(-50%); z-index:10; background:rgba(0,0,0,0.85); padding:10px; border-radius:10px; flex-direction:column; gap:8px; text-align:center; border: 1px solid var(--primary);">
+                                    <button class="btn-primary btn-small" onclick="startDualCam('front-rear')" style="margin:0; width:100%;">Frontal + Trasera</button>
+                                    <button class="btn-secondary btn-small" onclick="startDualCam('front-front')" style="margin:0; width:100%;">Frontal x2 (5s)</button>
+                                </div>
 
-                            <button class="btn-primary record-btn-anim" style="position:absolute; bottom:15px; left:50%; transform:translateX(-50%); width: 70%; opacity: 0.95; z-index:10;" onclick="captureLiveCamera()"><i class="fas fa-camera"></i> <span id="t-cap-btn">Capturar</span></button>
-                            <i class="fas fa-times" style="position:absolute; top:15px; right:15px; color:white; font-size:1.5rem; cursor:pointer; z-index:10;" onclick="closeLiveCamera()"></i>
+                                <div id="cam-countdown" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:4.5rem; color:white; font-weight:bold; z-index:20; text-shadow: 0 0 20px rgba(0,0,0,0.8);"></div>
+
+                                <button class="btn-primary record-btn-anim" style="position:absolute; bottom:15px; left:50%; transform:translateX(-50%); width: 70%; opacity: 0.95; z-index:10;" onclick="captureLiveCamera()"><i class="fas fa-camera"></i> <span id="t-cap-btn">Capturar</span></button>
+                                <i class="fas fa-times" style="position:absolute; top:15px; right:15px; color:white; font-size:1.5rem; cursor:pointer; z-index:10;" onclick="closeLiveCamera()"></i>
+                            </div>
+
+                            <div class="input-group" style="margin-top: 15px;">
+                                <textarea id="post-caption" placeholder="Escribe algo sobre tu foto..." rows="3"></textarea>
+                            </div>
+                            
+                            <div class="input-group" style="display:flex; align-items:center; gap:10px;">
+                                <label class="switch">
+                                    <input type="checkbox" id="post-location-toggle" onchange="fetchLocationText(this)">
+                                    <span class="slider"></span>
+                                </label>
+                                <label id="t-add-location" style="margin:0;">Añadir ubicación (Texto)</label>
+                            </div>
+                            <div id="location-display" style="font-size:0.8rem; color:var(--primary); margin-bottom:15px; font-weight:bold;"></div>
+
+                            <div class="input-group">
+                                <label id="t-privacy">Privacidad:</label>
+                                <select id="post-privacy">
+                                    <option value="public" id="t-pub">🌍 Público</option>
+                                    <option value="friends" id="t-friends">👥 Solo Amigos</option>
+                                </select>
+                            </div>
+
+                            <button id="btn-publish" class="btn-primary" style="display:none;" onclick="analyzeAndPublish()">
+                                <i class="fas fa-magic"></i> <span id="t-btn-pub">Publicar con IA</span>
+                            </button>
                         </div>
 
-                        <div class="input-group" style="margin-top: 15px;">
-                            <textarea id="post-caption" placeholder="Escribe algo sobre tu foto..." rows="3"></textarea>
+                        <!-- FORMULARIO 2: ENCUESTAS (POLLS) -->
+                        <div id="form-upload-poll" style="display: none;">
+                            <h2 id="t-create-poll" style="color: var(--text-main); margin-bottom: 15px;">Crear Encuesta</h2>
+                            <div class="input-group">
+                                <label id="t-poll-question-lbl">Pregunta:</label>
+                                <input type="text" id="poll-question" placeholder="Escribe la pregunta aquí...">
+                            </div>
+                            <div class="input-group">
+                                <label id="t-opt1-lbl">Opción 1:</label>
+                                <input type="text" id="poll-opt1" placeholder="Opción 1">
+                            </div>
+                            <div class="input-group">
+                                <label id="t-opt2-lbl">Opción 2:</label>
+                                <input type="text" id="poll-opt2" placeholder="Opción 2">
+                            </div>
+                            <div class="input-group">
+                                <label id="t-opt3-lbl">Opción 3 (Opcional):</label>
+                                <input type="text" id="poll-opt3" placeholder="Opción 3 (Opcional)">
+                            </div>
+                            <div class="input-group">
+                                <label id="t-opt4-lbl">Opción 4 (Opcional):</label>
+                                <input type="text" id="poll-opt4" placeholder="Opción 4 (Opcional)">
+                            </div>
+                            <button id="t-pub-poll-btn" class="btn-primary" onclick="publishPoll()"><i class="fas fa-paper-plane"></i> Publicar Encuesta</button>
                         </div>
-                        
-                        <div class="input-group" style="display:flex; align-items:center; gap:10px;">
-                            <label class="switch">
-                                <input type="checkbox" id="post-location-toggle" onchange="fetchLocationText(this)">
-                                <span class="slider"></span>
-                            </label>
-                            <label id="t-add-location" style="margin:0;">Añadir ubicación (Texto)</label>
-                        </div>
-                        <div id="location-display" style="font-size:0.8rem; color:var(--primary); margin-bottom:15px; font-weight:bold;"></div>
 
-                        <div class="input-group">
-                            <label id="t-privacy">Privacidad:</label>
-                            <select id="post-privacy">
-                                <option value="public" id="t-pub">🌍 Público</option>
-                                <option value="friends" id="t-friends">👥 Solo Amigos</option>
-                            </select>
+                        <!-- FORMULARIO 3: RETO VERSUS -->
+                        <div id="form-upload-versus" style="display: none;">
+                            <h2 id="t-versus-title" style="color: var(--text-main); margin-bottom: 15px;">Desafiar a un Versus</h2>
+                            <div class="input-group">
+                                <label id="t-choose-rival">Elige a tu Rival para el Versus:</label>
+                                <input type="text" id="versus-search" placeholder="Escribe el nombre del usuario..." onkeyup="searchVersusOpponent()">
+                                <div id="versus-search-results" style="max-height: 150px; overflow-y: auto; background: var(--input-bg); border-radius: 8px; margin-top: 5px; border: 1px solid var(--border-color);"></div>
+                            </div>
+                            
+                            <!-- Tarjeta de Rival Seleccionado -->
+                            <div id="versus-selected-card" style="display:none; background:rgba(0,168,232,0.1); border:1px solid var(--primary); padding:10px; border-radius:12px; margin-bottom:15px; display:flex; align-items:center; gap:10px;">
+                                <img id="versus-sel-avatar" src="" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border: 1px solid var(--primary);">
+                                <div style="flex: 1;">
+                                    <strong id="versus-sel-name" style="color:var(--text-main);"></strong>
+                                    <p id="versus-sel-username" style="font-size:0.8rem; color:var(--primary); font-weight:bold;"></p>
+                                </div>
+                                <i class="fas fa-times" style="cursor:pointer; color:var(--text-muted); font-size:1.2rem; padding: 5px;" onclick="clearSelectedVersusOpponent()"></i>
+                            </div>
+                            
+                            <button id="btn-send-versus" class="btn-primary" onclick="sendVersusChallenge()"><i class="fas fa-bolt"></i> <span id="t-send-versus-btn">Enviar Desafío</span></button>
                         </div>
-
-                        <button id="btn-publish" class="btn-primary" style="display:none;" onclick="analyzeAndPublish()">
-                            <i class="fas fa-magic"></i> <span id="t-btn-pub">Publicar con IA</span>
-                        </button>
                         
                         <div id="ai-status" style="text-align:center; color:var(--primary); margin-top:12px; font-weight:bold; font-size: 0.85rem;"></div>
                     </div>
@@ -721,10 +811,6 @@
             </div>
             <div class="modal-body" id="comments-list" style="padding-bottom: 0;"></div>
             <div class="comment-input-area">
-                <div id="reply-badge">
-                    <span>Respondiendo a <strong id="reply-to-name"></strong></span>
-                    <i class="fas fa-times" style="cursor:pointer;" onclick="cancelReply()"></i>
-                </div>
                 <div class="comment-input-row">
                     <i class="far fa-smile" style="font-size: 1.4rem; color: var(--primary); cursor: pointer; align-self: center;" onclick="toggleEmojiBox()"></i>
                     <input type="text" id="comment-input" placeholder="Escribe un comentario...">
@@ -789,7 +875,7 @@
         let posts = [];
         let stories = [];
         let notifications = [];
-        let isAiLoaded = true; // Forzado a true para evitar bloqueos
+        let isAiLoaded = true;
         
         let uploadBase64 = null;
         let regAvatarBase64 = null;
@@ -827,7 +913,12 @@
         let firstCamImage = null;
         let countdownInterval = null;
 
-        /* === DICCIONARIO TRADUCCIÓN === */
+        // Feed IA State
+        let featuredPostId = null; 
+        let selectedVersusOpponentUid = null;
+        let activePostIdForComments = null;
+
+        /* === DICCIONARIO TRADUCCIÓN COMPLETO === */
         const i18n = {
             es: { 
                 authDesc: "Tu red social donde brillas de verdad", 
@@ -891,7 +982,28 @@
                 following: "Siguiendo",
                 follow: "Seguir",
                 unfollow: "Dejar de seguir",
-                postsLabel: "Posts"
+                postsLabel: "Posts",
+                
+                // Nuevas etiquetas traducidas por completo
+                tabMedia: "Foto/Video",
+                tabPoll: "Encuestas",
+                tabVersus: "Reto Versus",
+                createPoll: "Crear Encuesta",
+                pollQuestionLbl: "Pregunta:",
+                questionPlaceholder: "Escribe la pregunta aquí...",
+                opt1Lbl: "Opción 1:",
+                opt2Lbl: "Opción 2:",
+                opt3Lbl: "Opción 3 (Opcional):",
+                opt4Lbl: "Opción 4 (Opcional):",
+                pubPollBtn: "Publicar Encuesta",
+                versusTitle: "Desafiar a un Versus",
+                chooseRival: "Elige a tu Rival para el Versus:",
+                versusSearchPlaceholder: "Escribe el nombre del usuario...",
+                sendVersusBtn: "Enviar Desafío",
+                versusVoted: "votos",
+                versusTuVoto: "Tu Voto",
+                versusAccept: "Aceptar",
+                versusDecline: "Rechazar"
             },
             en: { 
                 authDesc: "Your social network where you truly shine", 
@@ -955,7 +1067,28 @@
                 following: "Following",
                 follow: "Follow",
                 unfollow: "Unfollow",
-                postsLabel: "Posts"
+                postsLabel: "Posts",
+                
+                // New elements translated completely
+                tabMedia: "Photo/Video",
+                tabPoll: "Polls",
+                tabVersus: "Versus Challenge",
+                createPoll: "Create Poll",
+                pollQuestionLbl: "Question:",
+                questionPlaceholder: "Write your question here...",
+                opt1Lbl: "Option 1:",
+                opt2Lbl: "Option 2:",
+                opt3Lbl: "Option 3 (Optional):",
+                opt4Lbl: "Option 4 (Optional):",
+                pubPollBtn: "Publish Poll",
+                versusTitle: "Challenge a Rival",
+                chooseRival: "Choose your Rival for Versus:",
+                versusSearchPlaceholder: "Type user's name...",
+                sendVersusBtn: "Send Challenge",
+                versusVoted: "votes",
+                versusTuVoto: "Your Vote",
+                versusAccept: "Accept",
+                versusDecline: "Decline"
             }
         };
 
@@ -979,6 +1112,72 @@
         function changeLanguageAndReload(lang) {
             localStorage.setItem('starshine_lang', lang);
             location.reload(); 
+        }
+
+        function applyLanguage(lang) {
+            const d = i18n[lang];
+            const textMappings = {
+                't-auth-desc': d.authDesc,
+                't-create-post': d.createPost,
+                't-upload-tap': d.tapToUpload,
+                't-open-cam': d.openCam,
+                't-cap-btn': d.capBtn,
+                't-add-location': d.addLocation,
+                't-privacy': d.privacy,
+                't-pub': d.pub,
+                't-friends': d.friends,
+                't-search-title': d.searchTitle,
+                't-posts-title': d.postsTitle,
+                't-notif-title': d.notifTitle,
+                't-settings': d.settings,
+                't-dark-theme': d.darkTheme,
+                't-lang': d.lang,
+                't-logout': d.logoutBtn,
+                't-edit-prof': d.editProfTitle,
+                't-name': d.nameLabel,
+                't-bio': d.bioLabel,
+                't-save': d.saveBtn,
+                't-comments': d.commentsTitle,
+                't-req-pic': d.reqPic,
+                'story-add-text': d.storyAdd,
+                
+                // Nuevas traducciones añadidas
+                't-tab-media': d.tabMedia,
+                't-tab-poll': d.tabPoll,
+                't-tab-versus': d.tabVersus,
+                't-create-poll': d.createPoll,
+                't-poll-question-lbl': d.pollQuestionLbl,
+                't-opt1-lbl': d.opt1Lbl,
+                't-opt2-lbl': d.opt2Lbl,
+                't-opt3-lbl': d.opt3Lbl,
+                't-opt4-lbl': d.opt4Lbl,
+                't-pub-poll-btn': d.pubPollBtn,
+                't-versus-title': d.versusTitle,
+                't-choose-rival': d.chooseRival,
+                't-send-versus-btn': d.sendVersusBtn
+            };
+
+            for (const [id, text] of Object.entries(textMappings)) {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = text;
+            }
+
+            const placeholders = {
+                'search-input': d.searchPlaceholder,
+                'post-caption': d.captionPlaceholder,
+                'comment-input': d.commentPlaceholder,
+                'poll-question': d.questionPlaceholder,
+                'poll-opt1': d.opt1Lbl.replace(':', ''),
+                'poll-opt2': d.opt2Lbl.replace(':', ''),
+                'poll-opt3': d.opt3Lbl.replace(':', ''),
+                'poll-opt4': d.opt4Lbl.replace(':', ''),
+                'versus-search': d.versusSearchPlaceholder
+            };
+
+            for (const [id, ph] of Object.entries(placeholders)) {
+                const el = document.getElementById(id);
+                if (el) el.placeholder = ph;
+            }
         }
 
         function formatTimeAgo(timestamp) {
@@ -1146,7 +1345,7 @@
             reader.readAsText(file.slice(0, 100000));
         }
 
-        /* === BEREAL TIMER & CÁMARA (LIGERA Y ULTRA RÁPIDA) === */
+        /* === BEREAL TIMER & CÁMARA === */
         function toggleDualCamMenu() {
             const menu = document.getElementById('dual-cam-options');
             menu.style.display = menu.style.display === 'none' ? 'flex' : 'none';
@@ -1229,7 +1428,6 @@
                         toggleCamera(); 
                         setTimeout(() => { captureLiveCamera(); }, 1500);
                     } else if (dualCamType === 'front-front') {
-                        // BeReal: 5-Second Countdown
                         document.getElementById('t-cap-btn').innerText = "Mantente...";
                         let count = 5;
                         const countEl = document.getElementById('cam-countdown');
@@ -1327,7 +1525,69 @@
             reader.readAsDataURL(file);
         }
 
-        /* === PUBLICACIÓN E IA SIMULADA ULTRA-RÁPIDA === */
+        /* === CONTROL DE PESTAÑAS (UPLOAD VIEW) === */
+        function switchUploadTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`tab-${tab}-btn`).classList.add('active');
+            
+            document.getElementById('form-upload-media').style.display = (tab === 'media') ? 'block' : 'none';
+            document.getElementById('form-upload-poll').style.display = (tab === 'poll') ? 'block' : 'none';
+            document.getElementById('form-upload-versus').style.display = (tab === 'versus') ? 'block' : 'none';
+        }
+
+        /* === ALGORITMO INTELIGENTE IA & COMPORTAMIENTOS DEL FEED === */
+        function getPostScore(post) {
+            let score = 0;
+            score += (post.stars || 0) * 15;
+            
+            if (currentUser && currentUser.bio) {
+                const userBioWords = currentUser.bio.toLowerCase().split(/\s+/);
+                const postText = ((post.caption || "") + " " + (post.emotion || "")).toLowerCase();
+                userBioWords.forEach(word => {
+                    if (word.length > 3 && postText.includes(word)) {
+                        score += 35;
+                    }
+                });
+            }
+            const hoursOld = (Date.now() - post.timestamp) / (1000 * 60 * 60);
+            score -= hoursOld * 1.5;
+            return score;
+        }
+
+        function triggerAiRefresh() {
+            // Elige un post destacado de manera aleatoria o por afinidad IA que no sea el tuyo
+            const eligiblePosts = posts.filter(p => p.userId !== currentUser.uid);
+            if (eligiblePosts.length === 0) {
+                featuredPostId = null;
+                renderFeed();
+                return;
+            }
+            
+            // Ordenar por score IA e intereses
+            eligiblePosts.sort((a, b) => getPostScore(b) - getPostScore(a));
+            const topSlice = eligiblePosts.slice(0, 5);
+            const chosen = topSlice[Math.floor(Math.random() * topSlice.length)];
+            
+            if (chosen) {
+                featuredPostId = chosen.id;
+            }
+
+            // Simular loader espacial ultra rápido
+            const container = document.getElementById('feed-container');
+            container.innerHTML = `
+                <div class="space-loader-container">
+                    <div class="space-loader-stars"></div>
+                    <div class="space-loader-planet"></div>
+                    <p style="color:var(--primary); margin-top:15px; font-weight:bold; animation: pulse 1.5s infinite; z-index: 1;">La IA está analizando tus gustos estelares...</p>
+                </div>
+            `;
+            setTimeout(() => {
+                renderFeed();
+                document.getElementById('back-btn').style.display = 'none';
+            }, 850);
+        }
+
+        /* === PUBLICACIÓN DE CONTENIDOS === */
         async function analyzeAndPublish() {
             if(!uploadBase64) return;
             const btn = document.getElementById('btn-publish');
@@ -1336,7 +1596,6 @@
             let detectedText = "Original StarShine ✨"; 
             const dict = i18n[currentLang];
 
-            // IA instantánea sin delay basada en el caption o metadata del archivo
             const textContent = document.getElementById('post-caption').value.toLowerCase();
             let matchedVibe = "Energía Positiva ⚡";
             if(textContent.includes("feliz") || textContent.includes("happy")) matchedVibe = "Felicidad 😊";
@@ -1348,6 +1607,7 @@
 
             const newPost = {
                 id: 'post_' + Date.now(),
+                type: 'media',
                 userId: currentUser.uid, 
                 userName: currentUser.name || "Usuario", 
                 userAvatar: currentUser.avatar || "", 
@@ -1363,6 +1623,8 @@
                 edited: false
             };
 
+            featuredPostId = null; // Reiniciar post destacado para mostrar el propio post recién creado arriba del todo
+
             await db.ref('posts/' + newPost.id).set(newPost);
             
             document.getElementById('preview-img').style.display = 'none';
@@ -1377,6 +1639,150 @@
             uploadBase64 = null; btn.style.display = 'none'; btn.disabled = false;
             btn.innerHTML = `<i class="fas fa-magic"></i> ${dict.btnPub}`;
             openView('view-feed');
+        }
+
+        /* === SISTEMA DE ENCUESTAS === */
+        async function publishPoll() {
+            const question = document.getElementById('poll-question').value.trim();
+            const opt1 = document.getElementById('poll-opt1').value.trim();
+            const opt2 = document.getElementById('poll-opt2').value.trim();
+            const opt3 = document.getElementById('poll-opt3').value.trim();
+            const opt4 = document.getElementById('poll-opt4').value.trim();
+
+            if(!question || !opt1 || !opt2) {
+                alert(currentLang === 'es' ? "Completa la pregunta y al menos dos opciones." : "Fill the question and at least two options.");
+                return;
+            }
+
+            const options = [opt1, opt2];
+            if(opt3) options.push(opt3);
+            if(opt4) options.push(opt4);
+
+            const newPoll = {
+                id: 'poll_' + Date.now(),
+                type: 'poll',
+                userId: currentUser.uid,
+                userName: currentUser.name,
+                userAvatar: currentUser.avatar,
+                username: currentUser.username,
+                question: question,
+                options: options,
+                timestamp: Date.now()
+            };
+
+            featuredPostId = null;
+            await db.ref('posts/' + newPoll.id).set(newPoll);
+
+            // Resetear formulario
+            document.getElementById('poll-question').value = '';
+            document.getElementById('poll-opt1').value = '';
+            document.getElementById('poll-opt2').value = '';
+            document.getElementById('poll-opt3').value = '';
+            document.getElementById('poll-opt4').value = '';
+
+            openView('view-feed');
+        }
+
+        async function votePoll(postId, optionIdx) {
+            const voterUid = currentUser.uid;
+            await db.ref(`posts/${postId}/votes/${voterUid}`).set(optionIdx);
+        }
+
+        /* === SISTEMA DE RETO VERSUS === */
+        function searchVersusOpponent() {
+            const q = document.getElementById('versus-search').value.toLowerCase();
+            const resDiv = document.getElementById('versus-search-results');
+            if(!q) { resDiv.innerHTML = ''; return; }
+            
+            let html = '';
+            Object.values(allUsers).forEach(u => {
+                if(u.uid === currentUser.uid) return;
+                const matches = (u.name && u.name.toLowerCase().includes(q)) || (u.username && u.username.toLowerCase().includes(q));
+                if(matches) {
+                    html += `
+                        <div class="search-user-item" onclick="selectVersusOpponent('${u.uid}')">
+                            <div class="avatar"><img src="${u.avatar || ''}"></div>
+                            <div>
+                                <strong style="color:var(--text-main);">${u.name}</strong>
+                                <p style="font-size:0.75rem; color:var(--text-muted);">${u.username}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            resDiv.innerHTML = html;
+        }
+
+        function selectVersusOpponent(uid) {
+            const u = allUsers[uid];
+            if(!u) return;
+            selectedVersusOpponentUid = uid;
+            document.getElementById('versus-sel-avatar').src = u.avatar || '';
+            document.getElementById('versus-sel-name').innerText = u.name || '';
+            document.getElementById('versus-sel-username').innerText = u.username || '';
+            document.getElementById('versus-selected-card').style.display = 'flex';
+            document.getElementById('versus-search-results').innerHTML = '';
+            document.getElementById('versus-search').value = '';
+        }
+
+        function clearSelectedVersusOpponent() {
+            selectedVersusOpponentUid = null;
+            document.getElementById('versus-selected-card').style.display = 'none';
+        }
+
+        async function sendVersusChallenge() {
+            if(!selectedVersusOpponentUid) {
+                alert(currentLang === 'es' ? "Por favor selecciona un rival." : "Please select an opponent.");
+                return;
+            }
+            const challengerId = currentUser.uid;
+            const challengedId = selectedVersusOpponentUid;
+            const challengeId = 'chal_' + Date.now();
+            
+            const challengeObj = {
+                id: challengeId,
+                challengerId: challengerId,
+                challengedId: challengedId,
+                challengerName: currentUser.name,
+                challengedName: allUsers[challengedId].name,
+                challengerAvatar: currentUser.avatar,
+                challengedAvatar: allUsers[challengedId].avatar,
+                status: 'pending',
+                timestamp: Date.now()
+            };
+
+            await db.ref(`challenges/${challengeId}`).set(challengeObj);
+            
+            await sendNotification(
+                challengedId, 
+                'versus_request', 
+                `¡${currentUser.name} te ha desafiado a un Versus!`, 
+                challengeId
+            );
+            
+            alert(currentLang === 'es' ? "Desafío enviado con éxito. Esperando respuesta." : "Challenge successfully sent. Waiting response.");
+            clearSelectedVersusOpponent();
+            openView('view-feed');
+        }
+
+        async function voteVersus(postId, votedUserId) {
+            const voterUid = currentUser.uid;
+            const postRef = db.ref(`posts/${postId}`);
+            
+            await postRef.transaction(post => {
+                if(post) {
+                    if(!post.voters) post.voters = {};
+                    if(post.voters[voterUid]) return post; // Evitar doble voto
+                    
+                    post.voters[voterUid] = votedUserId;
+                    if(!post.votes) post.votes = {};
+                    post.votes[votedUserId] = (post.votes[votedUserId] || 0) + 1;
+                    
+                    // Suma directa de estrellas al ranking del competidor votado (+10)
+                    db.ref(`users/${votedUserId}/stars`).transaction(stars => (stars || 0) + 10);
+                }
+                return post;
+            });
         }
 
         /* === NAVEGACIÓN === */
@@ -1445,6 +1851,17 @@
             } else {
                 document.getElementById('auth-view').style.display = 'flex'; 
                 document.getElementById('main-app').style.display = 'none'; 
+                
+                // Arreglo: Vaciar campos de credenciales por completo al cerrar sesión
+                document.getElementById('login-email').value = '';
+                document.getElementById('login-pass').value = '';
+                document.getElementById('reg-email').value = '';
+                document.getElementById('reg-pass').value = '';
+                document.getElementById('reg-name').value = '';
+                regAvatarBase64 = null;
+                document.getElementById('reg-avatar-preview').style.display = 'none';
+                document.getElementById('reg-avatar-icon').style.display = 'block';
+                
                 currentUser = null;
             }
         });
@@ -1554,6 +1971,21 @@
                 const data = snap.val(); stories = data ? Object.values(data) : [];
                 if(document.getElementById('view-feed').classList.contains('active')) renderStories();
             });
+            db.ref(`notifications/${uid}`).on('value', snap => {
+                const data = snap.val();
+                notifications = data ? Object.values(data) : [];
+                const unread = notifications.filter(n => !n.read).length;
+                const badge = document.getElementById('notif-badge');
+                if (unread > 0) {
+                    badge.innerText = unread;
+                    badge.style.display = 'block';
+                } else {
+                    badge.style.display = 'none';
+                }
+                if (document.getElementById('view-notifications').classList.contains('active')) {
+                    renderNotifications();
+                }
+            });
         }
         function openSettings() { 
             checkPermissionsOnLoad();
@@ -1599,7 +2031,14 @@
                 let userStories = grouped[uid];
                 userStories.sort((a,b) => a.timestamp - b.timestamp); 
                 let latestStory = userStories[userStories.length - 1]; 
-                let nameDisplay = (uid === currentUser.uid) ? (i18n[currentLang].yourStory) : latestStory.userName.split(' ')[0];
+                
+                // Corrección: Solo dice "Tu Historia" si realmente la subiste tú. Para otros muestra su nombre real.
+                let nameDisplay = "";
+                if (currentUser && uid === currentUser.uid) {
+                    nameDisplay = i18n[currentLang].yourStory;
+                } else {
+                    nameDisplay = latestStory.userName ? latestStory.userName.split(' ')[0] : "Estrella";
+                }
 
                 htmlBuffer += `
                     <div>
@@ -1678,8 +2117,6 @@
             if(story) {
                 story.stars = rating;
                 renderStoryStars(story);
-                
-                // Actualiza estrellas del usuario creador
                 const creatorId = story.userId;
                 db.ref(`users/${creatorId}/stars`).transaction(curr => (curr || 0) + 1);
             }
@@ -1691,28 +2128,7 @@
             closeStory();
         }
 
-        /* === RENDERING FEED CON ALGORITMO IA INTELIGENTE === */
-        function getPostScore(post) {
-            let score = 0;
-            // Popularidad de estrellas
-            score += (post.stars || 0) * 15;
-            
-            // Coincidencia de intereses (Personalización IA)
-            if (currentUser && currentUser.bio) {
-                const userBioWords = currentUser.bio.toLowerCase().split(/\s+/);
-                const postText = (post.caption + " " + post.emotion).toLowerCase();
-                userBioWords.forEach(word => {
-                    if (word.length > 3 && postText.includes(word)) {
-                        score += 35; // Fuerte empuje semántico
-                    }
-                });
-            }
-            // Penalización por antigüedad (Frescura)
-            const hoursOld = (Date.now() - post.timestamp) / (1000 * 60 * 60);
-            score -= hoursOld * 1.5;
-            return score;
-        }
-
+        /* === RENDERING FEED (CON PRIORIDAD, AI HIGHLIGHT, ENCUESTAS Y VERSUS) === */
         function renderFeed() {
             const container = document.getElementById('feed-container');
             if(posts.length === 0) {
@@ -1720,15 +2136,22 @@
                 return;
             }
 
-            // APLICACIÓN DEL ALGORITMO DE RECOMENDACIÓN IA
+            // SISTEMA DE ORDENACIÓN IA + PRIORIDAD PROPIA
             const processedPosts = [...posts].sort((a, b) => {
-                // 1. MIS POSTS PRIMERO: Tus publicaciones se anclan arriba
+                // 1. Post destacado de recomendación IA va de absoluto primero
+                if (featuredPostId) {
+                    if (a.id === featuredPostId && b.id !== featuredPostId) return -1;
+                    if (a.id !== featuredPostId && b.id === featuredPostId) return 1;
+                }
+
+                // 2. Tus publicaciones van inmediatamente después (Ancladas al principio de tu visualización si no hay destacado activo)
                 const aIsOwn = a.userId === currentUser.uid;
                 const bIsOwn = b.userId === currentUser.uid;
                 if (aIsOwn && !bIsOwn) return -1;
                 if (!aIsOwn && bIsOwn) return 1;
 
-                // 2. Por el puntaje del algoritmo IA para el resto de usuarios
+                // 3. Si ambos son propios o ambos de terceros, ordenar por el score híbrido de intereses y stars
+                if (aIsOwn && bIsOwn) return b.timestamp - a.timestamp;
                 return getPostScore(b) - getPostScore(a);
             });
 
@@ -1737,6 +2160,12 @@
                 const isOwnPost = post.userId === currentUser.uid;
                 const starActive = (post.userStarsRating && post.userStarsRating[currentUser.uid]) || 0;
                 
+                // Arreglo: Obtener estrellas totales y número de comentarios
+                const totalRatings = post.userStarsRating ? Object.keys(post.userStarsRating).length : 0;
+                const postStarsSum = post.stars || 0;
+                const avgRating = totalRatings > 0 ? (postStarsSum / totalRatings).toFixed(1) : "0.0";
+                const commentCount = post.comments ? Object.keys(post.comments).length : 0;
+
                 let starsHTML = '';
                 for(let i=1; i<=5; i++) {
                     const activeClass = i <= starActive ? 'active' : '';
@@ -1747,51 +2176,201 @@
                 const editedLabel = post.edited ? `<span class="edited-badge">${i18n[currentLang].edited}</span>` : '';
                 const downloadBtn = `<i class="fas fa-download" onclick="event.stopPropagation(); downloadMedia('${post.image}', ${post.isVideo})"></i>`;
 
-                const mediaEl = post.isVideo ? 
-                    `<video class="post-media" src="${post.image}" autoplay muted loop playsinline onclick="openFullScreen('${post.image}', true, '${post.id}')"></video>` :
-                    `<img class="post-media" src="${post.image}" onclick="openFullScreen('${post.image}', false, '${post.id}')">`;
+                // Badge especial de IA si el post fue seleccionado en triggerAiRefresh
+                const isFeatured = post.id === featuredPostId;
+                const featuredBadge = isFeatured ? `<div style="background:linear-gradient(135deg, #FFD700, #ff8c00); color:#000; padding:4px 10px; border-radius:12px; font-size:0.75rem; font-weight:bold; margin-bottom:10px; display:inline-block;"><i class="fas fa-magic"></i> IA: Recomendación Destacada</div>` : '';
 
-                htmlBuffer += `
-                    <div class="post-card" id="card_${post.id}">
-                        <div class="post-header">
-                            <div style="display:flex; align-items:center;">
-                                <div class="avatar" onclick="simulateLoadingAndProfile('${post.userId}')">
-                                    <img src="${post.userAvatar}">
+                if (post.type === 'versus') {
+                    // === MAQUETA VERSUS / RETO ===
+                    const challengerPct = (post.votes?.[post.userId] || post.votes?.[post.challengedId]) ? Math.round(((post.votes?.[post.userId] || 0) / ((post.votes?.[post.userId] || 0) + (post.votes?.[post.challengedId] || 0))) * 100) : 50;
+                    const challengedPct = 100 - challengerPct;
+                    const hasVotedVersus = post.voters && post.voters[currentUser.uid];
+
+                    htmlBuffer += `
+                        <div class="post-card" id="card_${post.id}" style="border: 2px solid var(--primary); background: rgba(0, 168, 232, 0.05);">
+                            ${featuredBadge}
+                            <div class="post-header">
+                                <span style="background:linear-gradient(135deg, #ff007f, #7f00ff); color:white; padding:4px 10px; border-radius:12px; font-size:0.75rem; font-weight:bold;"><i class="fas fa-bolt"></i> ${i18n[currentLang].tabVersus.toUpperCase()}</span>
+                                <p style="font-size:0.75rem; color:var(--text-muted);">${postDate}</p>
+                            </div>
+                            
+                            <div style="display:flex; justify-content:space-around; align-items:center; margin: 20px 0; gap: 10px;">
+                                <!-- Retador -->
+                                <div style="text-align:center; flex:1;">
+                                    <div class="avatar" style="width:65px; height:65px; margin:0 auto 8px;" onclick="simulateLoadingAndProfile('${post.userId}')">
+                                        <img src="${post.challengerAvatar || ''}">
+                                    </div>
+                                    <h4 style="font-size:0.9rem; color:var(--text-main);">${post.challengerName}</h4>
+                                    <p style="font-size:0.75rem; color:var(--primary); font-weight:bold;">★ ${post.votes?.[post.userId] || 0} ${i18n[currentLang].versusVoted}</p>
+                                    ${!hasVotedVersus ? `<button class="btn-primary btn-small" onclick="voteVersus('${post.id}', '${post.userId}')" style="margin-top:10px; width:auto; padding:5px 15px;">${i18n[currentLang].versusVoteBtn}</button>` : ''}
                                 </div>
-                                <div class="post-user-info" onclick="simulateLoadingAndProfile('${post.userId}')">
-                                    <h4>${post.userName} <span style="color:var(--primary); font-size:0.8rem;">${post.username || ''}</span></h4>
-                                    <p>${postDate} ${editedLabel}</p>
+
+                                <div style="font-size:1.8rem; font-weight:900; color:var(--primary); font-style:italic;">VS</div>
+
+                                <!-- Retado -->
+                                <div style="text-align:center; flex:1;">
+                                    <div class="avatar" style="width:65px; height:65px; margin:0 auto 8px;" onclick="simulateLoadingAndProfile('${post.challengedId}')">
+                                        <img src="${post.challengedAvatar || ''}">
+                                    </div>
+                                    <h4 style="font-size:0.9rem; color:var(--text-main);">${post.challengedName}</h4>
+                                    <p style="font-size:0.75rem; color:var(--primary); font-weight:bold;">★ ${post.votes?.[post.challengedId] || 0} ${i18n[currentLang].versusVoted}</p>
+                                    ${!hasVotedVersus ? `<button class="btn-primary btn-small" onclick="voteVersus('${post.id}', '${post.challengedId}')" style="margin-top:10px; width:auto; padding:5px 15px;">${i18n[currentLang].versusVoteBtn}</button>` : ''}
                                 </div>
                             </div>
-                            <div class="post-options" onclick="togglePostMenu(event, '${post.id}')">
-                                <i class="fas fa-ellipsis-v"></i>
-                                <div class="post-menu" id="menu_${post.id}">
-                                    ${isOwnPost ? `
-                                        <button onclick="openEditPost('${post.id}')"><i class="fas fa-edit"></i> Editar</button>
-                                        <button onclick="deletePost('${post.id}')" style="color:#ff4d4d;"><i class="fas fa-trash"></i> Eliminar</button>
-                                    ` : `
-                                        <button onclick="reportPost('${post.id}')"><i class="fas fa-flag"></i> Reportar</button>
-                                    `}
+
+                            <!-- Resultados de Votación si ya votó -->
+                            ${hasVotedVersus ? `
+                                <div style="margin: 15px 0 10px;">
+                                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:bold; margin-bottom:4px; color:var(--text-main);">
+                                        <span>${challengerPct}%</span>
+                                        <span>${challengedPct}%</span>
+                                    </div>
+                                    <div style="width:100%; height:12px; background:var(--input-bg); border-radius:6px; overflow:hidden; display:flex;">
+                                        <div style="width:${challengerPct}%; height:100%; background:linear-gradient(90deg, #00A8E8, #007EA7);"></div>
+                                        <div style="width:${challengedPct}%; height:100%; background:linear-gradient(90deg, #ff007f, #7f00ff);"></div>
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            <div class="interaction-bar">
+                                <div></div>
+                                <div class="action-icons">
+                                    <div style="display:inline-flex; align-items:center; gap:4px; cursor:pointer;" onclick="openComments('${post.id}')">
+                                        <i class="far fa-comment"></i>
+                                        <span style="font-size:0.85rem; font-weight:bold; color:var(--text-muted);">${commentCount}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <p class="post-caption">${post.caption}</p>
-                        
-                        <div class="post-media-container">
-                            ${mediaEl}
-                        </div>
+                    `;
 
-                        ${post.emotion ? `<div class="ai-badge"><i class="fas fa-robot"></i> ${post.emotion}</div>` : ''}
+                } else if (post.type === 'poll') {
+                    // === MAQUETA ENCUESTA ===
+                    const hasVotedPoll = post.votes && post.votes[currentUser.uid] !== undefined;
+                    const selectedOptionIdx = hasVotedPoll ? post.votes[currentUser.uid] : null;
 
-                        <div class="interaction-bar">
-                            <div class="stars">${starsHTML}</div>
-                            <div class="action-icons">
-                                ${downloadBtn}
-                                <i class="far fa-comment" onclick="openComments('${post.id}')"></i>
+                    const optionVotes = Array(post.options.length).fill(0);
+                    let totalPollVotes = 0;
+                    if(post.votes) {
+                        Object.values(post.votes).forEach(idx => {
+                            if(idx !== undefined && idx < optionVotes.length) {
+                                optionVotes[idx]++;
+                                totalPollVotes++;
+                            }
+                        });
+                    }
+
+                    let optionsHTML = '<div style="display:flex; flex-direction:column; gap:8px; margin: 15px 0;">';
+                    post.options.forEach((opt, idx) => {
+                        const votesForOpt = optionVotes[idx] || 0;
+                        const pct = totalPollVotes > 0 ? Math.round((votesForOpt / totalPollVotes) * 100) : 0;
+                        const isMyVote = selectedOptionIdx === idx;
+
+                        if(hasVotedPoll) {
+                            optionsHTML += `
+                                <div style="position:relative; width:100%; background:var(--input-bg); border-radius:10px; overflow:hidden; padding:12px; border:1px solid ${isMyVote ? 'var(--primary)' : 'var(--border-color)'}; font-size:0.9rem; font-weight:bold; color:var(--text-main);">
+                                    <div style="position:absolute; top:0; left:0; width:${pct}%; height:100%; background:rgba(0, 168, 232, 0.15); transition:width 0.3s;"></div>
+                                    <div style="position:relative; display:flex; justify-content:space-between; z-index:1;">
+                                        <span>${opt} ${isMyVote ? ` <span style="color:var(--primary); font-size:0.75rem;">(${i18n[currentLang].versusTuVoto})</span>` : ''}</span>
+                                        <span>${pct}% (${votesForOpt})</span>
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            optionsHTML += `
+                                <button class="btn-secondary" style="margin:0; text-align:left; font-size:0.9rem;" onclick="votePoll('${post.id}', ${idx})">
+                                    ${opt}
+                                </button>
+                            `;
+                        }
+                    });
+                    optionsHTML += '</div>';
+
+                    htmlBuffer += `
+                        <div class="post-card" id="card_${post.id}">
+                            ${featuredBadge}
+                            <div class="post-header">
+                                <div style="display:flex; align-items:center;">
+                                    <div class="avatar" onclick="simulateLoadingAndProfile('${post.userId}')">
+                                        <img src="${post.userAvatar}">
+                                    </div>
+                                    <div class="post-user-info" onclick="simulateLoadingAndProfile('${post.userId}')">
+                                        <h4>${post.userName} <span style="color:var(--primary); font-size:0.8rem;">${post.username || ''}</span></h4>
+                                        <p>${postDate} <span style="background:rgba(0,168,232,0.1); color:var(--primary); padding:2px 6px; border-radius:8px; font-size:0.65rem; font-weight:bold; margin-left:5px;"><i class="fas fa-poll"></i> ${i18n[currentLang].tabPoll}</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <h3 style="font-size:1.1rem; margin:10px 0; color:var(--text-main); font-weight:800;">${post.question}</h3>
+                            ${optionsHTML}
+                            <div class="interaction-bar">
+                                <div></div>
+                                <div class="action-icons">
+                                    <div style="display:inline-flex; align-items:center; gap:4px; cursor:pointer;" onclick="openComments('${post.id}')">
+                                        <i class="far fa-comment"></i>
+                                        <span style="font-size:0.85rem; font-weight:bold; color:var(--text-muted);">${commentCount}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
+
+                } else {
+                    // === MAQUETA MEDIA STANDARD ===
+                    const mediaEl = post.isVideo ? 
+                        `<video class="post-media" src="${post.image}" autoplay muted loop playsinline onclick="openFullScreen('${post.image}', true, '${post.id}')"></video>` :
+                        `<img class="post-media" src="${post.image}" onclick="openFullScreen('${post.image}', false, '${post.id}')">`;
+
+                    htmlBuffer += `
+                        <div class="post-card" id="card_${post.id}">
+                            ${featuredBadge}
+                            <div class="post-header">
+                                <div style="display:flex; align-items:center;">
+                                    <div class="avatar" onclick="simulateLoadingAndProfile('${post.userId}')">
+                                        <img src="${post.userAvatar}">
+                                    </div>
+                                    <div class="post-user-info" onclick="simulateLoadingAndProfile('${post.userId}')">
+                                        <h4>${post.userName} <span style="color:var(--primary); font-size:0.8rem;">${post.username || ''}</span></h4>
+                                        <p>${postDate} ${editedLabel}</p>
+                                    </div>
+                                </div>
+                                <div class="post-options" onclick="togglePostMenu(event, '${post.id}')">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                    <div class="post-menu" id="menu_${post.id}">
+                                        ${isOwnPost ? `
+                                            <button onclick="openEditPost('${post.id}')"><i class="fas fa-edit"></i> Editar</button>
+                                            <button onclick="deletePost('${post.id}')" style="color:#ff4d4d;"><i class="fas fa-trash"></i> Eliminar</button>
+                                        ` : `
+                                            <button onclick="reportPost('${post.id}')"><i class="fas fa-flag"></i> Reportar</button>
+                                        `}
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="post-caption">${post.caption}</p>
+                            
+                            <div class="post-media-container">
+                                ${mediaEl}
+                            </div>
+
+                            ${post.emotion ? `<div class="ai-badge"><i class="fas fa-robot"></i> ${post.emotion}</div>` : ''}
+
+                            <div class="interaction-bar">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <div class="stars">${starsHTML}</div>
+                                    <!-- Arreglo: Ver la calificación y estrellas del post -->
+                                    <span style="font-size:0.8rem; color:var(--text-muted); font-weight:bold;">${avgRating} ★ (${totalRatings})</span>
+                                </div>
+                                <div class="action-icons">
+                                    ${downloadBtn}
+                                    <div style="display:inline-flex; align-items:center; gap:4px; cursor:pointer;" onclick="openComments('${post.id}')">
+                                        <i class="far fa-comment"></i>
+                                        <!-- Arreglo: Ver número de comentarios en el post -->
+                                        <span style="font-size:0.85rem; font-weight:bold; color:var(--text-muted);">${commentCount}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
             });
             container.innerHTML = htmlBuffer;
         }
@@ -1827,11 +2406,83 @@
                     post.userStarsRating[myUid] = rating;
                     post.stars = (post.stars || 0) - previousRating + rating;
                     
-                    // Incremento de estrellas globales del creador de la publicación
                     db.ref(`users/${post.userId}/stars`).transaction(curr => (curr || 0) - previousRating + rating);
                 }
                 return post;
             });
+        }
+
+        /* === COMENTARIOS TOTALMENTE CORREGIDOS === */
+        async function openComments(postId) {
+            activePostIdForComments = postId;
+            document.getElementById('comments-list').innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>`;
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('comment-modal').style.display = 'flex';
+            
+            db.ref(`posts/${postId}/comments`).on('value', snap => {
+                if(activePostIdForComments !== postId) return;
+                const commentsVal = snap.val();
+                const commentsList = commentsVal ? Object.values(commentsVal) : [];
+                
+                commentsList.sort((a,b) => a.timestamp - b.timestamp);
+                
+                const listEl = document.getElementById('comments-list');
+                if(commentsList.length === 0) {
+                    listEl.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted);">Sin comentarios aún. ¡Inicia la conversación!</div>`;
+                    return;
+                }
+                
+                let html = '';
+                commentsList.forEach(c => {
+                    html += `
+                        <div class="comment">
+                            <div class="avatar" style="width:32px; height:32px;" onclick="closeModals(); simulateLoadingAndProfile('${c.userId}')">
+                                <img src="${c.userAvatar || ''}">
+                            </div>
+                            <div class="comment-content">
+                                <h5 onclick="closeModals(); simulateLoadingAndProfile('${c.userId}')">${c.userName}</h5>
+                                <p>${c.text}</p>
+                                <span style="font-size:0.7rem; color:var(--text-muted); display:block; margin-top:4px;">${formatTimeAgo(c.timestamp)}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                listEl.innerHTML = html;
+            });
+        }
+
+        async function submitComment() {
+            const input = document.getElementById('comment-input');
+            const text = input.value.trim();
+            if(!text || !activePostIdForComments) return;
+            
+            const commentId = 'comm_' + Date.now();
+            const commentObj = {
+                id: commentId,
+                userId: currentUser.uid,
+                userName: currentUser.name,
+                userAvatar: currentUser.avatar,
+                text: text,
+                timestamp: Date.now()
+            };
+            
+            await db.ref(`posts/${activePostIdForComments}/comments/${commentId}`).set(commentObj);
+            input.value = '';
+            
+            const post = posts.find(p => p.id === activePostIdForComments);
+            if(post && post.userId !== currentUser.uid) {
+                sendNotification(post.userId, 'comment', `${currentUser.name} comentó tu publicación.`);
+            }
+        }
+
+        function toggleEmojiBox() {
+            const box = document.getElementById('emoji-box');
+            box.style.display = box.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        function addEmoji(emoji) {
+            document.getElementById('comment-input').value += emoji;
+            toggleEmojiBox();
         }
 
         /* === EDITAR / ELIMINAR POST === */
@@ -1910,7 +2561,6 @@
             const followBtn = isMe ? `<button class="btn-primary" onclick="openEditProfileModal()"><i class="fas fa-edit"></i> Editar Perfil</button>` :
                 `<button class="${isFollowing ? 'btn-secondary' : 'btn-primary'}" onclick="toggleFollow('${uid}')">${isFollowing ? i18n[currentLang].unfollow : i18n[currentLang].follow}</button>`;
 
-            // Render de Iconos de Redes Sociales Activas
             let socialHTML = '';
             if(user.whatsapp) socialHTML += `<a href="https://wa.me/${user.whatsapp}" target="_blank" class="social-icon"><i class="fab fa-whatsapp"></i></a>`;
             if(user.instagram) socialHTML += `<a href="https://instagram.com/${user.instagram}" target="_blank" class="social-icon"><i class="fab fa-instagram"></i></a>`;
@@ -1939,7 +2589,6 @@
                 </div>
             `;
 
-            // Cargar Grid de Publicaciones
             const grid = document.getElementById('profile-grid');
             const userPosts = posts.filter(p => p.userId === uid);
             if(userPosts.length === 0) {
@@ -1949,7 +2598,9 @@
 
             let gridHTML = '';
             userPosts.forEach(p => {
-                if(p.isVideo) {
+                if(p.type === 'versus' || p.type === 'poll') {
+                    gridHTML += `<div style="background:var(--input-bg); aspect-ratio: 1; border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--primary); font-size:1.8rem; border:1px solid var(--border-color);" onclick="openView('view-feed')"><i class="${p.type === 'versus' ? 'fas fa-bolt' : 'fas fa-poll'}"></i></div>`;
+                } else if(p.isVideo) {
                     gridHTML += `<video src="${p.image}" muted onclick="openFullScreen('${p.image}', true, '${p.id}')"></video>`;
                 } else {
                     gridHTML += `<img src="${p.image}" onclick="openFullScreen('${p.image}', false, '${p.id}')">`;
@@ -1973,7 +2624,6 @@
                 await db.ref(`users/${myUid}/followingCount`).transaction(c => (c || 0) + 1);
                 await db.ref(`users/${targetUid}/followersCount`).transaction(c => (c || 0) + 1);
                 
-                // Generar notificación
                 sendNotification(targetUid, "follow", `${currentUser.name} ha comenzado a seguirte.`);
             }
         }
@@ -2028,263 +2678,197 @@
             editAvatarBase64 = null;
         }
 
-        /* === COMENTARIOS === */
-        function openComments(postId) {
-            currentPostIdForAction = postId;
-            document.getElementById('overlay').style.display = 'block';
-            document.getElementById('comment-modal').style.display = 'flex';
-            loadComments(postId);
-        }
-
-        function loadComments(postId) {
-            db.ref(`posts/${postId}/comments`).on('value', snap => {
-                const data = snap.val();
-                const list = document.getElementById('comments-list');
-                list.innerHTML = '';
-                if(!data) {
-                    list.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted);">No hay comentarios. ¡Sé el primero!</div>`;
-                    return;
-                }
-                
-                Object.values(data).forEach(c => {
-                    list.innerHTML += `
-                        <div class="comment">
-                            <div class="avatar" style="width:32px; height:32px;"><img src="${c.userAvatar}"></div>
-                            <div class="comment-content">
-                                <h5>${c.userName}</h5>
-                                <p>${c.text}</p>
-                                <span class="comment-reply-btn" onclick="setReply('${c.id}', '${c.userName}')">${i18n[currentLang].reply}</span>
-                            </div>
-                        </div>
-                    `;
-                });
-            });
-        }
-
-        function setReply(id, name) {
-            replyingToCommentId = id;
-            document.getElementById('reply-badge').style.display = 'flex';
-            document.getElementById('reply-to-name').innerText = name;
-        }
-
-        function cancelReply() {
-            replyingToCommentId = null;
-            document.getElementById('reply-badge').style.display = 'none';
-        }
-
-        async function submitComment() {
-            const input = document.getElementById('comment-input');
-            if(!input.value.trim() || !currentPostIdForAction) return;
-
-            const newComment = {
-                id: 'comment_' + Date.now(),
-                userId: currentUser.uid,
-                userName: currentUser.name,
-                userAvatar: currentUser.avatar,
-                text: replyingToCommentId ? `@${document.getElementById('reply-to-name').innerText} ${input.value}` : input.value,
-                timestamp: Date.now()
-            };
-
-            await db.ref(`posts/${currentPostIdForAction}/comments/${newComment.id}`).set(newComment);
-            
-            // Notificación al autor del post
-            const post = posts.find(p => p.id === currentPostIdForAction);
-            if(post && post.userId !== currentUser.uid) {
-                sendNotification(post.userId, "comment", `${currentUser.name} comentó tu publicación.`);
-            }
-
-            input.value = '';
-            cancelReply();
-        }
-
-        function addEmoji(emoji) {
-            const input = document.getElementById('comment-input');
-            input.value += emoji;
-            document.getElementById('emoji-box').style.display = 'none';
-        }
-
-        function toggleEmojiBox() {
-            const box = document.getElementById('emoji-box');
-            box.style.display = box.style.display === 'none' ? 'flex' : 'none';
-        }
-
-        /* === BÚSQUEDA === */
-        function searchUsers() {
-            const val = document.getElementById('search-input').value.toLowerCase();
-            const results = document.getElementById('search-results');
-            results.innerHTML = '';
-            
-            const matches = Object.values(allUsers).filter(u => 
-                u.uid !== currentUser.uid && 
-                ((u.name && u.name.toLowerCase().includes(val)) || (u.username && u.username.toLowerCase().includes(val)))
-            );
-
-            if(matches.length === 0) {
-                results.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted);">No se encontraron estrellas</div>`;
-                return;
-            }
-
-            matches.forEach(u => {
-                results.innerHTML += `
-                    <div class="search-user-item" onclick="simulateLoadingAndProfile('${u.uid}')">
-                        <div class="avatar"><img src="${u.avatar}"></div>
-                        <div>
-                            <strong>${u.name}</strong>
-                            <p style="color:var(--primary); font-size:0.8rem;">${u.username || ''}</p>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        /* === NOTIFICACIONES === */
-        async function sendNotification(targetUid, type, text) {
+        /* === NOTIFICACIONES & RETOS (ACEPTAR / RECHAZAR) === */
+        async function sendNotification(targetUid, type, message, challengeId = null) {
             const notifId = 'notif_' + Date.now();
-            await db.ref(`users/${targetUid}/notifications/${notifId}`).set({
+            const notif = {
                 id: notifId,
                 type: type,
-                text: text,
+                message: message,
+                challengeId: challengeId,
+                senderId: currentUser.uid,
+                senderName: currentUser.name,
                 senderAvatar: currentUser.avatar,
                 timestamp: Date.now(),
                 read: false
-            });
+            };
+            await db.ref(`notifications/${targetUid}/${notifId}`).set(notif);
         }
 
-        // Suscribirse a las notificaciones para el badge
-        db.ref('users').child('notifications').on('value', () => {
-            if(!currentUser) return;
-            db.ref(`users/${currentUser.uid}/notifications`).on('value', snap => {
-                const data = snap.val();
-                const container = document.getElementById('notifications-container');
-                const badge = document.getElementById('notif-badge');
-                
-                if(!data) {
-                    badge.style.display = 'none';
-                    if(container) container.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted);">No tienes notificaciones de momento</div>`;
-                    return;
-                }
-
-                const list = Object.values(data).sort((a,b) => b.timestamp - a.timestamp);
-                const unreadCount = list.filter(n => !n.read).length;
-                
-                if(unreadCount > 0) {
-                    badge.innerText = unreadCount;
-                    badge.style.display = 'block';
-                    document.getElementById('notification-sound').play().catch(()=>{});
-                } else {
-                    badge.style.display = 'none';
-                }
-
-                if(container) {
-                    container.innerHTML = '';
-                    list.forEach(n => {
-                        container.innerHTML += `
-                            <div class="rank-item" style="gap:12px; opacity:${n.read ? 0.7 : 1};" onclick="markNotifRead('${n.id}')">
-                                <div class="avatar" style="width:36px; height:36px;"><img src="${n.senderAvatar}"></div>
-                                <div>
-                                    <p style="font-size:0.9rem;">${n.text}</p>
-                                    <span style="font-size:0.7rem; color:var(--text-muted);">${formatTimeAgo(n.timestamp)}</span>
-                                </div>
-                            </div>
-                        `;
-                    });
-                }
-            });
-        });
-
-        async function markNotifRead(id) {
-            await db.ref(`users/${currentUser.uid}/notifications/${id}/read`).set(true);
-        }
-
-        /* === RANKING & TOP ESTRELLAS === */
-        function renderRanking() {
-            const container = document.getElementById('ranking-container');
-            const banner = document.getElementById('ranking-banner');
-            const list = Object.values(allUsers).sort((a,b) => (b.stars || 0) - (a.stars || 0));
-
-            let myPos = list.findIndex(u => u.uid === currentUser.uid) + 1;
-            let bannerHTML = `<h2>Mi posición actual: #${myPos}</h2>`;
-            if (myPos === 1) bannerHTML += `<p>${i18n[currentLang].rank1}</p>`;
-            else if (myPos <= 3) bannerHTML += `<p>${i18n[currentLang].rank2}</p>`;
-            else bannerHTML += `<p>${i18n[currentLang].rank5}</p>`;
-            banner.innerHTML = bannerHTML;
-
+        function renderNotifications() {
+            const container = document.getElementById('notifications-container');
+            if (notifications.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted);">No tienes notificaciones de momento.</div>`;
+                return;
+            }
+            
+            notifications.sort((a,b) => b.timestamp - a.timestamp);
+            
             let html = '';
-            list.forEach((u, i) => {
-                const posClass = i === 0 ? 'top-1' : i === 1 ? 'top-2' : i === 2 ? 'top-3' : '';
+            notifications.forEach(n => {
+                let actionHTML = '';
+                if(n.type === 'versus_request') {
+                    actionHTML = `
+                        <div style="display:flex; gap:10px; margin-top:10px;">
+                            <button class="btn-primary btn-small" style="margin:0; width:auto;" onclick="acceptChallenge('${n.challengeId}', '${n.id}')">${i18n[currentLang].versusAccept}</button>
+                            <button class="btn-secondary btn-small" style="margin:0; width:auto; color:#ff4d4d; border-color:#ff4d4d;" onclick="declineChallenge('${n.challengeId}', '${n.id}')">${i18n[currentLang].versusDecline}</button>
+                        </div>
+                    `;
+                }
+                
                 html += `
-                    <div class="rank-item ${posClass}" onclick="simulateLoadingAndProfile('${u.uid}')">
-                        <span class="rank-pos">${i+1}</span>
-                        <div class="avatar" style="width:36px; height:36px; margin-right:12px;"><img src="${u.avatar}"></div>
-                        <strong>${u.name}</strong>
-                        <span class="rank-score">${u.stars || 0} ⭐</span>
+                    <div class="post-card" style="padding: 12px; margin-bottom: 10px; display: flex; flex-direction: column; opacity: ${n.read ? '0.7' : '1'};" onclick="markNotificationRead('${n.id}')">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <img src="${n.senderAvatar || ''}" style="width:36px; height:36px; border-radius:50%; object-fit:cover; border:1px solid var(--primary);">
+                            <div style="flex:1;">
+                                <p style="font-size:0.9rem; color:var(--text-main); font-weight:bold;">${n.message}</p>
+                                <span style="font-size:0.75rem; color:var(--text-muted);">${formatTimeAgo(n.timestamp)}</span>
+                            </div>
+                        </div>
+                        ${actionHTML}
                     </div>
                 `;
             });
             container.innerHTML = html;
         }
 
-        function renderMiniRanking() {
-            const list = Object.values(allUsers).sort((a,b) => (b.stars || 0) - (a.stars || 0)).slice(0, 3);
-            const container = document.getElementById('pc-ranking-container');
-            if(!container) return;
-            container.innerHTML = '';
-            list.forEach((u, i) => {
-                container.innerHTML += `
-                    <div class="rank-item" style="padding:8px; margin-bottom:4px; cursor:pointer;" onclick="simulateLoadingAndProfile('${u.uid}')">
-                        <span style="font-weight:bold; margin-right:10px; color:var(--primary); font-size:0.85rem;">#${i+1}</span>
-                        <div class="avatar" style="width:28px; height:28px; margin-right:8px;"><img src="${u.avatar}"></div>
-                        <span style="font-size:0.8rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px;">${u.name}</span>
-                        <span style="margin-left:auto; font-size:0.8rem; font-weight:bold; color:var(--primary);">${u.stars || 0} ⭐</span>
-                    </div>
-                `;
-            });
+        async function markNotificationRead(notifId) {
+            await db.ref(`notifications/${currentUser.uid}/${notifId}`).update({ read: true });
+        }
+
+        async function acceptChallenge(challengeId, notifId) {
+            const snap = await db.ref(`challenges/${challengeId}`).once('value');
+            const challenge = snap.val();
+            if(!challenge) {
+                alert(currentLang === 'es' ? "Este desafío ya no está disponible." : "Challenge no longer available.");
+                return;
+            }
+            
+            await db.ref(`challenges/${challengeId}/status`).set('accepted');
+            
+            // Creación automática del Post Tipo Versus con ambos perfiles
+            const versusPost = {
+                id: 'versus_' + challengeId,
+                type: 'versus',
+                userId: challenge.challengerId,
+                challengedId: challenge.challengedId,
+                challengerName: challenge.challengerName,
+                challengedName: challenge.challengedName,
+                challengerAvatar: challenge.challengerAvatar,
+                challengedAvatar: challenge.challengedAvatar,
+                votes: {
+                    [challenge.challengerId]: 0,
+                    [challenge.challengedId]: 0
+                },
+                timestamp: Date.now()
+            };
+            
+            featuredPostId = null; 
+            await db.ref('posts/' + versusPost.id).set(versusPost);
+            await db.ref(`notifications/${currentUser.uid}/${notifId}`).remove();
+            
+            alert(currentLang === 'es' ? "¡Desafío aceptado! Post de Versus creado." : "Challenge accepted! Versus post created.");
+            openView('view-feed');
+        }
+
+        async function declineChallenge(challengeId, notifId) {
+            await db.ref(`challenges/${challengeId}/status`).set('declined');
+            await db.ref(`notifications/${currentUser.uid}/${notifId}`).remove();
+            alert(currentLang === 'es' ? "Desafío rechazado." : "Challenge declined.");
         }
 
         /* === CIERRE DE MODALES === */
         function closeModals() {
             document.getElementById('overlay').style.display = 'none';
-            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-            cancelReply();
+            document.getElementById('settings-modal').style.display = 'none';
+            document.getElementById('edit-post-modal').style.display = 'none';
+            document.getElementById('edit-profile-modal').style.display = 'none';
+            document.getElementById('comment-modal').style.display = 'none';
+            if(activePostIdForComments) {
+                db.ref(`posts/${activePostIdForComments}/comments`).off();
+                activePostIdForComments = null;
+            }
         }
 
-        /* === CONFIGURACIÓN DE IDIOMA INICIAL === */
-        function applyLanguage(lang) {
-            const dict = i18n[lang];
-            if(!dict) return;
+        /* === BÚSQUEDAS === */
+        function searchUsers() {
+            const q = document.getElementById('search-input').value.toLowerCase();
+            const results = document.getElementById('search-results');
+            if(!q) { results.innerHTML = ''; return; }
+            let html = '';
+            Object.values(allUsers).forEach(u => {
+                const matches = (u.name && u.name.toLowerCase().includes(q)) || (u.username && u.username.toLowerCase().includes(q));
+                if(matches) {
+                    html += `
+                        <div class="search-user-item" onclick="simulateLoadingAndProfile('${u.uid}')">
+                            <div class="avatar"><img src="${u.avatar || ''}"></div>
+                            <div>
+                                <strong style="color:var(--text-main);">${u.name}</strong>
+                                <p style="font-size:0.75rem; color:var(--text-muted);">${u.username}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            results.innerHTML = html;
+        }
+
+        /* === MINI RANKING SIDEBAR === */
+        function renderMiniRanking() {
+            const pcRank = document.getElementById('pc-ranking-container');
+            if(!pcRank) return;
+            const sorted = Object.values(allUsers).sort((a,b) => (b.stars || 0) - (a.stars || 0)).slice(0, 3);
+            let html = '';
+            sorted.forEach((u, i) => {
+                html += `
+                    <div class="rank-item top-${i+1}" onclick="simulateLoadingAndProfile('${u.uid}')" style="cursor:pointer; padding: 6px 12px; margin-bottom:4px;">
+                        <span class="rank-pos">${i+1}</span>
+                        <div class="avatar" style="width:28px; height:28px; margin-right:8px;"><img src="${u.avatar || ''}"></div>
+                        <span style="font-size:0.8rem; font-weight:bold; color:var(--text-main);">${u.name.split(' ')[0]}</span>
+                        <span class="rank-score" style="font-size:0.8rem;">${u.stars || 0}★</span>
+                    </div>
+                `;
+            });
+            pcRank.innerHTML = html;
+        }
+
+        /* === RANKING VIEW PRINCIPAL === */
+        function renderRanking() {
+            const container = document.getElementById('ranking-container');
+            const banner = document.getElementById('ranking-banner');
+            const sorted = Object.values(allUsers).sort((a,b) => (b.stars || 0) - (a.stars || 0));
             
-            const trySetText = (id, text) => { const el = document.getElementById(id); if(el) el.innerText = text; };
-            const trySetHTML = (id, html) => { const el = document.getElementById(id); if(el) el.innerHTML = html; };
-            const trySetPlaceholder = (id, text) => { const el = document.getElementById(id); if(el) el.placeholder = text; };
+            const myPos = sorted.findIndex(u => u.uid === currentUser.uid) + 1;
+            let phrase = i18n[currentLang].rank5;
+            if(myPos === 1) phrase = i18n[currentLang].rank1;
+            else if(myPos <= 3 && myPos > 1) phrase = i18n[currentLang].rank2;
+            else if(myPos <= 10 && myPos > 3) phrase = i18n[currentLang].rank3;
+            else if(myPos > 10) phrase = i18n[currentLang].rank4;
 
-            trySetText('t-auth-desc', dict.authDesc);
-            trySetText('t-search-title', dict.searchTitle);
-            trySetPlaceholder('search-input', dict.searchPlaceholder);
-            trySetText('t-create-post', dict.createPost);
-            trySetText('t-upload-tap', dict.tapToUpload);
-            trySetText('t-open-cam', dict.openCam);
-            trySetText('t-cap-btn', dict.capBtn);
-            trySetPlaceholder('post-caption', dict.captionPlaceholder);
-            trySetText('t-add-location', dict.addLocation);
-            trySetText('t-privacy', dict.privacy);
-            trySetText('t-pub', dict.pub);
-            trySetText('t-friends', dict.friends);
-            trySetHTML('t-btn-pub', `<i class="fas fa-magic"></i> ${dict.btnPub}`);
-            trySetText('t-posts-title', dict.postsTitle);
-            trySetText('t-notif-title', dict.notifTitle);
-            trySetText('t-settings', dict.settings);
-            trySetText('t-dark-theme', dict.darkTheme);
-            trySetText('t-lang', dict.lang);
-            trySetText('t-logout', dict.logoutBtn);
-            trySetText('t-edit-prof', dict.editProfTitle);
-            trySetText('t-name', dict.nameLabel);
-            trySetText('t-bio', dict.bioLabel);
-            trySetText('t-save', dict.saveBtn);
-            trySetText('t-comments', dict.commentsTitle);
-            trySetPlaceholder('comment-input', dict.commentPlaceholder);
-            trySetText('story-add-text', dict.storyAdd);
-            trySetText('feed-loading-text', dict.loadingUniverse);
+            banner.innerHTML = `
+                <h2 style="font-size: 1.8rem; margin-bottom: 5px;">Ranking Estelar</h2>
+                <p style="font-weight: bold; font-size: 0.95rem;">${phrase}</p>
+                <span style="display:inline-block; margin-top:10px; background:rgba(255,255,255,0.2); padding: 5px 12px; border-radius:20px; font-size:0.85rem; font-weight:bold;">Tu puesto: #${myPos} de ${sorted.length}</span>
+            `;
+
+            let html = '';
+            sorted.forEach((u, i) => {
+                const isMe = u.uid === currentUser.uid;
+                html += `
+                    <div class="rank-item top-${i+1}" style="background:${isMe ? 'rgba(0,168,232,0.1)' : 'var(--surface-card)'}; border-color:${isMe ? 'var(--primary)' : 'var(--border-color)'}" onclick="simulateLoadingAndProfile('${u.uid}')">
+                        <span class="rank-pos">${i+1}</span>
+                        <div class="avatar" style="width:38px; height:38px; margin-right:12px;"><img src="${u.avatar || ''}"></div>
+                        <div>
+                            <strong style="color:var(--text-main);">${u.name}</strong>
+                            <p style="font-size:0.72rem; color:var(--text-muted);">${u.username}</p>
+                        </div>
+                        <span class="rank-score">${u.stars || 0} ★</span>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
         }
+
     </script>
 </body>
 </html>
