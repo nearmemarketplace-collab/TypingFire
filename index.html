@@ -180,7 +180,10 @@
         }
         .header-icons { display: flex; gap: 15px; align-items: center; position: relative; }
         .header-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; cursor: pointer; border: 2px solid var(--primary); box-shadow: 0 0 10px rgba(0,168,232,0.3);}
-        .notif-badge { position: absolute; top: -5px; right: 40px; background: #ff4d4d; color: white; border-radius: 50%; font-size: 0.65rem; padding: 2px 6px; display: none; font-weight: bold;}
+        
+        /* CORRECCIÓN DE BUG: Posición de Notificación */
+        .notif-badge { position: absolute; top: -5px; right: -5px; background: #ff4d4d; color: white; border-radius: 50%; font-size: 0.65rem; padding: 2px 6px; display: none; font-weight: bold;}
+        
         #back-btn { display: none; cursor: pointer; color: var(--primary); font-size: 1.2rem; margin-right: 15px; }
 
         main { flex: 1; padding: 15px; padding-bottom: 110px; }
@@ -215,6 +218,7 @@
         .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,168,232,0.45); }
         .btn-secondary { background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--primary); padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 10px; transition: 0.2s;}
         .btn-secondary:hover { background: rgba(0,168,232,0.1); }
+        .btn-secondary.active-tab { background: var(--primary-gradient); color: white; }
         .btn-small { padding: 5px 12px; font-size: 0.8rem; border-radius: 8px; }
 
         /* === HISTORIAS === */
@@ -407,6 +411,11 @@
             overflow: hidden;
             transition: all 0.3s ease;
         }
+        .versus-split { display: flex; align-items: center; justify-content: center; gap: 15px; margin-top:15px; }
+        .versus-side { flex: 1; text-align: center; cursor: pointer; }
+        .versus-side img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; border: 2px solid transparent; transition: 0.2s;}
+        .versus-side.voted img { border-color: #ff007f; box-shadow: 0 0 15px rgba(255,0,127,0.4); }
+        .versus-vs { font-weight: 900; color: #ff007f; font-size: 1.5rem; text-shadow: 0 0 10px rgba(255,0,127,0.5); }
         .frenzy-glow {
             box-shadow: 0 0 25px rgba(255, 0, 127, 0.6);
             border: 2.5px solid #ff007f !important;
@@ -416,6 +425,11 @@
             0% { transform: scale(1); }
             100% { transform: scale(1.01); }
         }
+
+        /* Notificaciones Styles */
+        .notif-item { display: flex; align-items: flex-start; padding: 12px; border-bottom: 1px solid var(--border-color); background: rgba(255,255,255,0.02);}
+        .notif-item.unread { background: rgba(0, 168, 232, 0.08); }
+        .notif-actions { display: flex; gap: 10px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -518,44 +532,50 @@
                     <div style="background: var(--surface-card); backdrop-filter: blur(10px); padding: 20px; border-radius: 20px; border: 1px solid var(--border-color); box-shadow: var(--shadow);">
                         <h2 id="t-create-post" style="color: var(--text-main); margin-bottom: 15px;">Crear Publicación</h2>
                         
+                        <!-- SELECTOR DE TIPO DE POST -->
+                        <div style="display:flex; gap:10px; margin-bottom:15px; overflow-x:auto;">
+                            <button class="btn-secondary active-tab" id="tab-normal" style="margin:0;" onclick="setPostTab('normal')"><i class="fas fa-image"></i> Normal</button>
+                            <button class="btn-secondary" id="tab-poll" style="margin:0;" onclick="setPostTab('poll')"><i class="fas fa-poll-h"></i> Encuesta</button>
+                            <button class="btn-secondary" id="tab-versus" style="margin:0; border-color:#ff007f; color:#ff007f;" onclick="setPostTab('versus')"><i class="fas fa-fire"></i> Versus</button>
+                        </div>
+
                         <div id="ai-pre-detect-alert" style="display:none; color:#fff; background: linear-gradient(135deg, #ff007f, #7f00ff); padding: 10px; border-radius: 10px; margin-bottom: 15px; font-weight: bold; text-align: center; box-shadow: 0 4px 15px rgba(255,0,127,0.4);"><i class="fas fa-robot"></i> ¡Imagen de IA detectada!</div>
 
-                        <div id="media-trigger" style="width: 100%; height: 180px; background: rgba(0,168,232,0.02); border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--primary); cursor: pointer; position: relative; margin-bottom: 10px; border: 2px dashed var(--primary); overflow: hidden;" onclick="document.getElementById('file-input').click()">
-                            <i class="fas fa-image" style="font-size: 2.5rem; margin-bottom: 8px;"></i>
-                            <span id="t-upload-tap" style="font-weight:bold; font-size:0.9rem;">Tocar para subir foto o video</span>
-                            <input type="file" id="file-input" accept="image/*,video/*,image/gif" style="display:none;" onchange="handleImageUpload(event)">
-                            <img id="preview-img" style="width: 100%; height: 100%; object-fit: cover; position: absolute; z-index: 2; display: none;">
-                            <video id="preview-vid" style="width: 100%; height: 100%; object-fit: cover; position: absolute; z-index: 2; display: none;" autoplay muted loop playsinline></video>
-                        </div>
-
-                        <button class="btn-secondary" id="btn-open-cam" onclick="openLiveCamera()"><i class="fas fa-camera"></i> <span id="t-open-cam">Abrir Cámara Real</span></button>
-                        
-                        <div id="camera-container" style="display:none; position:relative; width:100%; border-radius:14px; overflow:hidden; margin-bottom:15px; background: #000; border: 1px solid var(--primary);">
-                            <div class="camera-hud">LIVE CAM</div>
-                            <video id="live-video" autoplay playsinline style="width:100%; display:block; z-index:1;"></video>
-                            <i class="fas fa-sync" style="position:absolute; top:15px; left:15px; color:white; font-size:1.5rem; cursor:pointer; z-index:10;" onclick="toggleCamera()"></i>
-                            
-                            <button id="dual-cam-btn" class="btn-secondary" style="position:absolute; top:15px; left:50%; transform:translateX(-50%); width:auto; padding:5px 15px; z-index:10; font-size:0.8rem;" onclick="toggleDualCamMenu()">
-                                <i class="fas fa-camera"></i> Modo Dual (BeReal)
-                            </button>
-                            <div id="dual-cam-options" style="display:none; position:absolute; top:50px; left:50%; transform:translateX(-50%); z-index:10; background:rgba(0,0,0,0.85); padding:10px; border-radius:10px; flex-direction:column; gap:8px; text-align:center; border: 1px solid var(--primary);">
-                                <button class="btn-primary btn-small" onclick="startDualCam('front-rear')" style="margin:0; width:100%;">Frontal + Trasera</button>
-                                <button class="btn-secondary btn-small" onclick="startDualCam('front-front')" style="margin:0; width:100%;">Frontal x2 (5s)</button>
+                        <!-- SECCIÓN 1: NORMAL/MEDIA -->
+                        <div id="section-media" style="display: block;">
+                            <div id="media-trigger" style="width: 100%; height: 180px; background: rgba(0,168,232,0.02); border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--primary); cursor: pointer; position: relative; margin-bottom: 10px; border: 2px dashed var(--primary); overflow: hidden;" onclick="document.getElementById('file-input').click()">
+                                <i class="fas fa-image" style="font-size: 2.5rem; margin-bottom: 8px;"></i>
+                                <span id="t-upload-tap" style="font-weight:bold; font-size:0.9rem;">Tocar para subir foto o video</span>
+                                <input type="file" id="file-input" accept="image/*,video/*,image/gif" style="display:none;" onchange="handleImageUpload(event)">
+                                <img id="preview-img" style="width: 100%; height: 100%; object-fit: cover; position: absolute; z-index: 2; display: none;">
+                                <video id="preview-vid" style="width: 100%; height: 100%; object-fit: cover; position: absolute; z-index: 2; display: none;" autoplay muted loop playsinline></video>
                             </div>
 
-                            <div id="cam-countdown" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:4.5rem; color:white; font-weight:bold; z-index:20; text-shadow: 0 0 20px rgba(0,0,0,0.8);"></div>
+                            <button class="btn-secondary" id="btn-open-cam" onclick="openLiveCamera()"><i class="fas fa-camera"></i> <span id="t-open-cam">Abrir Cámara Real</span></button>
+                            
+                            <div id="camera-container" style="display:none; position:relative; width:100%; border-radius:14px; overflow:hidden; margin-bottom:15px; background: #000; border: 1px solid var(--primary);">
+                                <div class="camera-hud">LIVE CAM</div>
+                                <video id="live-video" autoplay playsinline style="width:100%; display:block; z-index:1;"></video>
+                                <i class="fas fa-sync" style="position:absolute; top:15px; left:15px; color:white; font-size:1.5rem; cursor:pointer; z-index:10;" onclick="toggleCamera()"></i>
+                                
+                                <button id="dual-cam-btn" class="btn-secondary" style="position:absolute; top:15px; left:50%; transform:translateX(-50%); width:auto; padding:5px 15px; z-index:10; font-size:0.8rem;" onclick="toggleDualCamMenu()">
+                                    <i class="fas fa-camera"></i> Modo Dual (BeReal)
+                                </button>
+                                <div id="dual-cam-options" style="display:none; position:absolute; top:50px; left:50%; transform:translateX(-50%); z-index:10; background:rgba(0,0,0,0.85); padding:10px; border-radius:10px; flex-direction:column; gap:8px; text-align:center; border: 1px solid var(--primary);">
+                                    <button class="btn-primary btn-small" onclick="startDualCam('front-rear')" style="margin:0; width:100%;">Frontal + Trasera</button>
+                                    <button class="btn-secondary btn-small" onclick="startDualCam('front-front')" style="margin:0; width:100%;">Frontal x2 (5s)</button>
+                                </div>
 
-                            <button class="btn-primary record-btn-anim" style="position:absolute; bottom:15px; left:50%; transform:translateX(-50%); width: 70%; opacity: 0.95; z-index:10;" onclick="captureLiveCamera()"><i class="fas fa-camera"></i> <span id="t-cap-btn">Capturar</span></button>
-                            <i class="fas fa-times" style="position:absolute; top:15px; right:15px; color:white; font-size:1.5rem; cursor:pointer; z-index:10;" onclick="closeLiveCamera()"></i>
+                                <div id="cam-countdown" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:4.5rem; color:white; font-weight:bold; z-index:20; text-shadow: 0 0 20px rgba(0,0,0,0.8);"></div>
+
+                                <button class="btn-primary record-btn-anim" style="position:absolute; bottom:15px; left:50%; transform:translateX(-50%); width: 70%; opacity: 0.95; z-index:10;" onclick="captureLiveCamera()"><i class="fas fa-camera"></i> <span id="t-cap-btn">Capturar</span></button>
+                                <i class="fas fa-times" style="position:absolute; top:15px; right:15px; color:white; font-size:1.5rem; cursor:pointer; z-index:10;" onclick="closeLiveCamera()"></i>
+                            </div>
                         </div>
 
-                        <div class="input-group" style="margin-top: 15px;">
-                            <textarea id="post-caption" placeholder="Escribe algo sobre tu foto..." rows="3"></textarea>
-                        </div>
-
-                        <!-- SECCIÓN 4: CREACIÓN DE ENCUESTA -->
-                        <div style="background: rgba(255,255,255,0.03); border: 1.5px dashed var(--border-color); padding: 15px; border-radius: 12px; margin-bottom: 15px;">
-                            <h4 style="color: var(--primary); font-size: 0.9rem; margin-bottom: 10px;"><i class="fas fa-poll-h"></i> ¿Crear una Encuesta?</h4>
+                        <!-- SECCIÓN 2: ENCUESTA -->
+                        <div id="section-poll" style="display: none; background: rgba(255,255,255,0.03); border: 1.5px dashed var(--border-color); padding: 15px; border-radius: 12px; margin-bottom: 15px;">
+                            <h4 style="color: var(--primary); font-size: 0.9rem; margin-bottom: 10px;"><i class="fas fa-poll-h"></i> Crear una Encuesta</h4>
                             <div class="input-group">
                                 <label>Pregunta:</label>
                                 <input type="text" id="poll-question-input" placeholder="Ej: ¿Qué prefieren para cenar?">
@@ -567,21 +587,31 @@
                             <button class="btn-secondary btn-small" type="button" onclick="addPollOptionInputField()" style="margin-top: 8px; width: auto;"><i class="fas fa-plus"></i> Añadir Opción</button>
                         </div>
 
-                        <!-- SECCIÓN 5: CREACIÓN DE VERSUS -->
-                        <div style="background: rgba(255, 0, 127, 0.04); border: 1.5px dashed #ff007f; padding: 15px; border-radius: 12px; margin-bottom: 15px;">
+                        <!-- SECCIÓN 3: VERSUS -->
+                        <div id="section-versus" style="display: none; background: rgba(255, 0, 127, 0.04); border: 1.5px dashed #ff007f; padding: 15px; border-radius: 12px; margin-bottom: 15px;">
                             <h4 style="color: #ff007f; font-size: 0.9rem; margin-bottom: 10px;"><i class="fas fa-fire"></i> Desafiar a Versus (Vs)</h4>
+                            
+                            <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:10px;">La imagen que subas arriba será tu lado del Versus. ¡Busca a quién quieres desafiar!</p>
+
                             <div class="input-group">
-                                <label>Selecciona un Rival:</label>
-                                <select id="versus-rival-select" style="background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; width: 100%; border-radius: 8px;">
-                                    <option value="">-- No iniciar un versus --</option>
-                                </select>
+                                <label>Buscar Rival:</label>
+                                <input type="text" id="versus-search-input" placeholder="Buscar usuario..." onkeyup="searchVersusUsers()" autocomplete="off">
+                                <div id="versus-search-results" style="margin-top:5px; max-height:150px; overflow-y:auto; border-radius:8px;"></div>
                             </div>
+                            
+                            <input type="hidden" id="selected-versus-rival-uid">
+
                             <div class="input-group">
                                 <label>Título del Versus:</label>
                                 <input type="text" id="versus-title-input" placeholder="Ej: Estilo Urbano vs Estilo Clásico">
                             </div>
                         </div>
                         
+                        <!-- DATOS GLOBALES (Texto y Privacidad) -->
+                        <div class="input-group" style="margin-top: 15px;">
+                            <textarea id="post-caption" placeholder="Escribe algo sobre tu foto o publicación..." rows="3"></textarea>
+                        </div>
+
                         <div class="input-group" style="display:flex; align-items:center; gap:10px;">
                             <label class="switch">
                                 <input type="checkbox" id="post-location-toggle" onchange="fetchLocationText(this)">
@@ -903,6 +933,8 @@
         let currentLang = 'es';
         let usingFrontCamera = true;
         
+        let currentPostTab = 'normal'; // 'normal', 'poll', 'versus'
+
         // Modal Media Variables
         let currentFsSrc = "";
         let currentFsIsVideo = false;
@@ -930,7 +962,7 @@
                 aiReady: "<span style='color: #00A8E8;'><i class='fas fa-check'></i> Motor Real Listo</span>", 
                 aiLoading: "Cargando motor...", 
                 analyzing: "<i class='fas fa-spinner fa-spin'></i> Publicando...", 
-                btnPub: "Publicar con IA", 
+                btnPub: "Publicar", 
                 reqPic: "Foto requerida", 
                 edited: "(Editado)", 
                 reply: "Responder",
@@ -939,7 +971,7 @@
                 tapToUpload: "Tocar para subir foto o video",
                 openCam: "Abrir Cámara Real",
                 capBtn: "Capturar",
-                captionPlaceholder: "Escribe algo sobre tu foto...",
+                captionPlaceholder: "Escribe algo sobre tu foto o publicación...",
                 addLocation: "Añadir ubicación (Texto)",
                 privacy: "Privacidad:",
                 pub: "🌍 Público",
@@ -994,7 +1026,7 @@
                 aiReady: "<span style='color: #00A8E8;'><i class='fas fa-check'></i> Real Engine Ready</span>", 
                 aiLoading: "Loading AI...", 
                 analyzing: "<i class='fas fa-spinner fa-spin'></i> Publishing...", 
-                btnPub: "Publish with AI", 
+                btnPub: "Publish", 
                 reqPic: "Photo required", 
                 edited: "(Edited)", 
                 reply: "Reply",
@@ -1003,7 +1035,7 @@
                 tapToUpload: "Tap to upload photo or video",
                 openCam: "Open Real Camera",
                 capBtn: "Capture",
-                captionPlaceholder: "Write something about your photo...",
+                captionPlaceholder: "Write something...",
                 addLocation: "Add location (Text)",
                 privacy: "Privacy:",
                 pub: "🌍 Public",
@@ -1056,6 +1088,9 @@
             document.getElementById('lang-select').value = currentLang;
             applyLanguage(currentLang);
             document.getElementById('ai-status').innerHTML = i18n[currentLang].aiReady;
+            
+            // Forzar pestaña normal al inicio
+            setPostTab('normal');
         };
 
         function applyLanguage(lang) {
@@ -1196,7 +1231,8 @@
             if(!currentFsPostId) return;
             const postId = currentFsPostId;
             closeFullScreen();
-            await deletePost(postId);
+            await db.ref('posts/' + postId).remove();
+            alert("Publicación eliminada.");
         }
 
         /* === PERMISOS Y UBICACIÓN === */
@@ -1397,6 +1433,8 @@
             document.getElementById('preview-vid').style.display = 'none';
             const img = document.getElementById('preview-img');
             img.src = uploadBase64; img.style.display = 'block';
+            
+            // Mostrar botón según la tab
             document.getElementById('btn-publish').style.display = 'block';
         }
 
@@ -1447,7 +1485,34 @@
             reader.readAsDataURL(file);
         }
 
-        /* === SECCIÓN 4: HELPER PARA AÑADIR CAMPOS DE ENCUESTA === */
+        /* === SEPARACIÓN DE TABS PARA PUBLICAR === */
+        function setPostTab(tab) {
+            currentPostTab = tab;
+            
+            document.getElementById('tab-normal').classList.remove('active-tab');
+            document.getElementById('tab-poll').classList.remove('active-tab');
+            document.getElementById('tab-versus').classList.remove('active-tab');
+            
+            document.getElementById('section-media').style.display = 'none';
+            document.getElementById('section-poll').style.display = 'none';
+            document.getElementById('section-versus').style.display = 'none';
+            
+            document.getElementById('tab-' + tab).classList.add('active-tab');
+            
+            if (tab === 'normal') {
+                document.getElementById('section-media').style.display = 'block';
+                document.getElementById('btn-publish').style.display = uploadBase64 ? 'block' : 'none';
+            } else if (tab === 'poll') {
+                document.getElementById('section-poll').style.display = 'block';
+                document.getElementById('btn-publish').style.display = 'block';
+            } else if (tab === 'versus') {
+                document.getElementById('section-media').style.display = 'block'; // Ocupamos la foto también para versus
+                document.getElementById('section-versus').style.display = 'block';
+                document.getElementById('btn-publish').style.display = 'block';
+            }
+        }
+
+        /* === SECCIÓN ENCUESTAS === */
         function addPollOptionInputField() {
             const container = document.getElementById('poll-options-inputs-container');
             const currentOptions = container.getElementsByClassName('poll-option-input').length;
@@ -1462,6 +1527,47 @@
             newInput.style.padding = "10px";
             newInput.placeholder = `Opción ${currentOptions + 1}`;
             container.appendChild(newInput);
+        }
+
+        /* === SECCIÓN VERSUS (Búsqueda) === */
+        function searchVersusUsers() {
+            const query = document.getElementById('versus-search-input').value.toLowerCase();
+            const resultsDiv = document.getElementById('versus-search-results');
+            resultsDiv.innerHTML = '';
+            
+            if (!query) {
+                document.getElementById('selected-versus-rival-uid').value = '';
+                return;
+            }
+
+            let found = false;
+            Object.values(allUsers).forEach(u => {
+                if (u.uid === currentUser.uid) return;
+                
+                if ((u.name && u.name.toLowerCase().includes(query)) || (u.username && u.username.toLowerCase().includes(query))) {
+                    found = true;
+                    const div = document.createElement('div');
+                    div.className = 'search-user-item';
+                    div.innerHTML = `
+                        <img src="${u.avatar}" class="avatar" style="width:30px; height:30px; margin-right:10px;">
+                        <div style="flex:1;">
+                            <strong style="font-size:0.85rem;">${u.name}</strong><br>
+                            <span style="font-size:0.7rem; color:var(--text-muted);">${u.username}</span>
+                        </div>
+                        <button class="btn-small btn-primary" onclick="selectVersusRival('${u.uid}', '${u.name}')">Elegir</button>
+                    `;
+                    resultsDiv.appendChild(div);
+                }
+            });
+            if(!found) {
+                resultsDiv.innerHTML = '<span style="color:var(--text-muted); font-size:0.8rem;">No se encontraron usuarios...</span>';
+            }
+        }
+
+        function selectVersusRival(uid, name) {
+            document.getElementById('selected-versus-rival-uid').value = uid;
+            document.getElementById('versus-search-input').value = name;
+            document.getElementById('versus-search-results').innerHTML = '<span style="color:var(--primary); font-size:0.85rem; font-weight:bold;"><i class="fas fa-check"></i> Rival seleccionado.</span>';
         }
 
         /* === PUBLICACIÓN E IA SIMULADA === */
@@ -1482,11 +1588,16 @@
             detectedText = `${dict.aiClass} ${matchedVibe}`;
             if(userLocationText) detectedText += ` | ${userLocationText}`;
 
-            // CONTROL VERSUS
-            const rivalUid = document.getElementById('versus-rival-select').value;
-            const versusTitle = document.getElementById('versus-title-input').value.trim();
+            // === FLUJO VERSUS ===
+            if (currentPostTab === 'versus') {
+                const rivalUid = document.getElementById('selected-versus-rival-uid').value;
+                const versusTitle = document.getElementById('versus-title-input').value.trim();
 
-            if (rivalUid && rivalUid !== "") {
+                if (!rivalUid || rivalUid === "") {
+                    alert("Por favor busca y selecciona a un rival para el versus.");
+                    btn.disabled = false; btn.innerHTML = `<i class="fas fa-magic"></i> ${dict.btnPub}`;
+                    return;
+                }
                 if (!versusTitle) {
                     alert("Por favor escribe un título/temática para el versus.");
                     btn.disabled = false; btn.innerHTML = `<i class="fas fa-magic"></i> ${dict.btnPub}`;
@@ -1508,6 +1619,7 @@
                     creatorImage: uploadBase64,
                     opponentId: rivalUid,
                     title: versusTitle,
+                    caption: document.getElementById('post-caption').value || "",
                     timestamp: Date.now(),
                     status: 'pending'
                 };
@@ -1519,47 +1631,56 @@
                 
                 alert("¡Desafío Versus enviado! Estará visible en cuanto el rival lo acepte en su buzón de notificaciones.");
                 
-                // Limpieza de campos
-                document.getElementById('versus-rival-select').value = "";
-                document.getElementById('versus-title-input').value = "";
                 resetUploadFields();
                 openView('view-feed');
                 return;
             }
 
-            // PROCESAMIENTO DE ENCUESTA (SI EXISTE)
+            // === FLUJO ENCUESTA ===
             let pollData = null;
-            const pollQuestion = document.getElementById('poll-question-input').value.trim();
-            if (pollQuestion !== "") {
-                const optionInputs = document.getElementsByClassName('poll-option-input');
-                let optionsList = [];
-                for (let i = 0; i < optionInputs.length; i++) {
-                    const text = optionInputs[i].value.trim();
-                    if (text !== "") {
-                        optionsList.push({
-                            id: i,
-                            text: text,
-                            votes: 0
-                        });
+            if (currentPostTab === 'poll') {
+                const pollQuestion = document.getElementById('poll-question-input').value.trim();
+                if (pollQuestion !== "") {
+                    const optionInputs = document.getElementsByClassName('poll-option-input');
+                    let optionsList = [];
+                    for (let i = 0; i < optionInputs.length; i++) {
+                        const text = optionInputs[i].value.trim();
+                        if (text !== "") {
+                            optionsList.push({
+                                id: i,
+                                text: text,
+                                votes: 0
+                            });
+                        }
                     }
-                }
-                if (optionsList.length >= 2) {
-                    pollData = {
-                        question: pollQuestion,
-                        options: optionsList,
-                        voters: {}
-                    };
+                    if (optionsList.length >= 2) {
+                        pollData = {
+                            question: pollQuestion,
+                            options: optionsList,
+                            voters: {}
+                        };
+                    } else {
+                        alert("Una encuesta necesita al menos 2 opciones válidas.");
+                        btn.disabled = false; btn.innerHTML = `<i class="fas fa-magic"></i> ${dict.btnPub}`;
+                        return;
+                    }
+                } else {
+                    alert("Escribe una pregunta para la encuesta.");
+                    btn.disabled = false; btn.innerHTML = `<i class="fas fa-magic"></i> ${dict.btnPub}`;
+                    return;
                 }
             }
 
-            if (!uploadBase64 && !pollData) {
-                alert("Sube una foto/video o crea una encuesta con al menos 2 opciones.");
+            // === FLUJO NORMAL ===
+            if (currentPostTab === 'normal' && !uploadBase64) {
+                alert("Sube una foto o video para tu publicación normal.");
                 btn.disabled = false; btn.innerHTML = `<i class="fas fa-magic"></i> ${dict.btnPub}`;
                 return;
             }
 
             const newPost = {
                 id: 'post_' + Date.now(),
+                type: currentPostTab,
                 userId: currentUser.uid, 
                 userName: currentUser.name || "Usuario", 
                 userAvatar: currentUser.avatar || "", 
@@ -1589,6 +1710,10 @@
             document.getElementById('preview-vid').style.display = 'none';
             document.getElementById('post-caption').value = '';
             document.getElementById('poll-question-input').value = '';
+            document.getElementById('versus-title-input').value = '';
+            document.getElementById('versus-search-input').value = '';
+            document.getElementById('versus-search-results').innerHTML = '';
+            document.getElementById('selected-versus-rival-uid').value = '';
             
             const optionInputs = document.getElementsByClassName('poll-option-input');
             for(let i = 0; i < optionInputs.length; i++){
@@ -1599,6 +1724,7 @@
             document.getElementById('ai-pre-detect-alert').style.display = 'none';
             currentUploadIsAI = false;
             currentUploadIsVideo = false;
+            setPostTab('normal');
 
             userLocationText = ""; document.getElementById('location-display').innerText = "";
             uploadBase64 = null; 
@@ -1627,7 +1753,6 @@
             if(viewId === 'view-feed') { renderFeed(); renderStories(); }
             if(viewId === 'view-ranking') renderRanking();
             if(viewId === 'view-search') searchUsers();
-            if(viewId === 'view-upload') { populateVersusOpponentList(); }
             if(viewId !== 'view-upload') closeLiveCamera();
         }
         function goBack() { if (viewHistory.length > 0) { const previousView = viewHistory.pop(); openView(previousView, true); } }
@@ -1770,7 +1895,6 @@
                     renderProfileData(currentlyViewingProfileUid);
                 }
                 renderMiniRanking();
-                populateVersusOpponentList();
             });
             db.ref('posts').on('value', snap => {
                 const data = snap.val(); 
@@ -1811,7 +1935,7 @@
             document.getElementById('overlay').style.display = 'block'; document.getElementById('settings-modal').style.display = 'flex'; 
         }
 
-        /* === SECCIÓN 5: ENVIAR NOTIFICACIONES === */
+        /* === SECCIÓN NOTIFICACIONES Y VERSUS ACTION === */
         async function sendNotification(targetUid, type, text, extraData = {}) {
             const notifId = 'notif_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
             const notification = {
@@ -1828,7 +1952,549 @@
             await db.ref(`notifications/${targetUid}/${notifId}`).set(notification);
         }
 
-        /* === SECCIÓN 1: HISTORIAS (CON FILTRO DE SEGUIDOS) === */
+        function renderNotifications() {
+            const container = document.getElementById('notifications-container');
+            container.innerHTML = '';
+            
+            if (notifications.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-muted); text-align:center;">No tienes notificaciones aún.</p>';
+                return;
+            }
+
+            notifications.forEach(n => {
+                const div = document.createElement('div');
+                div.className = `notif-item ${!n.read ? 'unread' : ''}`;
+                
+                let actionHtml = '';
+                // Si es un versus y aún no se ha tomado acción
+                if (n.type === 'versus_request' && !n.actionTaken) {
+                    actionHtml = `
+                        <div class="notif-actions">
+                            <button class="btn-small btn-primary" onclick="acceptVersus('${n.id}', '${n.versusId}')" style="margin:0;"><i class="fas fa-check"></i> Aceptar</button>
+                            <button class="btn-small btn-secondary" onclick="rejectVersus('${n.id}', '${n.versusId}')" style="margin:0; border-color:#ff4d4d; color:#ff4d4d;"><i class="fas fa-times"></i> Rechazar</button>
+                        </div>
+                    `;
+                }
+
+                div.innerHTML = `
+                    <img src="${n.fromAvatar}" class="avatar" style="width:40px; height:40px; margin-right:12px; cursor:pointer;" onclick="simulateLoadingAndProfile('${n.fromUid}')">
+                    <div style="flex:1;">
+                        <p style="font-size:0.85rem; color:var(--text-main); margin-bottom:4px;">${n.text}</p>
+                        <span style="font-size:0.7rem; color:var(--text-muted);">${formatTimeAgo(n.timestamp)}</span>
+                        ${actionHtml}
+                    </div>
+                `;
+                
+                if (!n.read && n.type !== 'versus_request') {
+                    div.onclick = () => { db.ref(`notifications/${currentUser.uid}/${n.id}/read`).set(true); };
+                }
+                
+                container.appendChild(div);
+            });
+            
+            // Marcar todas como leídas (excepto los versus requests pendientes)
+            notifications.forEach(n => {
+                if(!n.read && n.type !== 'versus_request') {
+                    db.ref(`notifications/${currentUser.uid}/${n.id}/read`).set(true);
+                }
+            });
+        }
+
+        async function acceptVersus(notifId, versusId) {
+            try {
+                const snap = await db.ref(`versus_requests/${versusId}`).once('value');
+                const vReq = snap.val();
+                
+                if (vReq) {
+                    const newPost = {
+                        id: 'post_' + Date.now(),
+                        type: 'versus',
+                        userId: vReq.creatorId,
+                        userName: vReq.creatorName,
+                        userAvatar: vReq.creatorAvatar,
+                        image: vReq.creatorImage, // Lado izquierdo
+                        opponentId: currentUser.uid,
+                        opponentName: currentUser.name,
+                        opponentAvatar: currentUser.avatar, // Lado derecho (perfil por defecto para hacer el versus rápido)
+                        title: vReq.title,
+                        caption: vReq.caption || "",
+                        timestamp: Date.now(),
+                        privacy: 'public',
+                        stars: 0,
+                        voters: {}
+                    };
+
+                    await db.ref(`posts/${newPost.id}`).set(newPost);
+                    await db.ref(`versus_requests/${versusId}`).remove(); // Borrar petición
+                    
+                    // Enviar noti de vuelta al creador
+                    await sendNotification(vReq.creatorId, "versus_accepted", `🔥 ¡${currentUser.name} ha aceptado tu Versus! Ya está publicado en el feed.`);
+                }
+
+                await db.ref(`notifications/${currentUser.uid}/${notifId}/actionTaken`).set(true);
+                await db.ref(`notifications/${currentUser.uid}/${notifId}/read`).set(true);
+                
+                alert("¡Versus aceptado y publicado!");
+                openView('view-feed');
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        async function rejectVersus(notifId, versusId) {
+            await db.ref(`versus_requests/${versusId}`).remove();
+            await db.ref(`notifications/${currentUser.uid}/${notifId}/actionTaken`).set(true);
+            await db.ref(`notifications/${currentUser.uid}/${notifId}/read`).set(true);
+        }
+
+        /* === BÚSQUEDA DESCUBRIR (Completada) === */
+        function searchUsers() {
+            const query = (document.getElementById('search-input').value || "").toLowerCase();
+            const resultsDiv = document.getElementById('search-results');
+            resultsDiv.innerHTML = '';
+
+            let shownCount = 0;
+            Object.values(allUsers).forEach(u => {
+                // No mostrarse a sí mismo
+                if (u.uid === currentUser.uid) return;
+                
+                // Si hay query, filtrar. Si no hay, mostrar sugerencias aleatorias
+                if (query === "" || (u.name && u.name.toLowerCase().includes(query)) || (u.username && u.username.toLowerCase().includes(query))) {
+                    if(shownCount > 15) return; // Limitar resultados
+                    
+                    const div = document.createElement('div');
+                    div.className = 'search-user-item';
+                    
+                    const isFollowing = currentUser.following && currentUser.following[u.uid];
+                    
+                    div.innerHTML = `
+                        <img src="${u.avatar}" class="avatar" onclick="simulateLoadingAndProfile('${u.uid}')">
+                        <div style="flex:1; cursor:pointer;" onclick="simulateLoadingAndProfile('${u.uid}')">
+                            <strong style="font-size:0.95rem; color:var(--text-main);">${u.name}</strong><br>
+                            <span style="font-size:0.75rem; color:var(--primary);">${u.username}</span>
+                        </div>
+                        <button class="btn-small ${isFollowing ? 'btn-secondary' : 'btn-primary'}" onclick="toggleFollowUser('${u.uid}')" style="margin:0;">
+                            ${isFollowing ? i18n[currentLang].unfollow : i18n[currentLang].follow}
+                        </button>
+                    `;
+                    resultsDiv.appendChild(div);
+                    shownCount++;
+                }
+            });
+
+            if (shownCount === 0) {
+                resultsDiv.innerHTML = '<p style="color:var(--text-muted); text-align:center; margin-top:20px;">No se encontraron estrellas.</p>';
+            }
+        }
+
+        /* === RENDERIZAR FEED (Completado para Normal, Poll y Versus) === */
+        function renderFeed() {
+            const container = document.getElementById('feed-container');
+            container.innerHTML = '';
+            
+            // Ordenar posts por timestamp (más reciente primero)
+            let feedPosts = [...posts].sort((a,b) => b.timestamp - a.timestamp);
+            
+            if (feedPosts.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding: 20px;">No hay publicaciones aún. ¡Sé el primero en brillar!</p>';
+                return;
+            }
+
+            feedPosts.forEach(post => {
+                // Filtro de privacidad
+                if (post.privacy === 'friends' && post.userId !== currentUser.uid && !(currentUser.following && currentUser.following[post.userId])) {
+                    return;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'post-card';
+                if(post.type === 'versus') card.classList.add('versus-card-box'); // Estilo especial
+                
+                const timeStr = formatTimeAgo(post.timestamp);
+                
+                let mediaHtml = '';
+                
+                // RENDER: NORMAL
+                if (!post.type || post.type === 'normal') {
+                    if (post.image) {
+                        if (post.isVideo) {
+                            mediaHtml = `<div class="post-media-container"><video class="post-media" src="${post.image}" controls></video></div>`;
+                        } else {
+                            mediaHtml = `<div class="post-media-container"><img class="post-media" src="${post.image}" onclick="openFullScreen('${post.image}', false, '${post.id}')"></div>`;
+                        }
+                    }
+                }
+                
+                // RENDER: POLL (Encuesta)
+                if (post.type === 'poll' && post.poll) {
+                    let totalVotes = 0;
+                    if(post.poll.voters) totalVotes = Object.keys(post.poll.voters).length;
+                    
+                    let optionsHtml = '';
+                    post.poll.options.forEach((opt, idx) => {
+                        const optVotes = Object.values(post.poll.voters || {}).filter(v => v === idx).length;
+                        const percentage = totalVotes === 0 ? 0 : Math.round((optVotes / totalVotes) * 100);
+                        const hasVoted = post.poll.voters && post.poll.voters[currentUser.uid] !== undefined;
+                        const votedThis = post.poll.voters && post.poll.voters[currentUser.uid] === idx;
+                        
+                        optionsHtml += `
+                            <div class="poll-option-row" onclick="votePoll('${post.id}', ${idx})">
+                                ${hasVoted ? `<div class="poll-fill-bar" style="width: ${percentage}%; ${votedThis ? 'background: rgba(0, 168, 232, 0.4);' : ''}"></div>` : ''}
+                                <span class="poll-text-span" style="${votedThis ? 'color: var(--primary); font-weight: 800;' : ''}">${opt.text}</span>
+                                ${hasVoted ? `<span class="poll-text-span">${percentage}%</span>` : ''}
+                            </div>
+                        `;
+                    });
+
+                    mediaHtml = `
+                        <div class="poll-box">
+                            <h3 style="margin-bottom:10px; font-size:1.1rem; color:var(--text-main);">${post.poll.question}</h3>
+                            <div class="poll-option-container">${optionsHtml}</div>
+                            <p style="font-size:0.75rem; color:var(--text-muted); margin-top:10px;">${totalVotes} votos</p>
+                        </div>
+                    `;
+                }
+
+                // RENDER: VERSUS
+                if (post.type === 'versus') {
+                    const vMap = post.voters || {};
+                    const totalVs = Object.keys(vMap).length;
+                    const creatorVs = Object.values(vMap).filter(v => v === 'creator').length;
+                    const oppVs = Object.values(vMap).filter(v => v === 'opponent').length;
+                    
+                    const pC = totalVs === 0 ? 0 : Math.round((creatorVs/totalVs)*100);
+                    const pO = totalVs === 0 ? 0 : Math.round((oppVs/totalVs)*100);
+
+                    const myVote = vMap[currentUser.uid];
+
+                    mediaHtml = `
+                        <div style="text-align:center;">
+                            <h3 style="color:#ff007f; margin-bottom:5px; font-weight:800; font-size:1.3rem;">🔥 VERSUS 🔥</h3>
+                            <p style="color:var(--text-main); font-weight:bold; margin-bottom:15px;">${post.title}</p>
+                        </div>
+                        <div class="versus-split">
+                            <div class="versus-side ${myVote === 'creator' ? 'voted' : ''}" onclick="voteVersus('${post.id}', 'creator')">
+                                <img src="${post.image}" alt="Lado 1">
+                                <p style="font-size:0.8rem; margin-top:8px; font-weight:bold;">${post.userName}</p>
+                                ${myVote ? `<p style="font-size:1.2rem; color:var(--primary); font-weight:900;">${pC}%</p>` : `<button class="btn-small btn-secondary" style="margin-top:5px; width:100%;">Votar</button>`}
+                            </div>
+                            <div class="versus-vs">VS</div>
+                            <div class="versus-side ${myVote === 'opponent' ? 'voted' : ''}" onclick="voteVersus('${post.id}', 'opponent')">
+                                <img src="${post.opponentAvatar}" alt="Lado 2">
+                                <p style="font-size:0.8rem; margin-top:8px; font-weight:bold;">${post.opponentName}</p>
+                                ${myVote ? `<p style="font-size:1.2rem; color:var(--primary); font-weight:900;">${pO}%</p>` : `<button class="btn-small btn-secondary" style="margin-top:5px; width:100%;">Votar</button>`}
+                            </div>
+                        </div>
+                        <p style="font-size:0.75rem; color:var(--text-muted); text-align:center; margin-top:15px;">${totalVs} votos totales</p>
+                    `;
+                }
+
+                // AI Emotion Tag
+                let emotionHtml = '';
+                if(post.emotion) {
+                    emotionHtml = `<div class="ai-badge"><i class="fas fa-sparkles"></i> ${post.emotion}</div>`;
+                }
+
+                let commentsCount = post.comments ? Object.keys(post.comments).length : 0;
+                let userStars = post.stars || 0;
+
+                card.innerHTML = `
+                    <div class="post-header">
+                        <img src="${post.userAvatar}" class="avatar" onclick="simulateLoadingAndProfile('${post.userId}')">
+                        <div class="post-user-info" onclick="simulateLoadingAndProfile('${post.userId}')">
+                            <h4>${post.userName} ${post.edited ? `<span class="edited-badge">${i18n[currentLang].edited}</span>` : ''}</h4>
+                            <p>${post.username} • ${timeStr}</p>
+                        </div>
+                        <div class="post-options" onclick="togglePostMenu('${post.id}')">
+                            <i class="fas fa-ellipsis-h"></i>
+                            <div class="post-menu" id="menu-${post.id}">
+                                ${post.userId === currentUser.uid ? `<button onclick="openEditPost('${post.id}')"><i class="fas fa-edit"></i> Editar</button>` : ''}
+                                ${post.userId === currentUser.uid ? `<button style="color:#ff4d4d;" onclick="deletePost('${post.id}')"><i class="fas fa-trash"></i> Eliminar</button>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${post.caption ? `<p class="post-caption">${post.caption}</p>` : ''}
+                    
+                    ${mediaHtml}
+                    ${emotionHtml}
+                    
+                    <div class="interaction-bar">
+                        <div class="stars" onclick="giveStar('${post.id}')">
+                            <i class="fas fa-star ${userStars > 0 ? 'active' : ''}"></i>
+                            <span style="font-size: 1rem; color: var(--text-main); font-weight: bold;">${userStars}</span>
+                        </div>
+                        <div class="action-icons">
+                            <span style="font-size: 0.9rem; cursor:pointer;" onclick="openComments('${post.id}')"><i class="far fa-comment"></i> ${commentsCount}</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        /* === ACCIONES DE PUBLICACIONES (Votos, Estrellas, etc) === */
+        async function votePoll(postId, optionIndex) {
+            const postRef = db.ref(`posts/${postId}/poll/voters/${currentUser.uid}`);
+            await postRef.set(optionIndex);
+            
+            // Notification to owner
+            const post = posts.find(p => p.id === postId);
+            if(post && post.userId !== currentUser.uid) {
+                sendNotification(post.userId, 'vote', `📊 ${currentUser.name} ha votado en tu encuesta.`);
+            }
+        }
+
+        async function voteVersus(postId, side) {
+            const postRef = db.ref(`posts/${postId}/voters/${currentUser.uid}`);
+            await postRef.set(side);
+            
+            // Notification
+            const post = posts.find(p => p.id === postId);
+            if(post) {
+                if(side === 'creator' && post.userId !== currentUser.uid) {
+                    sendNotification(post.userId, 'versus_vote', `🔥 ${currentUser.name} votó por ti en el Versus.`);
+                } else if(side === 'opponent' && post.opponentId !== currentUser.uid) {
+                    sendNotification(post.opponentId, 'versus_vote', `🔥 ${currentUser.name} votó por ti en el Versus.`);
+                }
+            }
+        }
+
+        async function giveStar(postId) {
+            const post = posts.find(p => p.id === postId);
+            if(!post) return;
+            const newStars = (post.stars || 0) + 1;
+            await db.ref(`posts/${postId}/stars`).set(newStars);
+            
+            // Actualizar ranking general del usuario
+            const userRef = db.ref(`users/${post.userId}/stars`);
+            userRef.transaction(currentStars => (currentStars || 0) + 1);
+
+            if(post.userId !== currentUser.uid) {
+                sendNotification(post.userId, 'star', `⭐ ${currentUser.name} le dio una estrella a tu publicación.`);
+            }
+        }
+
+        function togglePostMenu(id) {
+            const menu = document.getElementById(`menu-${id}`);
+            if(menu.style.display === 'flex') {
+                menu.style.display = 'none';
+            } else {
+                document.querySelectorAll('.post-menu').forEach(m => m.style.display = 'none');
+                menu.style.display = 'flex';
+            }
+            event.stopPropagation(); // Evitar cerrar al hacer click
+        }
+        
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.post-menu').forEach(m => m.style.display = 'none');
+        });
+
+        async function deletePost(postId) {
+            if(confirm("¿Seguro que deseas eliminar esta publicación?")) {
+                await db.ref(`posts/${postId}`).remove();
+            }
+        }
+
+        function openEditPost(postId) {
+            const post = posts.find(p => p.id === postId);
+            if(!post) return;
+            editingPostId = postId;
+            editingPostBase64 = post.image;
+            document.getElementById('edit-post-caption').value = post.caption || '';
+            document.getElementById('edit-post-preview').src = post.image || '';
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('edit-post-modal').style.display = 'flex';
+        }
+
+        function handleEditPostImage(e) {
+            const file = e.target.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                compressImage(ev.target.result, 720, comp => {
+                    editingPostBase64 = comp;
+                    document.getElementById('edit-post-preview').src = comp;
+                });
+            }; reader.readAsDataURL(file);
+        }
+
+        async function saveEditPost() {
+            if(!editingPostId) return;
+            const cap = document.getElementById('edit-post-caption').value;
+            await db.ref(`posts/${editingPostId}`).update({
+                caption: cap,
+                image: editingPostBase64,
+                edited: true
+            });
+            closeModals();
+        }
+
+        /* === PERFIL, SEGUIR Y COMENTARIOS (Mantenidos) === */
+        function simulateLoadingAndProfile(uid) {
+            document.getElementById('profile-loader-overlay').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('profile-loader-overlay').style.display = 'none';
+                viewProfile(uid);
+            }, 800);
+        }
+
+        function viewProfile(uid) {
+            currentlyViewingProfileUid = uid;
+            renderProfileData(uid);
+            openView('view-profile');
+        }
+
+        function viewMyProfile() {
+            viewProfile(currentUser.uid);
+        }
+
+        function renderProfileData(uid) {
+            const user = allUsers[uid];
+            if(!user) return;
+            
+            const isMe = uid === currentUser.uid;
+            const isFollowing = currentUser.following && currentUser.following[uid];
+            
+            let buttonsHtml = '';
+            if (isMe) {
+                buttonsHtml = `<button class="btn-secondary" style="width:auto; padding:8px 20px;" onclick="openEditProfile()">Editar Perfil</button>`;
+            } else {
+                buttonsHtml = `<button class="btn-${isFollowing ? 'secondary' : 'primary'}" style="width:auto; padding:8px 20px;" onclick="toggleFollowUser('${uid}')">${isFollowing ? i18n[currentLang].unfollow : i18n[currentLang].follow}</button>`;
+            }
+
+            // Redes
+            let socialHtml = '';
+            if(user.social) {
+                if(user.social.wa) socialHtml += `<a href="https://wa.me/${user.social.wa}" target="_blank" class="social-icon"><i class="fab fa-whatsapp"></i></a>`;
+                if(user.social.ig) socialHtml += `<a href="https://instagram.com/${user.social.ig}" target="_blank" class="social-icon"><i class="fab fa-instagram"></i></a>`;
+                if(user.social.snap) socialHtml += `<a href="https://snapchat.com/add/${user.social.snap}" target="_blank" class="social-icon"><i class="fab fa-snapchat-ghost"></i></a>`;
+                if(user.social.yt) socialHtml += `<a href="${user.social.yt}" target="_blank" class="social-icon"><i class="fab fa-youtube"></i></a>`;
+                if(user.social.tt) socialHtml += `<a href="https://tiktok.com/@${user.social.tt}" target="_blank" class="social-icon"><i class="fab fa-tiktok"></i></a>`;
+                if(user.social.x) socialHtml += `<a href="https://x.com/${user.social.x}" target="_blank" class="social-icon"><i class="fab fa-twitter"></i></a>`;
+                if(user.social.web) socialHtml += `<a href="${user.social.web}" target="_blank" class="social-icon"><i class="fas fa-link"></i></a>`;
+            }
+
+            document.getElementById('profile-header').innerHTML = `
+                <div class="profile-cover"></div>
+                <div class="profile-header">
+                    <img src="${user.avatar}" class="avatar" style="width:90px; height:90px;" onclick="if('${user.avatar}') openFullScreen('${user.avatar}', false)">
+                    <h2 style="margin:5px 0;">${user.name}</h2>
+                    <p class="profile-username">${user.username}</p>
+                    <p class="profile-bio">${user.bio || ''}</p>
+                    ${socialHtml !== '' ? `<div class="social-icons-container">${socialHtml}</div>` : ''}
+                    
+                    <div class="profile-stats">
+                        <div class="stat"><strong>${user.stars || 0}</strong><span>Estrellas</span></div>
+                        <div class="stat"><strong>${user.followersCount || 0}</strong><span>${i18n[currentLang].followers}</span></div>
+                        <div class="stat"><strong>${user.followingCount || 0}</strong><span>${i18n[currentLang].following}</span></div>
+                    </div>
+                    ${buttonsHtml}
+                </div>
+            `;
+
+            const grid = document.getElementById('profile-grid');
+            grid.innerHTML = '';
+            
+            const userPosts = posts.filter(p => p.userId === uid).sort((a,b) => b.timestamp - a.timestamp);
+            if(userPosts.length === 0) {
+                grid.innerHTML = `<p style="grid-column: span 3; text-align:center; color:var(--text-muted); padding: 20px;">No hay publicaciones.</p>`;
+            } else {
+                userPosts.forEach(p => {
+                    if (p.image) {
+                        const el = document.createElement('div');
+                        el.style.width = '100%'; el.style.aspectRatio = '1';
+                        
+                        if(p.isVideo) {
+                            el.innerHTML = `<video src="${p.image}" style="width:100%; height:100%; object-fit:cover; border-radius:6px; pointer-events:none;"></video>`;
+                        } else {
+                            el.innerHTML = `<img src="${p.image}" style="width:100%; height:100%; object-fit:cover; border-radius:6px;">`;
+                        }
+                        
+                        el.onclick = () => openFullScreen(p.image, p.isVideo, p.id);
+                        grid.appendChild(el);
+                    }
+                });
+            }
+        }
+
+        async function toggleFollowUser(targetUid) {
+            const isFollowing = currentUser.following && currentUser.following[targetUid];
+            if(isFollowing) {
+                await db.ref(`users/${currentUser.uid}/following/${targetUid}`).remove();
+                await db.ref(`users/${targetUid}/followers/${currentUser.uid}`).remove();
+                
+                db.ref(`users/${currentUser.uid}/followingCount`).transaction(c => (c||0)-1);
+                db.ref(`users/${targetUid}/followersCount`).transaction(c => (c||0)-1);
+            } else {
+                await db.ref(`users/${currentUser.uid}/following/${targetUid}`).set(true);
+                await db.ref(`users/${targetUid}/followers/${currentUser.uid}`).set(true);
+                
+                db.ref(`users/${currentUser.uid}/followingCount`).transaction(c => (c||0)+1);
+                db.ref(`users/${targetUid}/followersCount`).transaction(c => (c||0)+1);
+                
+                sendNotification(targetUid, 'follow', `🔔 ${currentUser.name} ha comenzado a seguirte.`);
+            }
+        }
+
+        function openEditProfile() {
+            document.getElementById('edit-name').value = currentUser.name;
+            document.getElementById('edit-bio').value = currentUser.bio || '';
+            document.getElementById('edit-avatar-preview').src = currentUser.avatar;
+            editAvatarBase64 = currentUser.avatar;
+            
+            if(currentUser.social) {
+                document.getElementById('edit-wa').value = currentUser.social.wa || '';
+                document.getElementById('edit-ig').value = currentUser.social.ig || '';
+                document.getElementById('edit-snap').value = currentUser.social.snap || '';
+                document.getElementById('edit-yt').value = currentUser.social.yt || '';
+                document.getElementById('edit-tt').value = currentUser.social.tt || '';
+                document.getElementById('edit-x').value = currentUser.social.x || '';
+                document.getElementById('edit-web').value = currentUser.social.web || '';
+            }
+            
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('edit-profile-modal').style.display = 'flex';
+        }
+
+        function handleEditAvatar(e) {
+            const file = e.target.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                if(file.type === 'image/gif'){
+                    editAvatarBase64 = ev.target.result;
+                    document.getElementById('edit-avatar-preview').src = editAvatarBase64;
+                } else {
+                    compressImage(ev.target.result, 250, comp => {
+                        editAvatarBase64 = comp; document.getElementById('edit-avatar-preview').src = comp;
+                    });
+                }
+            }; reader.readAsDataURL(file);
+        }
+
+        async function saveProfileChanges() {
+            await db.ref(`users/${currentUser.uid}`).update({
+                name: document.getElementById('edit-name').value,
+                bio: document.getElementById('edit-bio').value,
+                avatar: editAvatarBase64,
+                social: {
+                    wa: document.getElementById('edit-wa').value.trim(),
+                    ig: document.getElementById('edit-ig').value.trim(),
+                    snap: document.getElementById('edit-snap').value.trim(),
+                    yt: document.getElementById('edit-yt').value.trim(),
+                    tt: document.getElementById('edit-tt').value.trim(),
+                    x: document.getElementById('edit-x').value.trim(),
+                    web: document.getElementById('edit-web').value.trim()
+                }
+            });
+            
+            // Update posts and stories avatar cache
+            posts.forEach(p => { if(p.userId === currentUser.uid) db.ref(`posts/${p.id}/userAvatar`).set(editAvatarBase64); });
+            stories.forEach(s => { if(s.userId === currentUser.uid) db.ref(`stories/${s.id}/userAvatar`).set(editAvatarBase64); });
+            
+            closeModals();
+        }
+
+        /* === MANEJO DE HISTORIAS COMPLETADO === */
         function handleStoryUpload(e) {
             const file = e.target.files[0]; if(!file) return;
             const reader = new FileReader();
@@ -1837,7 +2503,7 @@
                     const newStory = { id: 'story_' + Date.now(), userId: currentUser.uid, userName: currentUser.name, userAvatar: currentUser.avatar, image: ev.target.result, timestamp: Date.now(), score: 0 };
                     await db.ref('stories/' + newStory.id).set(newStory);
                 } else {
-                    compressImage(ev.target.result, 400, async (compressed) => {
+                    compressImage(ev.target.result, 600, async (compressed) => {
                         const newStory = { id: 'story_' + Date.now(), userId: currentUser.uid, userName: currentUser.name, userAvatar: currentUser.avatar, image: compressed, timestamp: Date.now(), score: 0 };
                         await db.ref('stories/' + newStory.id).set(newStory);
                     });
@@ -1847,6 +2513,8 @@
         
         function renderStories() {
             const container = document.getElementById('friends-stories'); 
+            container.innerHTML = '';
+            
             const now = Date.now(); const oneDay = 24 * 60 * 60 * 1000;
             let grouped = {};
             
@@ -1865,516 +2533,147 @@
                 return b === currentUser.uid ? 1 : 0;
             });
 
-            let htmlBuffer = '';
             userIds.forEach(uid => {
-                let userStories = grouped[uid];
-                userStories.sort((a,b) => a.timestamp - b.timestamp); 
-                let latestStory = userStories[userStories.length - 1]; 
-                let nameDisplay = (uid === currentUser.uid) ? (i18n[currentLang].yourStory) : latestStory.userName.split(' ')[0];
-
-                htmlBuffer += `
-                    <div>
-                        <div class="story-circle" onclick="viewUserStories('${uid}')"><img src="${latestStory.image}"></div>
-                        <div class="story-username">${nameDisplay}</div>
+                let userStories = grouped[uid].sort((a,b) => a.timestamp - b.timestamp);
+                
+                const s = userStories[userStories.length - 1]; // Última historia para cover
+                
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <div class="story-circle" onclick="openStory('${uid}')">
+                        <img src="${s.userAvatar}">
                     </div>
+                    <div class="story-username">${uid === currentUser.uid ? i18n[currentLang].yourStory : s.userName.split(' ')[0]}</div>
                 `;
+                container.appendChild(div);
             });
-            container.innerHTML = htmlBuffer;
         }
 
-        function viewUserStories(uid) {
-            const now = Date.now(); const oneDay = 24 * 60 * 60 * 1000;
-            viewingUserStories = stories.filter(s => s.userId === uid && (now - s.timestamp <= oneDay)).sort((a,b) => a.timestamp - b.timestamp);
+        let storyTimer;
+        function openStory(uid) {
+            viewingUserStories = stories.filter(s => s.userId === uid).sort((a,b) => a.timestamp - b.timestamp);
             if(viewingUserStories.length === 0) return;
             viewingStoryIndex = 0;
-            showStoryIndex(viewingStoryIndex);
+            showCurrentStory();
             document.getElementById('story-view-modal').style.display = 'flex';
         }
 
-        function showStoryIndex(index) {
-            const story = viewingUserStories[index];
-            currentStoryId = story.id;
+        function showCurrentStory() {
+            clearTimeout(storyTimer);
+            const s = viewingUserStories[viewingStoryIndex];
             
-            const imgEl = document.getElementById('sv-img');
-            imgEl.src = story.image;
+            currentStoryId = s.id;
+            document.getElementById('sv-img').src = s.image;
+            document.getElementById('sv-avatar').src = s.userAvatar;
+            document.getElementById('sv-name').innerText = s.userName;
+            document.getElementById('sv-time').innerText = formatTimeAgo(s.timestamp);
+            document.getElementById('story-counter').innerText = `${viewingStoryIndex + 1}/${viewingUserStories.length}`;
             
-            document.getElementById('sv-avatar').src = story.userAvatar || '';
-            document.getElementById('sv-name').innerText = story.userName || 'Usuario';
-            document.getElementById('sv-time').innerText = formatTimeAgo(story.timestamp);
-            document.getElementById('story-counter').innerText = `${index + 1} / ${viewingUserStories.length}`;
-            
-            const deleteBtn = document.getElementById('story-delete-btn');
-            if (story.userId === currentUser.uid) {
-                deleteBtn.style.display = 'inline-block';
-            } else {
-                deleteBtn.style.display = 'none';
-            }
-            renderStoryStars(story);
+            const delBtn = document.getElementById('story-delete-btn');
+            if(s.userId === currentUser.uid) delBtn.style.display = 'block'; else delBtn.style.display = 'none';
+
+            // Estrellas de Historia (Reacciones)
+            let sc = s.score || 0;
+            document.getElementById('story-stars-container').innerHTML = `
+                <i class="fas fa-star ${sc > 0 ? 'active' : ''}" style="cursor:pointer;" onclick="starStory('${s.id}')"></i>
+                <span style="font-size:1.2rem; margin-left:5px; color:white;">${sc}</span>
+            `;
+
+            storyTimer = setTimeout(nextStory, 5000);
         }
 
         function nextStory() {
             if (viewingStoryIndex < viewingUserStories.length - 1) {
-                viewingStoryIndex++;
-                showStoryIndex(viewingStoryIndex);
-            } else {
-                closeStory();
-            }
+                viewingStoryIndex++; showCurrentStory();
+            } else { closeStory(); }
         }
 
         function prevStory() {
-            if (viewingStoryIndex > 0) {
-                viewingStoryIndex--;
-                showStoryIndex(viewingStoryIndex);
-            }
+            if (viewingStoryIndex > 0) { viewingStoryIndex--; showCurrentStory(); }
+            else { showCurrentStory(); } // Reiniciar timer
         }
 
         function closeStory() {
+            clearTimeout(storyTimer);
             document.getElementById('story-view-modal').style.display = 'none';
             currentStoryId = null;
         }
 
-        function renderStoryStars(story) {
-            const cont = document.getElementById('story-stars-container');
-            let html = '';
-            for(let i = 1; i <= 5; i++) {
-                const activeClass = (story.stars && i <= story.stars) ? 'active' : '';
-                html += `<i class="fas fa-star star ${activeClass}" onclick="rateStory('${story.id}', ${i})"></i>`;
-            }
-            cont.innerHTML = html;
-        }
-
-        async function rateStory(storyId, rating) {
-            await db.ref(`stories/${storyId}/stars`).set(rating);
-            const story = viewingUserStories.find(s => s.id === storyId);
-            if(story) {
-                story.stars = rating;
-                renderStoryStars(story);
-                
-                const creatorId = story.userId;
-                db.ref(`users/${creatorId}/stars`).transaction(curr => (curr || 0) + 1);
-            }
-        }
-
         async function deleteCurrentStory() {
-            if(!currentStoryId) return;
-            await db.ref('stories/' + currentStoryId).remove();
-            closeStory();
+            if(currentStoryId) {
+                await db.ref(`stories/${currentStoryId}`).remove();
+                closeStory();
+            }
         }
 
-        /* === SECCIÓN 6: ALGORITMO IA INTELIGENTE DEL FEED === */
-        function getPostScore(post) {
-            let score = 0;
-            
-            // Relevancia por Calificaciones de Estrellas
-            score += (post.stars || 0) * 12;
-            
-            // Coincidencia Semántica por Intereses de IA
-            if (currentUser && currentUser.bio) {
-                const bioWords = currentUser.bio.toLowerCase().split(/\s+/);
-                const postContent = `${post.caption || ''} ${post.emotion || ''}`.toLowerCase();
+        async function starStory(storyId) {
+            const s = stories.find(x => x.id === storyId);
+            if(s) {
+                await db.ref(`stories/${storyId}/score`).transaction(sc => (sc || 0) + 1);
                 
-                bioWords.forEach(word => {
-                    if (word.length > 3 && postContent.includes(word)) {
-                        score += 30; // Incremento semántico para recomendar contenido similar
-                    }
-                });
-            }
-            
-            // Desintegración Temporal (Prioriza Frescura)
-            const hoursOld = (Date.now() - post.timestamp) / (1000 * 60 * 60);
-            score -= hoursOld * 1.8;
-            
-            return score;
-        }
+                // Darle estrella general al perfil
+                db.ref(`users/${s.userId}/stars`).transaction(uS => (uS||0)+1);
 
-        /* === RENDERING FEED === */
-        function renderFeed() {
-            const container = document.getElementById('feed-container');
-            if(posts.length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding: 40px; color:var(--text-muted);">Aún no hay publicaciones estelares...</div>`;
-                return;
-            }
-
-            // ORDENAMIENTO BASADO EN EL ALGORITMO INTELIGENTE IA
-            const processedPosts = [...posts].sort((a, b) => {
-                // CONDICION PRIORIDAD DE FACEBOOK: Mis posts salen primero
-                const aIsOwn = a.userId === currentUser.uid;
-                const bIsOwn = b.userId === currentUser.uid;
-                if (aIsOwn && !bIsOwn) return -1;
-                if (!aIsOwn && bIsOwn) return 1;
-
-                // Para posts de terceros, se clasifica según el score inteligente de IA
-                return getPostScore(b) - getPostScore(a);
-            });
-
-            let htmlBuffer = '';
-            processedPosts.forEach(post => {
-                const isOwnPost = post.userId === currentUser.uid;
-                const starActive = (post.userStarsRating && post.userStarsRating[currentUser.uid]) || 0;
+                if(s.userId !== currentUser.uid) {
+                    sendNotification(s.userId, 'story_star', `⭐ ${currentUser.name} reaccionó a tu historia.`);
+                }
                 
-                let starsHTML = '';
-                for(let i=1; i<=5; i++) {
-                    const activeClass = i <= starActive ? 'active' : '';
-                    starsHTML += `<i class="fas fa-star star ${activeClass}" onclick="ratePost('${post.id}', ${i})"></i>`;
-                }
-
-                // SECCIÓN 3: CONTABILIZACIÓN DE ESTRELLAS DE CALIFICACIÓN (Ej. 14.5 ⭐)
-                const numericRatingScore = (post.stars || 0).toFixed(1);
-
-                // SECCIÓN 2: CONTABILIZACIÓN DE COMENTARIOS
-                const commentCount = post.comments ? Object.keys(post.comments).length : 0;
-                const commentText = commentCount === 1 ? "1 comentario" : `${commentCount} comentarios`;
-
-                const postDate = formatTimeAgo(post.timestamp);
-                const editedLabel = post.edited ? `<span class="edited-badge">${i18n[currentLang].edited}</span>` : '';
-                const downloadBtn = `<i class="fas fa-download" onclick="event.stopPropagation(); downloadMedia('${post.image}', ${post.isVideo})"></i>`;
-
-                // Renderizado Especial de Encuestas (SECCIÓN 4)
-                let pollHTML = '';
-                if(post.poll) {
-                    const totalPollVotes = post.poll.options.reduce((acc, curr) => acc + (curr.votes || 0), 0);
-                    const userVotedId = post.poll.voters ? post.poll.voters[currentUser.uid] : null;
-
-                    pollHTML += `<div class="poll-box">`;
-                    pollHTML += `<h4 style="font-size: 1rem; color: var(--text-main); font-weight: 700; margin-bottom: 8px;"><i class="fas fa-chart-bar"></i> ${post.poll.question}</h4>`;
-                    pollHTML += `<div class="poll-option-container">`;
-                    
-                    post.poll.options.forEach(opt => {
-                        const pct = totalPollVotes > 0 ? Math.round(((opt.votes || 0) / totalPollVotes) * 100) : 0;
-                        const hasVotedThis = userVotedId === opt.id;
-                        const borderStyle = hasVotedThis ? "border-color: var(--primary); background: rgba(0, 168, 232, 0.05);" : "";
-
-                        pollHTML += `
-                            <div class="poll-option-row" style="${borderStyle}" onclick="voteOnPoll('${post.id}', ${opt.id})">
-                                <div class="poll-fill-bar" style="width: ${pct}%;"></div>
-                                <span class="poll-text-span">${opt.text} ${hasVotedThis ? '✓' : ''}</span>
-                                <span class="poll-text-span" style="font-weight: bold;">${pct}% (${opt.votes || 0})</span>
-                            </div>
-                        `;
-                    });
-
-                    pollHTML += `</div><p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px; text-align: right;">${totalPollVotes} votos totales</p></div>`;
-                }
-
-                // Renderizado Especial de Versus (SECCIÓN 5)
-                let versusHTML = '';
-                if (post.type === 'versus' && post.versusData) {
-                    const vd = post.versusData;
-                    const totalVsVotes = (vd.votesA || 0) + (vd.votesB || 0);
-                    const pctA = totalVsVotes > 0 ? Math.round(((vd.votesA || 0) / totalVsVotes) * 100) : 50;
-                    const pctB = totalVsVotes > 0 ? Math.round(((vd.votesB || 0) / totalVsVotes) * 100) : 50;
-                    const myVsVote = vd.userVotes ? vd.userVotes[currentUser.uid] : null;
-
-                    // Frenesí activo si el FrenzyMeter supera el 40%
-                    const isFrenzyActive = (vd.frenzyMeter || 0) >= 40;
-                    const versusCardClass = isFrenzyActive ? 'versus-card-box frenzy-glow' : 'versus-card-box';
-
-                    versusHTML += `
-                        <div class="${versusCardClass}">
-                            ${isFrenzyActive ? `
-                                <div style="background: linear-gradient(90deg, #ff007f, #7f00ff); color: white; font-weight: bold; font-size: 0.8rem; text-align: center; padding: 5px 0; position: absolute; top:0; left:0; right:0; z-index: 10; letter-spacing: 1px;">
-                                    ⚡ ¡MODO FRENESÍ ACTIVADO! (+PUNTOS) ⚡
-                                </div>
-                            ` : ''}
-                            <h3 style="text-align: center; color: var(--primary); font-size: 1.1rem; margin-bottom: 12px; margin-top: ${isFrenzyActive ? '20px' : '0'}; font-weight: 800; text-transform: uppercase;">⚔️ Versus Battle ⚔️</h3>
-                            <h4 style="text-align: center; font-size: 0.95rem; color: var(--text-main); font-weight: bold; margin-bottom: 15px;">"${vd.title}"</h4>
-                            
-                            <div style="display: grid; grid-template-columns: 1fr 40px 1fr; align-items: center; gap: 10px;">
-                                <div style="text-align: center; cursor: pointer;" onclick="voteOnVersus('${post.id}', 'A')">
-                                    <img src="${vd.creatorImage}" style="width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; border: 3px solid ${myVsVote === 'A' ? '#ff007f' : 'transparent'};">
-                                    <p style="font-weight: bold; margin-top: 8px; font-size: 0.85rem; color: var(--text-main);">${vd.creatorName}</p>
-                                    <span style="background: rgba(255, 0, 127, 0.15); color: #ff007f; padding: 3px 8px; border-radius: 12px; font-weight: bold; font-size: 0.75rem; display: inline-block; margin-top: 4px;">${pctA}% (${vd.votesA || 0})</span>
-                                </div>
-                                <div style="text-align: center; font-weight: 900; color: #ff007f; font-size: 1.3rem;">VS</div>
-                                <div style="text-align: center; cursor: pointer;" onclick="voteOnVersus('${post.id}', 'B')">
-                                    <img src="${vd.opponentImage}" style="width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; border: 3px solid ${myVsVote === 'B' ? 'var(--primary)' : 'transparent'};">
-                                    <p style="font-weight: bold; margin-top: 8px; font-size: 0.85rem; color: var(--text-main);">${vd.opponentName}</p>
-                                    <span style="background: rgba(0, 168, 232, 0.15); color: var(--primary); padding: 3px 8px; border-radius: 12px; font-weight: bold; font-size: 0.75rem; display: inline-block; margin-top: 4px;">${pctB}% (${vd.votesB || 0})</span>
-                                </div>
-                            </div>
-                            
-                            <div style="margin-top: 15px;">
-                                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: bold; color: var(--text-muted); margin-bottom: 4px;">
-                                    <span>⚡ Barra de Frenesí:</span>
-                                    <span style="color: #ff007f;">${vd.frenzyMeter || 0}%</span>
-                                </div>
-                                <div style="width: 100%; height: 8px; background: var(--input-bg); border-radius: 4px; overflow: hidden;">
-                                    <div style="height: 100%; width: ${vd.frenzyMeter || 0}%; background: linear-gradient(90deg, #ff007f, #00A8E8); transition: width 0.3s ease;"></div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-
-                let mediaHTML = '';
-                if (post.image && post.image !== "") {
-                    mediaHTML = post.isVideo ? 
-                        `<video class="post-media" src="${post.image}" autoplay muted loop playsinline onclick="openFullScreen('${post.image}', true, '${post.id}')"></video>` :
-                        `<img class="post-media" src="${post.image}" onclick="openFullScreen('${post.image}', false, '${post.id}')">`;
-                }
-
-                htmlBuffer += `
-                    <div class="post-card" id="card_${post.id}">
-                        <div class="post-header">
-                            <div style="display:flex; align-items:center;">
-                                <div class="avatar" onclick="simulateLoadingAndProfile('${post.userId}')">
-                                    <img src="${post.userAvatar}">
-                                </div>
-                                <div class="post-user-info" onclick="simulateLoadingAndProfile('${post.userId}')">
-                                    <h4>${post.userName} <span style="color:var(--primary); font-size:0.8rem;">${post.username || ''}</span></h4>
-                                    <p>${postDate} ${editedLabel}</p>
-                                </div>
-                            </div>
-                            <div class="post-options" onclick="togglePostMenu(event, '${post.id}')">
-                                <i class="fas fa-ellipsis-v"></i>
-                                <div class="post-menu" id="menu_${post.id}">
-                                    ${isOwnPost ? `
-                                        <button onclick="openEditPost('${post.id}')"><i class="fas fa-edit"></i> Editar</button>
-                                        <button onclick="deletePost('${post.id}')" style="color:#ff4d4d;"><i class="fas fa-trash"></i> Eliminar</button>
-                                    ` : `
-                                        <button onclick="reportPost('${post.id}')"><i class="fas fa-flag"></i> Reportar</button>
-                                    `}
-                                </div>
-                            </div>
-                        </div>
-                        <p class="post-caption">${post.caption}</p>
-                        
-                        ${versusHTML}
-                        ${pollHTML}
-
-                        ${post.image && post.image !== "" ? `<div class="post-media-container">${mediaHTML}</div>` : ''}
-
-                        ${post.emotion ? `<div class="ai-badge"><i class="fas fa-robot"></i> ${post.emotion}</div>` : ''}
-
-                        <div class="interaction-bar">
-                            <div class="stars">
-                                ${starsHTML}
-                                <span style="font-size: 0.85rem; font-weight: bold; color: var(--star-active); margin-left: 6px;">${numericRatingScore} ⭐</span>
-                            </div>
-                            <div class="action-icons">
-                                ${post.image && post.image !== "" ? downloadBtn : ''}
-                                <div style="display: flex; align-items: center; gap: 5px; cursor: pointer;" onclick="openComments('${post.id}')">
-                                    <i class="far fa-comment"></i>
-                                    <span style="font-size:0.8rem; font-weight:bold;">${commentText}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                // Actualizar vista local rápido
+                s.score = (s.score || 0) + 1;
+                document.getElementById('story-stars-container').innerHTML = `
+                    <i class="fas fa-star active" style="cursor:pointer;"></i>
+                    <span style="font-size:1.2rem; margin-left:5px; color:white;">${s.score}</span>
                 `;
-            });
-            container.innerHTML = htmlBuffer;
-        }
-
-        /* === DESCARGAS === */
-        function downloadMedia(src, isVideo) {
-            const a = document.createElement('a');
-            a.href = src;
-            a.download = isVideo ? 'StarShine_Video.mp4' : 'StarShine_Image.jpg';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-
-        /* === INTERACCIONES DEL FEED === */
-        function togglePostMenu(e, id) {
-            e.stopPropagation();
-            const menu = document.getElementById('menu_' + id);
-            const isVisible = menu.style.display === 'flex';
-            document.querySelectorAll('.post-menu').forEach(m => m.style.display = 'none');
-            menu.style.display = isVisible ? 'none' : 'flex';
-        }
-
-        async function ratePost(postId, rating) {
-            const myUid = currentUser.uid;
-            const postRef = db.ref(`posts/${postId}`);
-            
-            await postRef.transaction(post => {
-                if (post) {
-                    if (!post.userStarsRating) post.userStarsRating = {};
-                    const previousRating = post.userStarsRating[myUid] || 0;
-                    
-                    post.userStarsRating[myUid] = rating;
-                    post.stars = (post.stars || 0) - previousRating + rating;
-                    
-                    db.ref(`users/${post.userId}/stars`).transaction(curr => (curr || 0) - previousRating + rating);
-                }
-                return post;
-            });
-        }
-
-        /* === SECCIÓN 4: VOTAR EN ENCUESTA === */
-        async function voteOnPoll(postId, optionId) {
-            const myUid = currentUser.uid;
-            await db.ref(`posts/${postId}/poll`).transaction(poll => {
-                if (poll) {
-                    if (!poll.voters) poll.voters = {};
-                    const previouslyVotedId = poll.voters[myUid];
-
-                    if (previouslyVotedId === optionId) {
-                        // Desvotar opción seleccionada
-                        delete poll.voters[myUid];
-                        poll.options[optionId].votes = Math.max(0, (poll.options[optionId].votes || 1) - 1);
-                    } else {
-                        // Cambiar o realizar nuevo voto
-                        if (previouslyVotedId !== undefined) {
-                            poll.options[previouslyVotedId].votes = Math.max(0, (poll.options[previouslyVotedId].votes || 1) - 1);
-                        }
-                        poll.voters[myUid] = optionId;
-                        poll.options[optionId].votes = (poll.options[optionId].votes || 0) + 1;
-                    }
-                }
-                return poll;
-            });
-        }
-
-        /* === SECCIÓN 5: VOTAR EN VERSUS === */
-        async function voteOnVersus(postId, side) {
-            const myUid = currentUser.uid;
-            await db.ref(`posts/${postId}`).transaction(post => {
-                if (post && post.type === 'versus' && post.versusData) {
-                    const vd = post.versusData;
-                    if (!vd.userVotes) vd.userVotes = {};
-
-                    const previousVote = vd.userVotes[myUid];
-
-                    if (previousVote === side) {
-                        // Retirar voto
-                        delete vd.userVotes[myUid];
-                        if (side === 'A') vd.votesA = Math.max(0, (vd.votesA || 1) - 1);
-                        else vd.votesB = Math.max(0, (vd.votesB || 1) - 1);
-
-                        vd.frenzyMeter = Math.max(0, (vd.frenzyMeter || 0) - 10);
-                    } else {
-                        // Realizar voto nuevo o alternativo
-                        if (previousVote) {
-                            if (previousVote === 'A') vd.votesA = Math.max(0, (vd.votesA || 1) - 1);
-                            else vd.votesB = Math.max(0, (vd.votesB || 1) - 1);
-                        }
-
-                        vd.userVotes[myUid] = side;
-                        if (side === 'A') vd.votesA = (vd.votesA || 0) + 1;
-                        else vd.votesB = (vd.votesB || 0) + 1;
-
-                        // Incremento de la barra de frenesí por voto activo
-                        vd.frenzyMeter = Math.min(100, (vd.frenzyMeter || 0) + 15);
-                        vd.lastVoteTimestamp = Date.now();
-
-                        // Multiplicador de Puntos por Frenesí
-                        const frenzyActive = vd.frenzyMeter >= 40;
-                        const pointsEarned = frenzyActive ? 10 : 5; // Frenesí activo duplica los puntos
-
-                        const winnerUid = side === 'A' ? vd.creatorId : vd.opponentId;
-                        db.ref(`users/${winnerUid}/stars`).transaction(s => (s || 0) + pointsEarned);
-                    }
-                }
-                return post;
-            });
-        }
-
-        /* === SECCIÓN 5: ACEPCIÓN / RECHAZO DE VERSUS === */
-        async function acceptVersusChallenge(versusId, notifId) {
-            const snap = await db.ref(`versus_requests/${versusId}`).once('value');
-            const req = snap.val();
-            if(!req) {
-                alert("Este versus ya caducó o no existe.");
-                return;
             }
-
-            const postObj = {
-                id: 'post_' + Date.now(),
-                userId: req.creatorId,
-                userName: req.creatorName,
-                userAvatar: req.creatorAvatar,
-                type: 'versus',
-                versusData: {
-                    id: versusId,
-                    title: req.title,
-                    creatorId: req.creatorId,
-                    creatorName: req.creatorName,
-                    creatorAvatar: req.creatorAvatar,
-                    creatorImage: req.creatorImage,
-                    opponentId: currentUser.uid,
-                    opponentName: currentUser.name,
-                    opponentAvatar: currentUser.avatar,
-                    opponentImage: currentUser.avatar, 
-                    votesA: 0,
-                    votesB: 0,
-                    userVotes: {},
-                    frenzyMeter: 0,
-                    lastVoteTimestamp: 0
-                },
-                caption: `⚔️ ¡BATALLA REAL ACTIVADA! ${req.creatorName} Vs ${currentUser.name} ⚔️\nCategoría: "${req.title}"`,
-                timestamp: Date.now(),
-                stars: 0
-            };
-
-            await db.ref(`posts/${postObj.id}`).set(postObj);
-            await db.ref(`versus_requests/${versusId}`).remove();
-            await db.ref(`notifications/${currentUser.uid}/${notifId}`).remove();
-
-            alert("Has aceptado el Versus. ¡Ya es público en el Feed!");
-            openView('view-feed');
         }
 
-        async function rejectVersusChallenge(versusId, notifId) {
-            await db.ref(`versus_requests/${versusId}`).remove();
-            await db.ref(`notifications/${currentUser.uid}/${notifId}`).remove();
-            alert("Desafío declinado correctamente.");
-            renderNotifications();
-        }
-
-        /* === SECCIÓN 5: CARGAR OPONENTES EN CREACIÓN DE POSTS === */
-        function populateVersusOpponentList() {
-            const select = document.getElementById('versus-rival-select');
-            if(!select) return;
-            select.innerHTML = '<option value="">-- No iniciar un versus --</option>';
-            Object.values(allUsers).forEach(u => {
-                if(u.uid !== currentUser.uid) {
-                    select.innerHTML += `<option value="${u.uid}">${u.name} (${u.username})</option>`;
-                }
-            });
-        }
-
-        /* === COMENTARIOS MODAL === */
+        /* === COMENTARIOS === */
         function openComments(postId) {
             currentPostIdForAction = postId;
             document.getElementById('overlay').style.display = 'block';
             document.getElementById('comment-modal').style.display = 'flex';
             renderComments(postId);
+            setTimeout(() => document.getElementById('comment-input').focus(), 100);
         }
-
+        
         function renderComments(postId) {
             const post = posts.find(p => p.id === postId);
             const list = document.getElementById('comments-list');
+            list.innerHTML = '';
+            
             if(!post || !post.comments) {
-                list.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted);">Sin comentarios aún. ¡Sé el primero!</div>`;
+                list.innerHTML = '<p style="color:var(--text-muted); text-align:center;">No hay comentarios aún.</p>';
                 return;
             }
-            
-            let html = '';
-            const commentsArr = Object.values(post.comments).sort((a,b) => a.timestamp - b.timestamp);
-            commentsArr.forEach(c => {
-                html += `
-                    <div class="comment" id="${c.id}">
-                        <div class="avatar" style="width:32px; height:32px;"><img src="${c.userAvatar}"></div>
-                        <div class="comment-content">
+
+            Object.values(post.comments).sort((a,b)=>a.timestamp-b.timestamp).forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'comment';
+                
+                let replyHtml = '';
+                if(c.replyTo) replyHtml = `<span style="font-size:0.7rem; color:var(--primary);">Respuesta a ${c.replyTo}</span><br>`;
+
+                div.innerHTML = `
+                    <img src="${c.avatar}" class="avatar" style="width:32px; height:32px; cursor:pointer;" onclick="closeModals(); simulateLoadingAndProfile('${c.userId}')">
+                    <div class="comment-content">
+                        <div style="display:flex; justify-content:space-between;">
                             <h5>${c.userName}</h5>
-                            <p>${c.text}</p>
-                            <div style="margin-top:4px; display:flex; gap:10px;">
-                                <span class="comment-reply-btn" onclick="setupReply('${c.id}', '${c.userName}')">${i18n[currentLang].reply}</span>
-                                <span style="font-size:0.7rem; color:var(--text-muted);">${formatTimeAgo(c.timestamp)}</span>
-                            </div>
+                            <span class="comment-reply-btn" onclick="prepareReply('${c.id}', '${c.userName}')">${i18n[currentLang].reply}</span>
                         </div>
+                        ${replyHtml}
+                        <p>${c.text}</p>
                     </div>
                 `;
+                list.appendChild(div);
             });
-            list.innerHTML = html;
+            list.scrollTop = list.scrollHeight;
         }
 
-        function setupReply(commentId, name) {
+        function prepareReply(commentId, userName) {
             replyingToCommentId = commentId;
-            document.getElementById('reply-to-name').innerText = name;
             document.getElementById('reply-badge').style.display = 'flex';
+            document.getElementById('reply-to-name').innerText = userName;
+            document.getElementById('comment-input').focus();
         }
 
         function cancelReply() {
@@ -2382,365 +2681,103 @@
             document.getElementById('reply-badge').style.display = 'none';
         }
 
+        function toggleEmojiBox() {
+            const b = document.getElementById('emoji-box');
+            b.style.display = b.style.display === 'none' ? 'flex' : 'none';
+        }
+        
+        function addEmoji(emoji) {
+            const i = document.getElementById('comment-input');
+            i.value += emoji; i.focus();
+            toggleEmojiBox();
+        }
+
         async function submitComment() {
-            const text = document.getElementById('comment-input').value.trim();
+            const inp = document.getElementById('comment-input');
+            const text = inp.value.trim();
             if(!text || !currentPostIdForAction) return;
 
-            const commentId = 'comment_' + Date.now();
-            const commentObj = {
-                id: commentId,
-                userId: currentUser.uid,
-                userName: currentUser.name,
-                userAvatar: currentUser.avatar,
-                text: text,
-                timestamp: Date.now(),
-                replyTo: replyingToCommentId || null
-            };
-
-            await db.ref(`posts/${currentPostIdForAction}/comments/${commentId}`).set(commentObj);
-
-            // Notificación al creador del post
-            const post = posts.find(p => p.id === currentPostIdForAction);
-            if (post && post.userId !== currentUser.uid) {
-                sendNotification(post.userId, "comment", `${currentUser.name} comentó en tu publicación: "${text.substring(0, 20)}..."`);
-            }
-
-            document.getElementById('comment-input').value = '';
-            cancelReply();
-            renderComments(currentPostIdForAction);
-        }
-
-        function toggleEmojiBox() {
-            const box = document.getElementById('emoji-box');
-            box.style.display = box.style.display === 'none' ? 'flex' : 'none';
-        }
-
-        function addEmoji(emoji) {
-            document.getElementById('comment-input').value += emoji;
-        }
-
-        /* === EDITAR / ELIMINAR POST === */
-        function openEditPost(id) {
-            editingPostId = id;
-            const post = posts.find(p => p.id === id);
-            if(!post) return;
-            document.getElementById('edit-post-preview').src = post.image;
-            document.getElementById('edit-post-caption').value = post.caption;
-            document.getElementById('overlay').style.display = 'block';
-            document.getElementById('edit-post-modal').style.display = 'flex';
-        }
-
-        function handleEditPostImage(e) {
-            const file = e.target.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = ev => {
-                compressImage(ev.target.result, 720, (comp) => {
-                    editingPostBase64 = comp;
-                    document.getElementById('edit-post-preview').src = comp;
-                });
-            };
-            reader.readAsDataURL(file);
-        }
-
-        async function saveEditPost() {
-            if(!editingPostId) return;
-            const updateObj = {
-                caption: document.getElementById('edit-post-caption').value,
-                edited: true
-            };
-            if(editingPostBase64) updateObj.image = editingPostBase64;
+            const cId = 'comment_' + Date.now();
             
-            await db.ref(`posts/${editingPostId}`).update(updateObj);
-            closeModals();
-            editingPostId = null;
-            editingPostBase64 = null;
-        }
-
-        async function deletePost(id) {
-            if(confirm("¿Seguro que quieres borrar este post?")) {
-                await db.ref(`posts/${id}`).remove();
+            let replyToName = null;
+            if (replyingToCommentId) {
+                replyToName = document.getElementById('reply-to-name').innerText;
             }
+
+            await db.ref(`posts/${currentPostIdForAction}/comments/${cId}`).set({
+                id: cId, userId: currentUser.uid, userName: currentUser.name, avatar: currentUser.avatar,
+                text: text, timestamp: Date.now(), replyTo: replyToName
+            });
+
+            const post = posts.find(p => p.id === currentPostIdForAction);
+            if(post && post.userId !== currentUser.uid && !replyingToCommentId) {
+                sendNotification(post.userId, 'comment', `💬 ${currentUser.name} comentó tu publicación.`);
+            }
+
+            inp.value = ''; cancelReply(); renderComments(currentPostIdForAction);
         }
 
-        function reportPost(id) {
-            alert("Publicación reportada. Nuestro equipo la revisará de inmediato.");
-        }
-
-        /* === PERFIL, SEGUIDORES Y REDES SOCIALES === */
-        function simulateLoadingAndProfile(uid) {
-            document.getElementById('profile-loader-overlay').style.display = 'flex';
-            setTimeout(() => {
-                document.getElementById('profile-loader-overlay').style.display = 'none';
-                viewUserProfile(uid);
-            }, 500);
-        }
-
-        function viewUserProfile(uid) {
-            currentlyViewingProfileUid = uid;
-            openView('view-profile');
-            renderProfileData(uid);
-        }
-
-        function viewMyProfile() {
-            if(currentUser) simulateLoadingAndProfile(currentUser.uid);
-        }
-
-        function renderProfileData(uid) {
-            const user = allUsers[uid];
-            if(!user) return;
-            const isMe = uid === currentUser.uid;
-
-            const isFollowing = currentUser.following && currentUser.following[uid];
-            const followBtn = isMe ? `<button class="btn-primary" onclick="openEditProfileModal()"><i class="fas fa-edit"></i> Editar Perfil</button>` :
-                `<button class="${isFollowing ? 'btn-secondary' : 'btn-primary'}" onclick="toggleFollow('${uid}')">${isFollowing ? i18n[currentLang].unfollow : i18n[currentLang].follow}</button>`;
-
-            let socialHTML = '';
-            if(user.whatsapp) socialHTML += `<a href="https://wa.me/${user.whatsapp}" target="_blank" class="social-icon"><i class="fab fa-whatsapp"></i></a>`;
-            if(user.instagram) socialHTML += `<a href="https://instagram.com/${user.instagram}" target="_blank" class="social-icon"><i class="fab fa-instagram"></i></a>`;
-            if(user.snapchat) socialHTML += `<a href="https://snapchat.com/add/${user.snapchat}" target="_blank" class="social-icon"><i class="fab fa-snapchat-ghost"></i></a>`;
-            if(user.youtube) socialHTML += `<a href="${user.youtube.startsWith('http') ? user.youtube : 'https://youtube.com/' + user.youtube}" target="_blank" class="social-icon"><i class="fab fa-youtube"></i></a>`;
-            if(user.tiktok) socialHTML += `<a href="https://tiktok.com/@${user.tiktok}" target="_blank" class="social-icon"><i class="fab fa-tiktok"></i></a>`;
-            if(user.x) socialHTML += `<a href="https://x.com/${user.x}" target="_blank" class="social-icon"><i class="fab fa-twitter"></i></a>`;
-            if(user.web) socialHTML += `<a href="${user.web}" target="_blank" class="social-icon"><i class="fas fa-globe"></i></a>`;
-
-            const headCont = document.getElementById('profile-header');
-            headCont.innerHTML = `
-                <div class="profile-cover"></div>
-                <div class="profile-header">
-                    <div class="avatar"><img src="${user.avatar || ''}"></div>
-                    <h2 style="color:var(--text-main);">${user.name || ''}</h2>
-                    <p class="profile-username">${user.username || ''}</p>
-                    <p class="profile-bio">${user.bio || ''}</p>
-                    
-                    <div class="profile-stats">
-                        <div class="stat"><strong>${(user.stars || 0).toFixed(1)}</strong><span>Estrellas</span></div>
-                        <div class="stat"><strong>${user.followersCount || 0}</strong><span>${i18n[currentLang].followers}</span></div>
-                        <div class="stat"><strong>${user.followingCount || 0}</strong><span>${i18n[currentLang].following}</span></div>
-                    </div>
-                    ${followBtn}
-                    <div class="social-icons-container">${socialHTML}</div>
-                </div>
+        /* === RANKING GLOBALES === */
+        function renderRanking() {
+            const usersArray = Object.values(allUsers).sort((a,b) => (b.stars || 0) - (a.stars || 0));
+            const container = document.getElementById('ranking-container');
+            container.innerHTML = '';
+            
+            const myIndex = usersArray.findIndex(u => u.uid === currentUser.uid);
+            let msg = i18n[currentLang].rank5;
+            if (myIndex === 0) msg = i18n[currentLang].rank1;
+            else if (myIndex === 1) msg = i18n[currentLang].rank2;
+            else if (myIndex === 2) msg = i18n[currentLang].rank3;
+            else if (myIndex < 10) msg = i18n[currentLang].rank4;
+            
+            document.getElementById('ranking-banner').innerHTML = `
+                <h2 style="font-size:1.8rem; text-shadow: 0 2px 10px rgba(0,0,0,0.3);"><i class="fas fa-trophy"></i> Top Estrellas</h2>
+                <p style="font-size: 0.9rem; margin-top: 10px;">${msg}</p>
             `;
 
-            const grid = document.getElementById('profile-grid');
-            const userPosts = posts.filter(p => p.userId === uid);
-            if(userPosts.length === 0) {
-                grid.innerHTML = `<div style="grid-column: span 3; text-align:center; padding: 20px; color:var(--text-muted);">Sin publicaciones de momento</div>`;
-                return;
-            }
-
-            let gridHTML = '';
-            userPosts.forEach(p => {
-                if (p.image && p.image !== "") {
-                    if(p.isVideo) {
-                        gridHTML += `<video src="${p.image}" muted onclick="openFullScreen('${p.image}', true, '${p.id}')"></video>`;
-                    } else {
-                        gridHTML += `<img src="${p.image}" onclick="openFullScreen('${p.image}', false, '${p.id}')">`;
-                    }
-                }
-            });
-            grid.innerHTML = gridHTML;
-        }
-
-        /* === SECCIÓN 1: SISTEMA DE SEGUIDORES / TOGGLE FOLLOW === */
-        async function toggleFollow(targetUid) {
-            const myUid = currentUser.uid;
-            const isFollowing = currentUser.following && currentUser.following[targetUid];
-            
-            if(isFollowing) {
-                await db.ref(`users/${myUid}/following/${targetUid}`).remove();
-                await db.ref(`users/${targetUid}/followers/${myUid}`).remove();
-                await db.ref(`users/${myUid}/followingCount`).transaction(c => (c || 1) - 1);
-                await db.ref(`users/${targetUid}/followersCount`).transaction(c => (c || 1) - 1);
-            } else {
-                await db.ref(`users/${myUid}/following/${targetUid}`).set(true);
-                await db.ref(`users/${targetUid}/followers/${myUid}`).set(true);
-                await db.ref(`users/${myUid}/followingCount`).transaction(c => (c || 0) + 1);
-                await db.ref(`users/${targetUid}/followersCount`).transaction(c => (c || 0) + 1);
+            usersArray.slice(0, 50).forEach((u, index) => {
+                const div = document.createElement('div');
+                div.className = `rank-item top-${index+1}`;
+                if(u.uid === currentUser.uid) div.style.background = 'rgba(0,168,232,0.1)';
                 
-                sendNotification(targetUid, "follow", `${currentUser.name} ha comenzado a seguirte. ✨`);
-            }
-        }
-
-        /* === BUSCAR USUARIOS === */
-        function searchUsers() {
-            const q = document.getElementById('search-input').value.toLowerCase();
-            const results = document.getElementById('search-results');
-            results.innerHTML = '';
-            
-            Object.values(allUsers).forEach(u => {
-                if(u.uid === currentUser.uid) return;
-                if(u.name.toLowerCase().includes(q) || u.username.toLowerCase().includes(q)) {
-                    results.innerHTML += `
-                        <div class="search-user-item" onclick="simulateLoadingAndProfile('${u.uid}')">
-                            <div class="avatar"><img src="${u.avatar || ''}"></div>
-                            <div>
-                                <strong>${u.name}</strong>
-                                <p style="color:var(--primary); font-size:0.8rem;">${u.username}</p>
-                            </div>
-                        </div>
-                    `;
-                }
-            });
-        }
-
-        /* === EDITAR PERFIL === */
-        function openEditProfileModal() {
-            if(!currentUser) return;
-            document.getElementById('edit-name').value = currentUser.name || '';
-            document.getElementById('edit-bio').value = currentUser.bio || '';
-            document.getElementById('edit-wa').value = currentUser.whatsapp || '';
-            document.getElementById('edit-ig').value = currentUser.instagram || '';
-            document.getElementById('edit-snap').value = currentUser.snapchat || '';
-            document.getElementById('edit-yt').value = currentUser.youtube || '';
-            document.getElementById('edit-tt').value = currentUser.tiktok || '';
-            document.getElementById('edit-x').value = currentUser.x || '';
-            document.getElementById('edit-web').value = currentUser.web || '';
-            document.getElementById('edit-avatar-preview').src = currentUser.avatar || '';
-            
-            document.getElementById('overlay').style.display = 'block';
-            document.getElementById('edit-profile-modal').style.display = 'flex';
-        }
-
-        function handleEditAvatar(e) {
-            const file = e.target.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = ev => {
-                if (file.type === 'image/gif') {
-                    editAvatarBase64 = ev.target.result;
-                    document.getElementById('edit-avatar-preview').src = editAvatarBase64;
-                } else {
-                    compressImage(ev.target.result, 250, (comp) => {
-                        editAvatarBase64 = comp;
-                        document.getElementById('edit-avatar-preview').src = comp;
-                    });
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-
-        async function saveProfileChanges() {
-            if(!currentUser) return;
-            const name = document.getElementById('edit-name').value;
-            const bio = document.getElementById('edit-bio').value;
-            const updateObj = {
-                name: name,
-                bio: bio,
-                whatsapp: document.getElementById('edit-wa').value,
-                instagram: document.getElementById('edit-ig').value,
-                snapchat: document.getElementById('edit-snap').value,
-                youtube: document.getElementById('edit-yt').value,
-                tiktok: document.getElementById('edit-tt').value,
-                x: document.getElementById('edit-x').value,
-                web: document.getElementById('edit-web').value
-            };
-            if(editAvatarBase64) {
-                updateObj.avatar = editAvatarBase64;
-                editAvatarBase64 = null;
-            }
-            await db.ref(`users/${currentUser.uid}`).update(updateObj);
-            closeModals();
-        }
-
-        /* === VISUALIZACIÓN DE RANKINGS === */
-        function renderRanking() {
-            const container = document.getElementById('ranking-container');
-            const sorted = Object.values(allUsers).sort((a,b) => (b.stars || 0) - (a.stars || 0));
-            
-            let html = '';
-            sorted.forEach((u, i) => {
-                const isMe = currentUser && u.uid === currentUser.uid;
-                const rankClass = i === 0 ? 'top-1' : i === 1 ? 'top-2' : i === 2 ? 'top-3' : '';
-                html += `
-                    <div class="rank-item ${rankClass}" style="border: ${isMe ? '1.5px solid var(--primary)' : '1px solid var(--border-color)'};">
-                        <span class="rank-pos">${i+1}</span>
-                        <div class="avatar" style="margin-right:12px;" onclick="simulateLoadingAndProfile('${u.uid}')"><img src="${u.avatar || ''}"></div>
-                        <div onclick="simulateLoadingAndProfile('${u.uid}')" style="cursor:pointer;">
-                            <strong>${u.name}</strong>
-                            <p style="color:var(--text-muted); font-size:0.75rem;">${u.username}</p>
-                        </div>
-                        <span class="rank-score">${(u.stars || 0).toFixed(1)} <i class="fas fa-star"></i></span>
+                div.innerHTML = `
+                    <div class="rank-pos">#${index+1}</div>
+                    <img src="${u.avatar}" class="avatar" style="width:36px; height:36px; margin-right:12px; cursor:pointer;" onclick="simulateLoadingAndProfile('${u.uid}')">
+                    <div style="flex:1; cursor:pointer;" onclick="simulateLoadingAndProfile('${u.uid}')">
+                        <strong style="color:var(--text-main); font-size:0.95rem;">${u.name}</strong><br>
+                        <span style="font-size:0.75rem; color:var(--primary);">${u.username}</span>
                     </div>
+                    <div class="rank-score"><i class="fas fa-star"></i> ${u.stars || 0}</div>
                 `;
+                container.appendChild(div);
             });
-            container.innerHTML = html;
-            
-            const myRank = sorted.findIndex(u => u.uid === currentUser.uid);
-            const banner = document.getElementById('ranking-banner');
-            const dict = i18n[currentLang];
-            let msg = dict.rank5;
-            if(myRank === 0) msg = dict.rank1;
-            else if(myRank === 1 || myRank === 2) msg = dict.rank2;
-            else if(myRank >= 3 && myRank < 10) msg = dict.rank3;
-            else if(myRank >= 10 && myRank < 25) msg = dict.rank4;
-            
-            banner.innerHTML = `<h3 style="font-size:1.3rem; margin-bottom:5px;"><i class="fas fa-crown"></i> Tu Ranking: #${myRank + 1}</h3><p style="font-size:0.9rem;">${msg}</p>`;
         }
-
+        
         function renderMiniRanking() {
-            const container = document.getElementById('pc-ranking-container');
-            if(!container) return;
-            const sorted = Object.values(allUsers).sort((a,b) => (b.stars || 0) - (a.stars || 0)).slice(0, 5);
+            const pcContainer = document.getElementById('pc-ranking-container');
+            if(!pcContainer) return;
+            pcContainer.innerHTML = '';
+            const usersArray = Object.values(allUsers).sort((a,b) => (b.stars || 0) - (a.stars || 0)).slice(0, 5);
             
-            let html = '';
-            sorted.forEach((u, i) => {
-                html += `
-                    <div style="display:flex; align-items:center; gap:8px; padding:6px; background:rgba(255,255,255,0.02); border-radius:10px; border:1px solid var(--border-color);">
-                        <span style="font-weight:bold; font-size:0.8rem; color:var(--text-muted);">${i+1}</span>
-                        <img src="${u.avatar || ''}" style="width:24px; height:24px; border-radius:50%; object-fit:cover;">
-                        <span style="font-size:0.8rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100px;">${u.name}</span>
-                        <span style="margin-left:auto; font-size:0.8rem; color:var(--primary); font-weight:bold;">${(u.stars || 0).toFixed(1)} ⭐</span>
+            usersArray.forEach((u, idx) => {
+                let color = 'var(--text-muted)';
+                if(idx===0) color='#FFD700'; else if(idx===1) color='#C0C0C0'; else if(idx===2) color='#CD7F32';
+                
+                pcContainer.innerHTML += `
+                    <div style="display:flex; align-items:center; padding: 6px 0; border-bottom: 1px solid var(--border-color); cursor:pointer;" onclick="simulateLoadingAndProfile('${u.uid}')">
+                        <strong style="color:${color}; width:20px;">${idx+1}</strong>
+                        <img src="${u.avatar}" style="width:28px; height:28px; border-radius:50%; margin: 0 8px;">
+                        <span style="flex:1; font-size:0.8rem; font-weight:bold; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${u.name}</span>
+                        <span style="font-size:0.75rem; color:var(--primary); font-weight:bold;">${u.stars||0}⭐</span>
                     </div>
                 `;
             });
-            container.innerHTML = html;
         }
 
-        /* === SECCIÓN 5: RENDER DE NOTIFICACIONES CON ACCIÓN VERSUS === */
-        function renderNotifications() {
-            const container = document.getElementById('notifications-container');
-            if(notifications.length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted);">Sin notificaciones de momento</div>`;
-                return;
-            }
-            
-            let html = '';
-            notifications.forEach(n => {
-                let actionBtns = '';
-                if(n.type === 'versus_request') {
-                    actionBtns = `
-                        <div style="margin-top:10px; display:flex; gap:10px;">
-                            <button class="btn-primary btn-small" style="width:auto; margin:0;" onclick="acceptVersusChallenge('${n.versusId}', '${n.id}')">Aceptar Versus</button>
-                            <button class="btn-secondary btn-small" style="width:auto; margin:0; border-color:#ff4d4d; color:#ff4d4d;" onclick="rejectVersusChallenge('${n.versusId}', '${n.id}')">Rechazar</button>
-                        </div>
-                    `;
-                }
-                
-                html += `
-                    <div class="sidebar-card" style="margin-bottom:12px; display:flex; flex-direction:column; gap:8px; border-left: 4px solid ${n.read ? 'transparent' : 'var(--primary)'}; background:${n.read ? 'var(--surface-card)' : 'rgba(0,168,232,0.05)'};">
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <img src="${n.fromAvatar}" style="width:40px; height:40px; border-radius:50%; border:2px solid var(--primary);">
-                            <div style="flex:1;">
-                                <p style="font-size:0.9rem; color:var(--text-main); font-weight:600;">${n.text}</p>
-                                <span style="font-size:0.75rem; color:var(--text-muted);">${formatTimeAgo(n.timestamp)}</span>
-                            </div>
-                        </div>
-                        ${actionBtns}
-                    </div>
-                `;
-                
-                if(!n.read) {
-                    db.ref(`notifications/${currentUser.uid}/${n.id}/read`).set(true);
-                }
-            });
-            container.innerHTML = html;
-        }
-
+        /* === CERRAR MODALES === */
         function closeModals() {
-            document.getElementById('overlay').style.display = 'none';
             document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+            document.getElementById('overlay').style.display = 'none';
             cancelReply();
         }
     </script>
