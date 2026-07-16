@@ -52,32 +52,10 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; transition: background-color 0.3s, color 0.3s, border-color 0.3s; }
         body { background-color: #000; display: flex; justify-content: center; height: 100vh; overflow: hidden; }
 
-        /* === RESPONSIVIDAD (PC y Móvil) === */
         .app-container {
-            width: 100%; height: 100vh; background-color: var(--bg-color);
+            width: 100%; max-width: 414px; height: 100vh; background-color: var(--bg-color);
             display: flex; flex-direction: column; position: relative;
             box-shadow: 0 0 50px rgba(0, 168, 232, 0.3); overflow: hidden;
-            margin: 0 auto;
-        }
-
-        @media (min-width: 768px) {
-            .app-container {
-                max-width: 850px; /* Ancho para PC */
-                border-left: 1px solid rgba(0,168,232,0.2);
-                border-right: 1px solid rgba(0,168,232,0.2);
-                border-radius: 20px;
-                height: 96vh;
-                margin-top: 2vh;
-            }
-            main { padding: 30px !important; padding-bottom: 120px !important; }
-            main::-webkit-scrollbar { display: block; width: 6px; }
-            main::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
-            nav { width: 80% !important; left: 10% !important; max-width: 600px; margin: 0 auto; }
-            .post-media { max-height: 600px !important; }
-        }
-
-        @media (max-width: 767px) {
-            .app-container { max-width: 100%; height: 100vh; border-radius: 0; margin-top: 0; }
         }
 
         /* === LOGO ÉPICO === */
@@ -121,7 +99,7 @@
 
         /* === AUTH SECTION === */
         #auth-view { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 30px; background: var(--surface); z-index: 100; position: absolute; width: 100%; overflow-y: auto;}
-        .auth-box { width: 100%; max-width: 400px; text-align: center; animation: fadeIn 0.5s ease; }
+        .auth-box { width: 100%; text-align: center; animation: fadeIn 0.5s ease; }
         .auth-input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-main); font-size: 1rem; outline: none; transition: 0.3s; box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);}
         .auth-input:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(0,168,232,0.2); }
         .auth-btn { width: 100%; padding: 15px; border-radius: 12px; background: var(--primary-gradient); color: white; border: none; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,168,232,0.4); transition: transform 0.2s, box-shadow 0.2s;}
@@ -180,9 +158,9 @@
         .avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: var(--input-bg); display:flex; align-items:center; justify-content:center; font-weight:bold; cursor: pointer; overflow: hidden; border: 1px solid rgba(0,168,232,0.3);}
         .avatar img { width: 100%; height: 100%; object-fit: cover; }
         .btn-primary { background: var(--primary-gradient); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(0,168,232,0.3); transition: 0.3s;}
-        .btn-primary:hover { box-shadow: 0 4px 20px rgba(0,168,232,0.6); }
+        .btn-primary:hover { box-shadow: 0 4px 20px rgba(0,168,232,0.6); transform: translateY(-2px); }
         .btn-secondary { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); color: var(--text-main); border: 1px solid var(--primary); padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 10px; transition: 0.3s;}
-        .btn-secondary:hover { background: rgba(0,168,232,0.1); box-shadow: 0 0 15px rgba(0,168,232,0.3);}
+        .btn-secondary:hover { background: rgba(0,168,232,0.1); box-shadow: 0 0 15px rgba(0,168,232,0.3); transform: translateY(-2px);}
         .btn-small { padding: 5px 10px; font-size: 0.8rem; border-radius: 8px; }
 
         /* === HISTORIAS === */
@@ -339,12 +317,89 @@
         .search-user-item:hover { transform: scale(1.02); border-color: var(--primary); }
         .search-user-item .avatar { width: 40px; height: 40px; margin-right: 15px; }
 
-        /* CAMARA EPICA OPTIMIZADA */
+        /* CAMARA EPICA OPTIMIZADA (SIN ESCÁNER) */
         .record-btn-anim { animation: pulseRecord 1.5s infinite; border: 2px solid white; }
         @keyframes pulseRecord {
             0% { box-shadow: 0 0 0 0 rgba(0,168,232,0.8); }
             70% { box-shadow: 0 0 0 15px rgba(0,168,232,0); }
             100% { box-shadow: 0 0 0 0 rgba(0,168,232,0); }
+        }
+
+        /* === MEDIA QUERIES PARA RESPONSIVIDAD (ESCRITORIO/PC) === */
+        @media (min-width: 768px) {
+            body { background-color: var(--bg-color); }
+            .app-container { max-width: 100vw; height: 100vh; border-radius: 0; box-shadow: none; overflow: hidden; }
+            
+            #main-app[style*="display: flex"], #main-app[style*="display: block"] {
+                display: grid !important;
+                grid-template-columns: 280px 1fr;
+                grid-template-rows: 70px 1fr;
+                grid-template-areas:
+                    "nav header"
+                    "nav main";
+            }
+            
+            header { 
+                grid-area: header; 
+                background: var(--surface); 
+                box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+                position: relative !important;
+                border-radius: 0;
+            }
+            
+            nav {
+                grid-area: nav;
+                position: relative !important;
+                bottom: auto !important; left: auto !important;
+                width: 100% !important; height: 100%;
+                border-radius: 0 !important;
+                flex-direction: column !important;
+                justify-content: flex-start !important;
+                background: var(--surface) !important;
+                border-right: 1px solid var(--border-color);
+                padding: 30px 20px !important;
+                box-shadow: none !important;
+                backdrop-filter: none !important;
+            }
+            
+            .nav-btn {
+                width: 100%; justify-content: flex-start; padding: 15px 25px; margin-bottom: 15px; font-size: 1.2rem;
+                border-radius: 15px;
+            }
+            .nav-btn span { display: inline-block !important; font-size: 1.1rem !important; margin-left: 20px; }
+            
+            main { 
+                grid-area: main; 
+                padding: 30px !important; 
+                padding-bottom: 40px !important; 
+                display: flex; 
+                flex-direction: column; 
+                align-items: center; 
+            }
+            .view { width: 100%; max-width: 680px; margin: 0 auto; }
+            
+            #auth-view { justify-content: center; align-items: center; display: flex !important; }
+            .auth-box { max-width: 420px; width: 100%; padding: 40px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); background: var(--surface); border: 1px solid var(--border-color); }
+            
+            /* Ajustes Modales PC */
+            .modal {
+                width: 450px;
+                left: 50%;
+                bottom: 50%;
+                transform: translate(-50%, 50%);
+                border-radius: 24px;
+                height: auto;
+                max-height: 85vh;
+                border: 1px solid rgba(0,168,232,0.3);
+                animation: modalFadeIn 0.3s ease forwards;
+            }
+            @keyframes modalFadeIn { 
+                from { opacity: 0; transform: translate(-50%, 60%); } 
+                to { opacity: 1; transform: translate(-50%, 50%); } 
+            }
+            
+            .story-view-modal { width: 100%; max-width: 100%; left: 0; height: 100%; }
+            #feed-container { width: 100%; }
         }
     </style>
 </head>
@@ -470,12 +525,10 @@
                             <video id="preview-vid" style="width: 100%; height: 100%; object-fit: cover; position: absolute; z-index: 2; display: none;" autoplay muted loop playsinline></video>
                         </div>
 
-                        <button class="btn-secondary" id="btn-open-cam" onclick="openLiveCamera()"><i class="fas fa-camera"></i> <span id="t-open-cam">Abrir Cámara con IA</span></button>
+                        <button class="btn-secondary" id="btn-open-cam" onclick="openLiveCamera()"><i class="fas fa-camera"></i> <span id="t-open-cam">Abrir Cámara Libre</span></button>
                         
-                        <!-- CÁMARA MEJORADA SIN CONGELAMIENTOS Y SIN BEREAL -->
                         <div id="camera-container" style="display:none; position:relative; width:100%; border-radius:14px; overflow:hidden; margin-bottom:15px; background: #000; border: 2px solid var(--primary); box-shadow: 0 0 20px rgba(0,168,232,0.3);">
                             <video id="live-video" autoplay playsinline style="width:100%; display:block; z-index:1;"></video>
-                            
                             <i class="fas fa-sync" style="position:absolute; top:15px; left:15px; color:white; font-size:1.5rem; cursor:pointer; z-index:10;" onclick="toggleCamera()"></i>
 
                             <button class="btn-primary record-btn-anim" style="position:absolute; bottom:15px; left:50%; transform:translateX(-50%); width: 80%; opacity: 0.9; z-index:10;" onclick="captureLiveCamera()"><i class="fas fa-camera"></i> <span id="t-cap-btn">Capturar</span></button>
@@ -689,9 +742,11 @@
             </div>
             
             <div class="story-score-bar" style="z-index: 1002;">
-                <div class="stars" id="story-stars-container"></div>
+                <div class="stars" id="story-stars-container">
+                    </div>
             </div>
         </div>
+
     </div>
 
     <script>
@@ -767,7 +822,7 @@
                 searchTitle: "Buscar Usuarios",
                 searchPlaceholder: "Buscar por @usuario o nombre...",
                 tapToUpload: "Tocar para subir foto o video",
-                openCam: "Abrir Cámara con IA",
+                openCam: "Abrir Cámara Libre",
                 capBtn: "Capturar",
                 captionPlaceholder: "Escribe algo sobre tu foto...",
                 addLocation: "Añadir ubicación (Texto)",
@@ -804,7 +859,12 @@
                 rank2: "⭐ ¡Casi en la cima! Sigue brillando.",
                 rank3: "🔥 ¡Gran puntuación! Tu luz está deslumbrando.",
                 rank4: "✨ Vas por muy buen camino, ¡sigue publicando!",
-                rankDefault: "🚀 ¡Comienza a brillar publicando y recibiendo estrellas!"
+                rank5: "🌟 Sube fotos y gana estrellas para subir en el top.",
+                followers: "Seguidores",
+                following: "Siguiendo",
+                follow: "Seguir",
+                unfollow: "Dejar de seguir",
+                postsLabel: "Posts"
             },
             en: { 
                 authDesc: "Your social network where you truly shine", 
@@ -812,24 +872,24 @@
                 aiPerson: "Person", 
                 aiClass: "AI:", 
                 justNow: "Just now", 
-                ago: "ago ", 
-                m: "m", 
-                h: "h", 
-                d: "d", 
-                aiReady: "<span style='color: #00A8E8;'><i class='fas fa-check'></i> AI Engines Ready</span>", 
-                aiLoading: "Loading AI engines...", 
+                ago: "", 
+                m: "m ago", 
+                h: "h ago", 
+                d: "d ago", 
+                aiReady: "<span style='color: #00A8E8;'><i class='fas fa-check'></i> AI Ready</span>", 
+                aiLoading: "Loading AI...", 
                 analyzing: "<i class='fas fa-spinner fa-spin'></i> Analyzing...", 
                 btnPub: "Analyze & Publish", 
-                reqPic: "Picture required", 
+                reqPic: "Photo required", 
                 edited: "(Edited)", 
                 reply: "Reply",
                 searchTitle: "Search Users",
                 searchPlaceholder: "Search by @user or name...",
                 tapToUpload: "Tap to upload photo or video",
-                openCam: "Open AI Camera",
+                openCam: "Open Camera",
                 capBtn: "Capture",
-                captionPlaceholder: "Write something about your post...",
-                addLocation: "Add Location (Text)",
+                captionPlaceholder: "Write something about your photo...",
+                addLocation: "Add location (Text)",
                 privacy: "Privacy:",
                 pub: "🌍 Public",
                 friends: "👥 Friends Only",
@@ -838,8 +898,8 @@
                 settings: "Settings",
                 darkTheme: "Dark Theme",
                 lang: "Language",
-                permsBtn: "Request Perms (Notif, Cam)",
-                logoutBtn: "Log Out",
+                permsBtn: "Request Permissions (Notif, Cam)",
+                logoutBtn: "Logout",
                 editProfTitle: "Edit Profile",
                 nameLabel: "Name:",
                 bioLabel: "Bio:",
@@ -859,535 +919,298 @@
                 yourStory: "Your Story",
                 published: "Published: ",
                 loadingUniverse: "Loading your universe...",
-                rank1: "👑 You are at the top! The brightest star.",
+                rank1: "👑 You are at the top! You are the brightest star.",
                 rank2: "⭐ Almost at the top! Keep shining.",
                 rank3: "🔥 Great score! Your light is dazzling.",
-                rank4: "✨ You're on a great path, keep posting!",
-                rankDefault: "🚀 Start shining by posting and receiving stars!"
+                rank4: "✨ You are on a great path, keep posting!",
+                rank5: "🌟 Upload photos and earn stars to rank up.",
+                followers: "Followers",
+                following: "Following",
+                follow: "Follow",
+                unfollow: "Unfollow",
+                postsLabel: "Posts"
             }
         };
 
-        function getText(key) { return i18n[currentLang][key] || key; }
-        
-        function updateUITexts() {
-            if(document.getElementById('t-auth-desc')) document.getElementById('t-auth-desc').innerText = getText('authDesc');
-            if(document.getElementById('t-create-post')) document.getElementById('t-create-post').innerText = getText('createPost');
-            if(document.getElementById('t-btn-pub')) document.getElementById('t-btn-pub').innerText = getText('btnPub');
-            if(document.getElementById('t-req-pic')) document.getElementById('t-req-pic').innerText = getText('reqPic');
-            if(document.getElementById('t-search-title')) document.getElementById('t-search-title').innerText = getText('searchTitle');
-            if(document.getElementById('search-input')) document.getElementById('search-input').placeholder = getText('searchPlaceholder');
-            if(document.getElementById('t-upload-tap')) document.getElementById('t-upload-tap').innerText = getText('tapToUpload');
-            if(document.getElementById('t-open-cam')) document.getElementById('t-open-cam').innerText = getText('openCam');
-            if(document.getElementById('t-cap-btn')) document.getElementById('t-cap-btn').innerText = getText('capBtn');
-            if(document.getElementById('post-caption')) document.getElementById('post-caption').placeholder = getText('captionPlaceholder');
-            if(document.getElementById('t-add-location')) document.getElementById('t-add-location').innerText = getText('addLocation');
-            if(document.getElementById('t-privacy')) document.getElementById('t-privacy').innerText = getText('privacy');
-            if(document.getElementById('t-pub')) document.getElementById('t-pub').innerText = getText('pub');
-            if(document.getElementById('t-friends')) document.getElementById('t-friends').innerText = getText('friends');
-            if(document.getElementById('t-posts-title')) document.getElementById('t-posts-title').innerText = getText('postsTitle');
-            if(document.getElementById('t-notif-title')) document.getElementById('t-notif-title').innerText = getText('notifTitle');
-            if(document.getElementById('t-settings')) document.getElementById('t-settings').innerText = getText('settings');
-            if(document.getElementById('t-dark-theme')) document.getElementById('t-dark-theme').innerText = getText('darkTheme');
-            if(document.getElementById('t-lang')) document.getElementById('t-lang').innerText = getText('lang');
-            if(document.getElementById('t-logout')) document.getElementById('t-logout').innerText = getText('logoutBtn');
-            if(document.getElementById('t-edit-prof')) document.getElementById('t-edit-prof').innerText = getText('editProfTitle');
-            if(document.getElementById('t-name')) document.getElementById('t-name').innerText = getText('nameLabel');
-            if(document.getElementById('t-bio')) document.getElementById('t-bio').innerText = getText('bioLabel');
-            if(document.getElementById('t-save')) document.getElementById('t-save').innerText = getText('saveBtn');
-            if(document.getElementById('t-comments')) document.getElementById('t-comments').innerText = getText('commentsTitle');
-            if(document.getElementById('comment-input')) document.getElementById('comment-input').placeholder = getText('commentPlaceholder');
+        const emotionMap = {
+            happy: { emoji: '😊', es: 'Feliz', en: 'Happy' },
+            sad: { emoji: '😢', es: 'Triste', en: 'Sad' },
+            angry: { emoji: '😡', es: 'Enojado', en: 'Angry' },
+            fearful: { emoji: '😨', es: 'Asustado', en: 'Fearful' },
+            disgusted: { emoji: '🤢', es: 'Disgustado', en: 'Disgusted' },
+            surprised: { emoji: '😲', es: 'Sorprendido', en: 'Surprised' },
+            neutral: { emoji: '😐', es: 'Neutral', en: 'Neutral' }
+        };
+
+        /* === APLICAR TRADUCCIONES === */
+        function applyLanguage(lang) {
+            const dict = i18n[lang];
+            if(!dict) return;
             
-            if(document.getElementById('nav-home')) document.getElementById('nav-home').innerText = getText('navHome');
-            if(document.getElementById('nav-search')) document.getElementById('nav-search').innerText = getText('navSearch');
-            if(document.getElementById('nav-upload')) document.getElementById('nav-upload').innerText = getText('navUpload');
-            if(document.getElementById('nav-top')) document.getElementById('nav-top').innerText = getText('navTop');
-            if(document.getElementById('nav-profile')) document.getElementById('nav-profile').innerText = getText('navProfile');
-            if(document.getElementById('story-add-text')) document.getElementById('story-add-text').innerText = getText('storyAdd');
-            if(document.getElementById('feed-loading-text')) document.getElementById('feed-loading-text').innerText = getText('loadingUniverse');
-            
-            updateAIStatusText();
+            const trySetText = (id, text) => { const el = document.getElementById(id); if(el) el.innerText = text; };
+            const trySetHTML = (id, html) => { const el = document.getElementById(id); if(el) el.innerHTML = html; };
+            const trySetPlaceholder = (id, text) => { const el = document.getElementById(id); if(el) el.placeholder = text; };
+
+            trySetText('t-auth-desc', dict.authDesc);
+            trySetText('t-search-title', dict.searchTitle);
+            trySetPlaceholder('search-input', dict.searchPlaceholder);
+            trySetText('t-create-post', dict.createPost);
+            trySetText('t-upload-tap', dict.tapToUpload);
+            trySetText('t-open-cam', dict.openCam);
+            trySetText('t-cap-btn', dict.capBtn);
+            trySetPlaceholder('post-caption', dict.captionPlaceholder);
+            trySetText('t-add-location', dict.addLocation);
+            trySetText('t-privacy', dict.privacy);
+            trySetText('t-pub', dict.pub);
+            trySetText('t-friends', dict.friends);
+            trySetHTML('t-btn-pub', `<i class="fas fa-magic"></i> ${dict.btnPub}`);
+            trySetText('t-posts-title', dict.postsTitle);
+            trySetText('t-notif-title', dict.notifTitle);
+            trySetText('t-settings', dict.settings);
+            trySetText('t-dark-theme', dict.darkTheme);
+            trySetText('t-lang', dict.lang);
+            trySetText('t-logout', dict.logoutBtn);
+            trySetText('t-edit-prof', dict.editProfTitle);
+            trySetText('t-name', dict.nameLabel);
+            trySetText('t-bio', dict.bioLabel);
+            trySetText('t-save', dict.saveBtn);
+            trySetText('t-comments', dict.commentsTitle);
+            trySetPlaceholder('comment-input', dict.commentPlaceholder);
+            trySetText('nav-home', dict.navHome);
+            trySetText('nav-search', dict.navSearch);
+            trySetText('nav-upload', dict.navUpload);
+            trySetText('nav-top', dict.navTop);
+            trySetText('nav-profile', dict.navProfile);
+            trySetText('story-add-text', dict.storyAdd);
+            trySetText('feed-loading-text', dict.loadingUniverse);
+        }
+
+        /* === INICIO & IDIOMAS === */
+        window.onload = () => {
+            const savedTheme = localStorage.getItem('starshine_theme') || 'dark'; 
+            currentLang = localStorage.getItem('starshine_lang') || 'es';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            document.getElementById('theme-toggle').checked = (savedTheme === 'dark');
+            document.getElementById('lang-select').value = currentLang;
+            applyLanguage(currentLang);
+            initBoomerangLoopers();
+        };
+
+        function toggleTheme(isDark) {
+            const theme = isDark ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('starshine_theme', theme);
         }
 
         function changeLanguageAndReload(lang) {
-            currentLang = lang;
             localStorage.setItem('starshine_lang', lang);
-            updateUITexts();
-            if (currentUser) {
-                renderFeed();
-                renderRanking();
-            }
-        }
-        
-        function updateAIStatusText() {
-            const aiStatus = document.getElementById('ai-status');
-            if(!aiStatus) return;
-            if (isAiLoaded) {
-                aiStatus.innerHTML = getText('aiReady');
-            } else {
-                aiStatus.innerHTML = getText('aiLoading');
-            }
-        }
-
-        /* === INICIALIZACIÓN === */
-        window.addEventListener('load', async () => {
-            const savedLang = localStorage.getItem('starshine_lang');
-            if (savedLang) { currentLang = savedLang; document.getElementById('lang-select').value = currentLang; }
-            const savedTheme = localStorage.getItem('starshine_theme');
-            if (savedTheme === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); document.getElementById('theme-toggle').checked = true; }
-            
-            updateUITexts();
-
-            try {
-                await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model');
-                mobilenetModel = await mobilenet.load();
-                isAiLoaded = true;
-                updateAIStatusText();
-            } catch (e) {
-                console.error("Error loading AI:", e);
-                isAiLoaded = true; 
-                document.getElementById('ai-status').innerHTML = "<span style='color:orange;'>IA Limitada</span>";
-            }
-
-            setTimeout(() => {
-                document.getElementById('splash-screen').style.opacity = '0';
-                setTimeout(() => { document.getElementById('splash-screen').style.display = 'none'; }, 500);
-                
-                auth.onAuthStateChanged(user => {
-                    if (user) {
-                        currentUser = user;
-                        document.getElementById('auth-view').style.display = 'none';
-                        document.getElementById('main-app').style.display = 'flex';
-                        initApp();
-                    } else {
-                        document.getElementById('main-app').style.display = 'none';
-                        document.getElementById('auth-view').style.display = 'flex';
-                        document.getElementById('login-box').style.display = 'block';
-                        document.getElementById('register-box').style.display = 'none';
-                    }
-                });
-            }, 1000);
-        });
-
-        /* === FUNCIONES DE COMPLETADO (Mocking implementaciones faltantes) === */
-
-        function renderFeed() {
-            const container = document.getElementById('feed-container');
-            container.innerHTML = '';
-            if (posts.length === 0) {
-                container.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No hay publicaciones aún. ¡Sé el primero en brillar!</p>`;
-                return;
-            }
-            posts.forEach(post => {
-                const author = allUsers[post.userId] || { name: 'Desconocido', avatar: '' };
-                const timeStr = formatTimeAgo(post.timestamp);
-                
-                let mediaHtml = '';
-                if (post.type === 'video') {
-                    mediaHtml = `<video class="post-media" src="${post.media}" controls></video>`;
-                } else {
-                    mediaHtml = `<img class="post-media" src="${post.media}" onclick="openFullScreen('${post.media}', false, '${post.id}')">`;
-                }
-
-                const card = document.createElement('div');
-                card.className = 'post-card';
-                card.innerHTML = `
-                    <div class="post-header">
-                        <img class="avatar" src="${author.avatar}" onclick="simulateLoadingAndProfile('${post.userId}')">
-                        <div class="post-user-info" onclick="simulateLoadingAndProfile('${post.userId}')">
-                            <h4>${author.name}</h4>
-                            <p>${timeStr} ${post.location ? '• ' + post.location : ''}</p>
-                        </div>
-                        ${post.userId === currentUser.uid ? `<i class="fas fa-ellipsis-v post-options" onclick="togglePostMenu('${post.id}')"></i>` : ''}
-                    </div>
-                    <div id="menu-${post.id}" class="post-menu">
-                        <button onclick="openEditPost('${post.id}')"><i class="fas fa-edit"></i> Editar</button>
-                        <button class="delete" onclick="deletePost('${post.id}')"><i class="fas fa-trash"></i> Eliminar</button>
-                    </div>
-                    ${post.caption ? `<p class="post-caption">${post.caption}</p>` : ''}
-                    <div class="post-media-container">
-                        ${mediaHtml}
-                    </div>
-                    ${post.aiAnalysis ? `<div class="ai-badge"><i class="fas fa-robot"></i> IA: ${post.aiAnalysis}</div>` : ''}
-                    <div class="interaction-bar">
-                        <div class="stars">
-                            <i class="fas fa-star ${post.stars && post.stars[currentUser.uid] ? 'active' : ''}" onclick="toggleStar('${post.id}')"></i>
-                            <span style="font-size:1rem; color:var(--text-main); margin-left:5px; align-self:center;">${post.stars ? Object.keys(post.stars).length : 0}</span>
-                        </div>
-                        <div class="action-icons">
-                            <i class="fas fa-comment" onclick="openComments('${post.id}')"></i>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
+            location.reload(); 
         }
 
         function formatTimeAgo(timestamp) {
-            if (!timestamp) return getText('justNow');
             const seconds = Math.floor((new Date() - timestamp) / 1000);
-            if (seconds < 60) return getText('justNow');
-            const minutes = Math.floor(seconds / 60);
-            if (minutes < 60) return `${getText('ago')} ${minutes}${getText('m')}`;
-            const hours = Math.floor(minutes / 60);
-            if (hours < 24) return `${getText('ago')} ${hours}${getText('h')}`;
-            const days = Math.floor(hours / 24);
-            return `${getText('ago')} ${days}${getText('d')}`;
+            const d = i18n[currentLang];
+            if (seconds < 60) return d.justNow;
+            if (seconds >= 86400) return `${d.ago}${Math.floor(seconds/86400)} ${d.d}`;
+            if (seconds >= 3600) return `${d.ago}${Math.floor(seconds/3600)} ${d.h}`;
+            return `${d.ago}${Math.floor(seconds/60)} ${d.m}`;
         }
 
-        async function initApp() {
-            // Load users
-            db.ref('users').on('value', snap => {
-                allUsers = snap.val() || {};
-                if(allUsers[currentUser.uid]) {
-                    document.getElementById('header-avatar').src = allUsers[currentUser.uid].avatar;
+        /* === COMPRESIÓN DE IMÁGENES === */
+        function compressImage(base64Str, maxWidth, callback) {
+            let img = new Image();
+            img.src = base64Str;
+            img.onload = () => {
+                let canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                if (width > maxWidth) {
+                    height *= maxWidth / width;
+                    width = maxWidth;
                 }
-            });
-
-            // Load posts
-            db.ref('posts').on('value', snap => {
-                const data = snap.val();
-                posts = [];
-                if(data) {
-                    for(let key in data) {
-                        posts.push({ id: key, ...data[key] });
-                    }
-                    posts.sort((a,b) => b.timestamp - a.timestamp);
-                }
-                renderFeed();
-                renderRanking();
-            });
-
-            // Load stories (mock implementation)
-            db.ref('stories').on('value', snap => {
-                const data = snap.val();
-                stories = [];
-                if(data) {
-                    for(let key in data) {
-                        stories.push({ id: key, ...data[key] });
-                    }
-                    stories.sort((a,b) => b.timestamp - a.timestamp);
-                }
-                renderStories();
-            });
+                canvas.width = width;
+                canvas.height = height;
+                let ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                callback(canvas.toDataURL('image/jpeg', 0.8));
+            };
         }
 
-        function renderStories() {
-            const container = document.getElementById('friends-stories');
-            container.innerHTML = '';
+        /* === FULL SCREEN & DESCARGAS === */
+        function openFullScreen(src, isVideo, postId = null) {
+            currentFsSrc = src;
+            currentFsIsVideo = isVideo;
+            currentFsPostId = postId;
+            const modal = document.getElementById('fullscreen-view');
+            const img = document.getElementById('fs-img');
+            const vid = document.getElementById('fs-vid');
             
-            // Group stories by user
-            const groupedStories = {};
-            stories.forEach(story => {
-                if(!groupedStories[story.userId]) groupedStories[story.userId] = [];
-                groupedStories[story.userId].push(story);
-            });
+            const editBtn = document.getElementById('fs-edit-btn');
+            const deleteBtn = document.getElementById('fs-delete-btn');
 
-            for(let userId in groupedStories) {
-                const userStories = groupedStories[userId];
-                const author = allUsers[userId];
-                if(!author) continue;
-
-                const firstStory = userStories[0];
-                const div = document.createElement('div');
-                div.innerHTML = `
-                    <div class="story-circle" onclick="playStories('${userId}')">
-                        <img src="${firstStory.image}">
-                    </div>
-                    <div class="story-username">${userId === currentUser.uid ? getText('yourStory') : author.name}</div>
-                `;
-                container.appendChild(div);
-            }
-        }
-
-        function playStories(userId) {
-            viewingUserStories = stories.filter(s => s.userId === userId);
-            if(viewingUserStories.length > 0) {
-                viewingStoryIndex = 0;
-                document.getElementById('story-view-modal').style.display = 'flex';
-                showStoryIndex(viewingStoryIndex);
-            }
-        }
-        
-        function showStoryIndex(index) {
-            const story = viewingUserStories[index];
-            currentStoryId = story.id;
-            
-            const author = allUsers[story.userId] || { name: 'Usuario', avatar: '' };
-
-            const img = document.getElementById('sv-img');
-            img.src = story.image;
-            document.getElementById('sv-avatar').src = author.avatar;
-            document.getElementById('sv-name').innerText = author.name;
-            document.getElementById('sv-time').innerText = formatTimeAgo(story.timestamp);
-            document.getElementById('story-counter').innerText = `${index + 1}/${viewingUserStories.length}`;
-
-            const deleteBtn = document.getElementById('story-delete-btn');
-            if (story.userId === currentUser.uid) {
-                deleteBtn.style.display = 'inline-block';
+            if(postId) {
+                const post = posts.find(p => p.id === postId);
+                if(post && post.userId === currentUser.uid) {
+                    editBtn.style.display = 'inline-block';
+                    deleteBtn.style.display = 'inline-block';
+                } else {
+                    editBtn.style.display = 'none';
+                    deleteBtn.style.display = 'none';
+                }
             } else {
+                editBtn.style.display = 'none';
                 deleteBtn.style.display = 'none';
             }
-        }
-        
-        function nextStory() {
-            if (viewingStoryIndex < viewingUserStories.length - 1) {
-                viewingStoryIndex++;
-                showStoryIndex(viewingStoryIndex);
+
+            if(isVideo) {
+                img.style.display = 'none';
+                vid.src = src;
+                vid.style.display = 'block';
+                vid.play();
             } else {
-                closeStory();
+                vid.style.display = 'none';
+                img.src = src;
+                img.style.display = 'block';
+            }
+            modal.style.display = 'flex';
+        }
+
+        function closeFullScreen() {
+            document.getElementById('fullscreen-view').style.display = 'none';
+            document.getElementById('fs-vid').pause();
+            currentFsPostId = null;
+        }
+
+        function downloadCurrentMedia() {
+            const a = document.createElement('a');
+            a.href = currentFsSrc;
+            a.download = currentFsIsVideo ? 'StarShine_Video.mp4' : 'StarShine_Image.jpg';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        /* === FUNCIONALIDADES DE ACCIÓN EN PANTALLA COMPLETA === */
+        function openEditPostFromFS() {
+            if(!currentFsPostId) return;
+            const postId = currentFsPostId;
+            closeFullScreen();
+            openEditPost(postId);
+        }
+
+        async function deletePostFromFS() {
+            if(!currentFsPostId) return;
+            const postId = currentFsPostId;
+            closeFullScreen();
+            await deletePost(postId);
+        }
+
+        /* === PERMISOS Y UBICACIÓN OPTIMIZADOS PARA ANDROID === */
+        function checkPermissionsOnLoad() {
+            if ("Notification" in window) {
+                document.getElementById('perm-notif-toggle').checked = Notification.permission === "granted";
+            }
+            if (navigator.permissions && navigator.permissions.query) {
+                navigator.permissions.query({name: 'camera'}).then(res => {
+                    document.getElementById('perm-cam-toggle').checked = res.state === "granted";
+                }).catch(()=> { document.getElementById('perm-cam-toggle').checked = false; });
             }
         }
-        
-        function prevStory() {
-            if (viewingStoryIndex > 0) {
-                viewingStoryIndex--;
-                showStoryIndex(viewingStoryIndex);
-            }
-        }
-        
-        function closeStory() {
-            document.getElementById('story-view-modal').style.display = 'none';
-            currentStoryId = null;
-        }
-        
-        async function deleteCurrentStory() {
-            if (currentStoryId) {
-                await db.ref('stories/' + currentStoryId).remove();
-                closeStory();
-            }
-        }
-
-        function togglePostMenu(postId) {
-            const menu = document.getElementById('menu-' + postId);
-            if(menu) {
-                menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
-            }
-        }
-
-        function openEditPost(postId) {
-            const post = posts.find(p => p.id === postId);
-            if(!post) return;
-            editingPostId = postId;
-            document.getElementById('edit-post-modal').style.display = 'flex';
-            document.getElementById('edit-post-caption').value = post.caption || '';
-            document.getElementById('edit-post-preview').src = post.media;
-            editingPostBase64 = null; // Reset
-            togglePostMenu(postId);
-        }
-
-        async function saveEditPost() {
-            if(!editingPostId) return;
-            const newCaption = document.getElementById('edit-post-caption').value;
-            const updates = { caption: newCaption };
-            if(editingPostBase64) updates.media = editingPostBase64;
-            
-            await db.ref('posts/' + editingPostId).update(updates);
-            closeModals();
-        }
-
-        async function deletePost(postId) {
-            if(confirm("¿Estás seguro de eliminar esta publicación?")) {
-                await db.ref('posts/' + postId).remove();
-                togglePostMenu(postId);
-            }
-        }
-
-        function closeModals() {
-            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-            document.getElementById('overlay').style.display = 'none';
-        }
-
-        function openView(viewId) {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.getElementById(viewId).classList.add('active');
-            
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            const targetBtn = document.querySelector(`[data-target="${viewId}"]`);
-            if(targetBtn) targetBtn.classList.add('active');
-
-            if(viewId !== 'view-feed') {
-                document.getElementById('back-btn').style.display = 'inline-block';
-                document.getElementById('header-logo').style.display = 'none';
-            } else {
-                document.getElementById('back-btn').style.display = 'none';
-                document.getElementById('header-logo').style.display = 'block';
-            }
-        }
-
-        function goBack() {
-            openView('view-feed');
-        }
-
-        /* Funciones base agregadas para asegurar funcionamiento */
-        function toggleTheme(isDark) {
-            if(isDark) {
-                document.documentElement.setAttribute('data-theme', 'dark');
-                localStorage.setItem('starshine_theme', 'dark');
-            } else {
-                document.documentElement.setAttribute('data-theme', 'light');
-                localStorage.setItem('starshine_theme', 'light');
-            }
-        }
-
-        function searchUsers() {
-            const query = document.getElementById('search-input').value.toLowerCase();
-            const container = document.getElementById('search-results');
-            container.innerHTML = '';
-            
-            if(query.length < 2) return;
-            
-            for(let uid in allUsers) {
-                const user = allUsers[uid];
-                if(user.name.toLowerCase().includes(query) || (user.bio && user.bio.toLowerCase().includes(query))) {
-                    const div = document.createElement('div');
-                    div.className = 'search-user-item';
-                    div.innerHTML = `
-                        <img src="${user.avatar}" class="avatar">
-                        <div>
-                            <strong>${user.name}</strong>
-                            <p style="font-size:0.8rem; color:var(--text-muted);">${user.bio || 'Sin bio'}</p>
-                        </div>
-                    `;
-                    div.onclick = () => simulateLoadingAndProfile(uid);
-                    container.appendChild(div);
+        function toggleNotifPerm(checkbox) {
+            if (checkbox.checked) {
+                if ("Notification" in window) { 
+                    Notification.requestPermission().then(p => { checkbox.checked = (p === "granted"); }); 
                 }
+            } else {
+                alert("Para desactivar las notificaciones, debes hacerlo desde los ajustes de la app en Android o navegador.");
+                checkbox.checked = true;
+            }
+        }
+        function toggleCamPerm(checkbox) {
+            if (checkbox.checked) {
+                // Forzar el cuadro de diálogo de permisos nativo de Android / Navegador pidiendo audio/video
+                navigator.mediaDevices.getUserMedia({ video: true }).then(s => { 
+                    s.getTracks().forEach(t => t.stop()); 
+                    checkbox.checked = true; 
+                }).catch(() => { 
+                    alert("Por favor, permite el acceso a la cámara en los ajustes nativos de tu teléfono.");
+                    checkbox.checked = false; 
+                });
+            } else {
+                alert("Para revocar el permiso de la cámara, debes hacerlo desde la configuración de tu teléfono.");
+                checkbox.checked = true;
             }
         }
 
-        function renderRanking() {
-            const container = document.getElementById('ranking-container');
-            if(!container) return;
-            container.innerHTML = '';
-            
-            const scores = {};
-            posts.forEach(p => {
-                if(!scores[p.userId]) scores[p.userId] = 0;
-                if(p.stars) scores[p.userId] += Object.keys(p.stars).length;
-            });
-
-            const sortedUsers = Object.keys(scores).sort((a,b) => scores[b] - scores[a]);
-            
-            let rankHtml = '';
-            sortedUsers.forEach((uid, index) => {
-                const user = allUsers[uid];
-                if(!user) return;
-                let topClass = index === 0 ? 'top-1' : (index === 1 ? 'top-2' : (index === 2 ? 'top-3' : ''));
-                let rankIcon = index === 0 ? '🥇' : (index === 1 ? '🥈' : (index === 2 ? '🥉' : `${index + 1}`));
-                
-                rankHtml += `
-                    <div class="rank-item ${topClass}" onclick="simulateLoadingAndProfile('${uid}')">
-                        <div class="rank-pos">${rankIcon}</div>
-                        <img src="${user.avatar}" class="avatar" style="margin: 0 15px;">
-                        <strong>${user.name}</strong>
-                        <div class="rank-score"><i class="fas fa-star"></i> ${scores[uid]}</div>
-                    </div>
-                `;
-            });
-            container.innerHTML = rankHtml;
-            
-            const banner = document.getElementById('ranking-banner');
-            if(banner && sortedUsers.length > 0) {
-                const myRank = sortedUsers.indexOf(currentUser.uid);
-                if(myRank === 0) banner.innerHTML = `<h2>${getText('rank1')}</h2>`;
-                else if(myRank === 1) banner.innerHTML = `<h2>${getText('rank2')}</h2>`;
-                else if(myRank === 2) banner.innerHTML = `<h2>${getText('rank3')}</h2>`;
-                else if(myRank > 2) banner.innerHTML = `<h2>${getText('rank4')}</h2>`;
-                else banner.innerHTML = `<h2>${getText('rankDefault')}</h2>`;
+        async function fetchLocationText(checkbox) {
+            if(checkbox.checked && "geolocation" in navigator) {
+                document.getElementById('location-display').innerText = i18n[currentLang].gettingLoc;
+                navigator.geolocation.getCurrentPosition(async pos => {
+                    try {
+                        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
+                        const data = await res.json();
+                        userLocationText = data.address.city || data.address.town || data.address.country || i18n[currentLang].unknownLoc;
+                        document.getElementById('location-display').innerText = `📍 ${userLocationText}`;
+                    } catch(e) { document.getElementById('location-display').innerText = i18n[currentLang].errorLoc; }
+                }, () => { checkbox.checked = false; document.getElementById('location-display').innerText = i18n[currentLang].deniedLoc; });
+            } else {
+                userLocationText = ""; document.getElementById('location-display').innerText = "";
             }
         }
 
-        function simulateLoadingAndProfile(uid) {
-            document.getElementById('profile-loader-overlay').style.display = 'flex';
-            setTimeout(() => {
-                document.getElementById('profile-loader-overlay').style.display = 'none';
-                viewProfile(uid);
-            }, 800);
+        /* === IA === */
+        async function loadAI() {
+            try {
+                const MODEL_URL = 'https://cdn.jsdelivr.net/gh/vladmandic/face-api/model';
+                await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
+                if(typeof mobilenet !== 'undefined') mobilenetModel = await mobilenet.load();
+                isAiLoaded = true; document.getElementById('ai-status').innerHTML = i18n[currentLang].aiReady;
+            } catch(e) { console.error("Error AI", e); }
         }
 
-        function viewProfile(uid) {
-            const user = allUsers[uid];
-            if(!user) return;
-            
-            currentlyViewingProfileUid = uid;
-            
-            const header = document.getElementById('profile-header');
-            let socialHtml = '';
-            if(user.social) {
-                if(user.social.wa) socialHtml += `<a href="https://wa.me/${user.social.wa}" target="_blank" class="social-icon"><i class="fab fa-whatsapp"></i></a>`;
-                if(user.social.ig) socialHtml += `<a href="https://instagram.com/${user.social.ig}" target="_blank" class="social-icon"><i class="fab fa-instagram"></i></a>`;
-                if(user.social.tt) socialHtml += `<a href="https://tiktok.com/@${user.social.tt}" target="_blank" class="social-icon"><i class="fab fa-tiktok"></i></a>`;
-            }
-            
-            const userPosts = posts.filter(p => p.userId === uid);
-            let totalStars = 0;
-            userPosts.forEach(p => { if(p.stars) totalStars += Object.keys(p.stars).length; });
-
-            header.innerHTML = `
-                <div class="profile-cover"></div>
-                <div class="profile-header">
-                    <img src="${user.avatar}" class="avatar">
-                    <div class="profile-username">@${user.name.replace(/\s+/g, '').toLowerCase()}</div>
-                    <h2>${user.name}</h2>
-                    <div class="profile-bio">${user.bio || 'Una estrella brillante en el universo de StarShine.'}</div>
-                    <div class="profile-stats">
-                        <div class="stat"><strong>${userPosts.length}</strong><span>Posts</span></div>
-                        <div class="stat"><strong>${totalStars}</strong><span>Estrellas</span></div>
-                    </div>
-                    <div class="social-icons-container">${socialHtml}</div>
-                    ${uid === currentUser.uid ? `<button class="btn-secondary" style="margin-top:15px;" onclick="openSettings()"><i class="fas fa-cog"></i> Configuración</button>` : ''}
-                </div>
-            `;
-            
-            const grid = document.getElementById('profile-grid');
-            grid.innerHTML = '';
-            userPosts.forEach(p => {
-                const el = document.createElement(p.type === 'video' ? 'video' : 'img');
-                el.src = p.media;
-                el.onclick = () => openFullScreen(p.media, p.type === 'video', p.id);
-                grid.appendChild(el);
-            });
-            
-            openView('view-profile');
+        function checkAIGenerated(file) {
+            currentUploadIsAI = false;
+            document.getElementById('ai-pre-detect-alert').style.display = 'none';
+            if(!file || currentUploadIsVideo) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const aiTags = ['Midjourney', 'DALL-E', 'Stable Diffusion', 'NovelAI', 'ComfyUI', 'automatic1111', 'civitai', 'AI Generated'];
+                if(aiTags.some(tag => text.includes(tag))) {
+                    currentUploadIsAI = true;
+                }
+            };
+            reader.readAsText(file.slice(0, 100000));
         }
 
-        function viewMyProfile() {
-            if(currentUser) viewProfile(currentUser.uid);
-        }
-
-        function openSettings() {
-            document.getElementById('overlay').style.display = 'block';
-            document.getElementById('settings-modal').style.display = 'flex';
-        }
-
-        // CÁMARA MEJORADA SIN CONGELAMIENTO
+        /* === CÁMARA LIBRE OPTIMIZADA (SIN CONGELAMIENTO) === */
         async function openLiveCamera() {
             document.getElementById('media-trigger').style.display = 'none';
             document.getElementById('btn-open-cam').style.display = 'none';
             document.getElementById('camera-container').style.display = 'block';
-            await startCameraStream();
+            document.getElementById('t-cap-btn').innerText = i18n[currentLang].capBtn;
+            startCameraStream();
         }
 
         async function startCameraStream() {
             const video = document.getElementById('live-video');
-            if(cameraStream) {
-                cameraStream.getTracks().forEach(t => t.stop());
-            }
+            if(cameraStream) cameraStream.getTracks().forEach(t => t.stop());
             
-            const constraints = {
-                video: {
-                    facingMode: usingFrontCamera ? "user" : "environment",
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                }
-            };
+            const videoConstraints = usingFrontCamera ? { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } } : { facingMode: { exact: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } };
 
             try {
-                cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
                 video.srcObject = cameraStream;
-                // Live face detection removed to fix freezing issue.
             } catch(e) { 
-                alert("No se pudo iniciar la cámara en tu dispositivo. Por favor verifica los permisos.");
-                closeLiveCamera();
+                try {
+                    const fallbackConstraints = { video: { facingMode: usingFrontCamera ? "user" : "environment" } };
+                    cameraStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+                    video.srcObject = cameraStream;
+                } catch(err) {
+                    alert("No se pudo iniciar la cámara en tu dispositivo. Por favor verifica los permisos.");
+                    closeLiveCamera();
+                }
             }
         }
 
@@ -1397,10 +1220,7 @@
         }
 
         function closeLiveCamera() {
-            if(cameraStream) {
-                cameraStream.getTracks().forEach(t => t.stop());
-                cameraStream = null;
-            }
+            if(cameraStream) cameraStream.getTracks().forEach(t => t.stop());
             document.getElementById('camera-container').style.display = 'none';
             document.getElementById('media-trigger').style.display = 'flex';
             document.getElementById('btn-open-cam').style.display = 'block';
@@ -1409,203 +1229,933 @@
         function captureLiveCamera() {
             const video = document.getElementById('live-video');
             const tCanvas = document.createElement('canvas');
-            tCanvas.width = video.videoWidth; 
-            tCanvas.height = video.videoHeight;
+            tCanvas.width = video.videoWidth; tCanvas.height = video.videoHeight;
             tCanvas.getContext('2d').drawImage(video, 0, 0);
             
             compressImage(tCanvas.toDataURL('image/jpeg'), 800, finishCapture);
         }
-
-        function finishCapture(dataUrl) {
-            uploadBase64 = dataUrl;
+        
+        function finishCapture(compressedBase64) {
+            uploadBase64 = compressedBase64;
+            currentUploadIsAI = false; 
             currentUploadIsVideo = false;
-            document.getElementById('preview-img').src = dataUrl;
-            document.getElementById('preview-img').style.display = 'block';
-            document.getElementById('btn-publish').style.display = 'block';
             closeLiveCamera();
+            document.getElementById('preview-vid').style.display = 'none';
+            const img = document.getElementById('preview-img');
+            img.src = uploadBase64; img.style.display = 'block';
+            document.getElementById('btn-publish').style.display = 'block';
         }
 
         function handleImageUpload(e) {
             const file = e.target.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                uploadBase64 = event.target.result;
-                document.getElementById('preview-img').src = uploadBase64;
-                document.getElementById('preview-img').style.display = 'block';
-                document.getElementById('btn-publish').style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-        }
+            if(!file) return; 
 
-        function compressImage(dataUrl, maxWidth, callback) {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
-                if (width > maxWidth) {
-                    height = Math.round((height * maxWidth) / width);
-                    width = maxWidth;
+            currentUploadIsVideo = file.type.startsWith('video/');
+
+            const btnPub = document.getElementById('btn-publish');
+            btnPub.style.display = 'block';
+            btnPub.disabled = true;
+            btnPub.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Preparando...`;
+            document.getElementById('ai-pre-detect-alert').style.display = 'none';
+            
+            if(!currentUploadIsVideo) checkAIGenerated(file);
+
+            const reader = new FileReader();
+            reader.onload = ev => {
+                const processMedia = (base64) => {
+                    uploadBase64 = base64;
+                    if(currentUploadIsVideo) {
+                        document.getElementById('preview-img').style.display = 'none';
+                        const vid = document.getElementById('preview-vid');
+                        vid.src = uploadBase64;
+                        vid.style.display = 'block';
+                    } else {
+                        document.getElementById('preview-vid').style.display = 'none';
+                        const img = document.getElementById('preview-img');
+                        img.src = uploadBase64; 
+                        img.style.display = 'block';
+                    }
+                    
+                    setTimeout(() => {
+                        btnPub.disabled = false;
+                        btnPub.innerHTML = `<i class="fas fa-magic"></i> ${i18n[currentLang].btnPub || 'Analizar y Publicar'}`;
+                        if(currentUploadIsAI && !currentUploadIsVideo) {
+                            document.getElementById('ai-pre-detect-alert').style.display = 'block';
+                        }
+                    }, 1000);
+                };
+
+                if (currentUploadIsVideo || file.type === 'image/gif') {
+                    processMedia(ev.target.result);
+                } else {
+                    compressImage(ev.target.result, 800, processMedia);
                 }
-                canvas.width = width;
-                canvas.height = height;
-                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-                callback(canvas.toDataURL('image/jpeg', 0.8));
-            };
-            img.src = dataUrl;
+            }; 
+            reader.readAsDataURL(file);
         }
 
         async function analyzeAndPublish() {
             if(!uploadBase64) return;
-            const caption = document.getElementById('post-caption').value;
-            
             const btn = document.getElementById('btn-publish');
-            btn.disabled = true;
-            btn.innerHTML = getText('analyzing');
-
-            let aiText = "Post Regular";
-
-            // Save to DB
-            const postRef = db.ref('posts').push();
-            await postRef.set({
-                userId: currentUser.uid,
-                caption: caption,
-                media: uploadBase64,
-                type: 'image',
-                aiAnalysis: aiText,
-                location: userLocationText,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            });
-
-            // Reset
-            uploadBase64 = null;
-            document.getElementById('preview-img').style.display = 'none';
-            document.getElementById('post-caption').value = '';
-            document.getElementById('btn-publish').style.display = 'none';
-            btn.disabled = false;
-            btn.innerHTML = `<i class="fas fa-magic"></i> <span id="t-btn-pub">${getText('btnPub')}</span>`;
+            btn.disabled = true; btn.innerHTML = i18n[currentLang].analyzing;
             
+            let detectedText = "Vibra Estelar ✨"; 
+            const dict = i18n[currentLang];
+            let filterText = "";
+
+            if (isAiLoaded && !currentUploadIsVideo) {
+                const imgEl = document.getElementById('preview-img');
+                try {
+                    let faceTxt = ""; let objTxt = "";
+                    const detections = await faceapi.detectAllFaces(imgEl).withFaceExpressions();
+                    if(detections && detections.length > 0) {
+                        const exps = detections[0].expressions;
+                        const sortedEmotions = Object.keys(exps).sort((a,b) => exps[b] - exps[a]);
+                        const topEmotion = sortedEmotions[0];
+                        const confidence = Math.round(exps[topEmotion] * 100);
+                        const emotionData = emotionMap[topEmotion] || emotionMap['neutral'];
+                        const emotionName = currentLang === 'es' ? emotionData.es : emotionData.en;
+                        faceTxt = `${dict.aiPerson} - ${emotionName} ${emotionData.emoji} ${confidence}%`;
+                    }
+                    if (mobilenetModel) {
+                        const predictions = await mobilenetModel.classify(imgEl);
+                        if(predictions && predictions.length > 0) objTxt = `${dict.aiClass} ${predictions[0].className.split(',')[0]} 🤖`;
+                    }
+                    if(faceTxt || objTxt) detectedText = [faceTxt, objTxt].filter(Boolean).join(' | ');
+
+                    // === DETECCIÓN BÁSICA DE FILTROS (BLANCO Y NEGRO) ===
+                    const canvas = document.createElement('canvas');
+                    canvas.width = imgEl.naturalWidth || imgEl.width;
+                    canvas.height = imgEl.naturalHeight || imgEl.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(imgEl, 0, 0, canvas.width, canvas.height);
+                    
+                    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imgData.data;
+                    let isBW = true;
+                    for (let i = 0; i < data.length; i += 4) {
+                        if (Math.abs(data[i] - data[i+1]) > 25 || Math.abs(data[i] - data[i+2]) > 25) {
+                            isBW = false;
+                            break;
+                        }
+                    }
+                    if (isBW) filterText = "Filtro: Blanco y Negro 🖤";
+
+                } catch(e) { console.error(e); }
+            }
+
+            if(userLocationText) detectedText += ` | ${userLocationText}`;
+            if(filterText) detectedText += (detectedText ? ' | ' : '') + filterText;
+
+            const newPost = {
+                id: 'post_' + Date.now(),
+                userId: currentUser.uid, 
+                userName: currentUser.name || "Usuario", 
+                userAvatar: currentUser.avatar || "", 
+                username: currentUser.username || "",
+                image: uploadBase64 || "", 
+                isVideo: currentUploadIsVideo,
+                caption: document.getElementById('post-caption').value || "", 
+                emotion: detectedText || "",
+                isAI: currentUploadIsAI, 
+                privacy: document.getElementById('post-privacy').value || "public", 
+                timestamp: Date.now(), 
+                stars: 0,
+                edited: false
+            };
+
+            await db.ref('posts/' + newPost.id).set(newPost);
+            
+            document.getElementById('preview-img').style.display = 'none';
+            document.getElementById('preview-vid').style.display = 'none';
+            document.getElementById('post-caption').value = '';
+            document.getElementById('post-location-toggle').checked = false;
+            document.getElementById('ai-pre-detect-alert').style.display = 'none';
+            currentUploadIsAI = false;
+            currentUploadIsVideo = false;
+
+            userLocationText = ""; document.getElementById('location-display').innerText = "";
+            uploadBase64 = null; btn.style.display = 'none'; btn.disabled = false;
+            btn.innerHTML = `<i class="fas fa-magic"></i> ${dict.btnPub}`;
             openView('view-feed');
         }
 
-        // Simples Auth Stubs
-        function toggleAuth() {
-            const login = document.getElementById('login-box');
-            const reg = document.getElementById('register-box');
-            if(login.style.display === 'none') {
-                login.style.display = 'block';
-                reg.style.display = 'none';
-            } else {
-                login.style.display = 'none';
-                reg.style.display = 'block';
-            }
-        }
-        
-        async function login() {
-            const e = document.getElementById('login-email').value;
-            const p = document.getElementById('login-pass').value;
-            try {
-                await auth.signInWithEmailAndPassword(e, p);
-            } catch(err) {
-                document.getElementById('auth-error').innerText = "Error: " + err.message;
-            }
-        }
-        
-        async function register() {
-            const e = document.getElementById('reg-email').value;
-            const p = document.getElementById('reg-pass').value;
-            const n = document.getElementById('reg-name').value;
-            try {
-                const cred = await auth.createUserWithEmailAndPassword(e, p);
-                await db.ref('users/' + cred.user.uid).set({
-                    name: n,
-                    email: e,
-                    avatar: regAvatarBase64 || 'https://via.placeholder.com/150'
+        /* === BOOMERANG EFECTO OPTIMIZADO === */
+        function initBoomerangLoopers() {
+            setInterval(() => {
+                const vids = document.querySelectorAll('.boomerang-video');
+                if(!vids.length) return;
+                vids.forEach(vid => {
+                    if(vid.readyState === 0) return;
+                    if(!vid.hasAttribute('data-dur')) vid.setAttribute('data-dur', vid.duration);
+                    
+                    let maxDur = Math.min(vid.duration, 50); 
+                    if(isNaN(maxDur)) maxDur = 50;
+                    if(!vid.b_dir) vid.b_dir = 1;
+
+                    if(vid.b_dir === 1 && vid.currentTime >= maxDur) {
+                        vid.b_dir = -1; vid.pause();
+                    } else if(vid.b_dir === -1 && vid.currentTime <= 0.1) {
+                        vid.b_dir = 1; vid.play();
+                    }
+                    if(vid.b_dir === -1) { vid.currentTime = Math.max(0, vid.currentTime - 0.15); }
                 });
-            } catch(err) {
-                document.getElementById('auth-error').innerText = "Error: " + err.message;
+            }, 150);
+        }
+
+        /* === NAVEGACIÓN === */
+        function openView(viewId, isBack = false) {
+            const currentView = document.querySelector('.view.active')?.id;
+            if (!isBack && currentView && currentView !== viewId) viewHistory.push(currentView);
+
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            
+            const targetView = document.getElementById(viewId);
+            if(targetView) targetView.classList.add('active');
+            
+            const btn = document.querySelector(`[data-target="${viewId}"]`);
+            if(btn) btn.classList.add('active');
+            else if(viewId === 'view-profile') document.querySelector(`[data-target="view-profile"]`).classList.add('active');
+
+            document.getElementById('back-btn').style.display = viewId === 'view-feed' ? 'none' : 'inline-block';
+
+            if(viewId === 'view-feed') { renderFeed(); renderStories(); }
+            if(viewId === 'view-ranking') renderRanking();
+            if(viewId === 'view-search') searchUsers();
+            if(viewId !== 'view-upload') closeLiveCamera();
+        }
+        function goBack() { if (viewHistory.length > 0) { const previousView = viewHistory.pop(); openView(previousView, true); } }
+
+        /* === AUTH, VERIFICACIÓN Y USERNAME === */
+        function checkPasswordStrength(val) {
+            const container = document.getElementById('pass-strength-container');
+            const bar = document.getElementById('pass-strength-bar');
+            const text = document.getElementById('pass-strength-text');
+            
+            if(!val) { container.style.display = 'none'; return; }
+            container.style.display = 'block';
+            
+            let strength = 0;
+            if(val.length >= 6) strength++;
+            if(val.length >= 8) strength++;
+            if(/[A-Z]/.test(val)) strength++;
+            if(/[0-9]/.test(val)) strength++;
+            if(/[^A-Za-z0-9]/.test(val)) strength++;
+
+            if(strength <= 1) { 
+                bar.style.width = '25%'; bar.style.backgroundColor = '#ff4d4d'; 
+                text.innerText = 'Débil'; text.style.color = '#ff4d4d'; 
+            } else if(strength === 2 || strength === 3) { 
+                bar.style.width = '50%'; bar.style.backgroundColor = '#ffa500'; 
+                text.innerText = 'Media'; text.style.color = '#ffa500'; 
+            } else if(strength === 4) { 
+                bar.style.width = '75%'; bar.style.backgroundColor = '#9acd32'; 
+                text.innerText = 'Fuerte'; text.style.color = '#9acd32'; 
+            } else { 
+                bar.style.width = '100%'; bar.style.backgroundColor = '#28a745'; 
+                text.innerText = 'Segura'; text.style.color = '#28a745'; 
             }
         }
 
+        auth.onAuthStateChanged(user => {
+            setTimeout(() => { document.getElementById('splash-screen').style.opacity = '0'; setTimeout(() => document.getElementById('splash-screen').style.display = 'none', 500); }, 1500);
+            
+            if (user && user.emailVerified) {
+                document.getElementById('auth-view').style.display = 'none'; 
+                document.getElementById('main-app').style.display = 'flex';
+                if(!isAiLoaded) loadAI(); 
+                initApp(user.uid); 
+                viewHistory = []; 
+                openView('view-feed');
+            } else {
+                document.getElementById('auth-view').style.display = 'flex'; 
+                document.getElementById('main-app').style.display = 'none'; 
+                currentUser = null;
+                document.getElementById('profile-header').innerHTML = '';
+                document.getElementById('profile-grid').innerHTML = '';
+            }
+        });
+
+        function toggleAuth() {
+            const login = document.getElementById('login-box'), reg = document.getElementById('register-box');
+            login.style.display = login.style.display === 'none' ? 'block' : 'none';
+            reg.style.display = reg.style.display === 'none' ? 'block' : 'none';
+            document.getElementById('auth-error').innerText = "";
+        }
+
         function handleRegAvatar(e) {
+            const file = e.target.files[0]; 
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => { 
+                if (file.type === 'image/gif') {
+                    regAvatarBase64 = ev.target.result;
+                    document.getElementById('reg-avatar-preview').src = regAvatarBase64; 
+                    document.getElementById('reg-avatar-preview').style.display = 'block'; 
+                    document.getElementById('reg-avatar-icon').style.display = 'none'; 
+                } else {
+                    compressImage(ev.target.result, 400, (comp) => {
+                        regAvatarBase64 = comp; 
+                        document.getElementById('reg-avatar-preview').src = regAvatarBase64; 
+                        document.getElementById('reg-avatar-preview').style.display = 'block'; 
+                        document.getElementById('reg-avatar-icon').style.display = 'none'; 
+                    });
+                }
+            };
+            if(file) reader.readAsDataURL(file);
+        }
+
+        async function register() {
+            const email = document.getElementById('reg-email').value, pass = document.getElementById('reg-pass').value, name = document.getElementById('reg-name').value;
+            const errorLabel = document.getElementById('auth-error');
+            errorLabel.style.color = "#ff4d4d";
+            
+            if(!name || !email || !pass || !regAvatarBase64) return errorLabel.innerText = i18n[currentLang].reqPic;
+            if(pass.length < 6) return errorLabel.innerText = "La contraseña debe tener al menos 6 caracteres";
+            
+            const autoUsername = '@' + name.replace(/\s+/g, '').toLowerCase() + Math.floor(Math.random() * 1000);
+            
+            document.getElementById('btn-register').disabled = true;
+            try {
+                const cred = await auth.createUserWithEmailAndPassword(email, pass);
+                await cred.user.sendEmailVerification();
+                await db.ref('users/' + cred.user.uid).set({ uid: cred.user.uid, name: name, username: autoUsername, stars: 0, bio: "¡Hola! Uso StarShine ✨", avatar: regAvatarBase64, followersCount: 0, followingCount: 0 });
+                await auth.signOut();
+                
+                errorLabel.style.color = "var(--primary)";
+                errorLabel.innerText = "¡Registro exitoso! Por favor verifica tu correo electrónico antes de iniciar sesión.";
+                toggleAuth();
+                
+            } catch(e) { errorLabel.innerText = e.message; }
+            document.getElementById('btn-register').disabled = false;
+        }
+
+        async function login() {
+            const email = document.getElementById('login-email').value, pass = document.getElementById('login-pass').value;
+            const errorLabel = document.getElementById('auth-error');
+            try { 
+                const cred = await auth.signInWithEmailAndPassword(email, pass); 
+                if (!cred.user.emailVerified) {
+                    await auth.signOut();
+                    errorLabel.style.color = "#ff4d4d";
+                    errorLabel.innerText = "Aún no has verificado tu correo. Por favor revisa tu bandeja de entrada o spam.";
+                }
+            } catch(e) { 
+                errorLabel.style.color = "#ff4d4d";
+                errorLabel.innerText = "Error: Verifica tus datos."; 
+            }
+        }
+
+        /* === INICIO APP === */
+        function initApp(uid) {
+            db.ref('users/' + uid).on('value', snap => {
+                currentUser = snap.val();
+                if(currentUser) {
+                    document.getElementById('header-avatar').src = currentUser.avatar || '';
+                    if(document.getElementById('view-profile').classList.contains('active') && currentlyViewingProfileUid === uid) {
+                        renderProfileData(uid);
+                    }
+                }
+            });
+            db.ref('users').on('value', snap => { 
+                allUsers = snap.val() || {}; 
+                if(document.getElementById('view-search').classList.contains('active')) searchUsers(); 
+                if(document.getElementById('view-profile').classList.contains('active') && currentlyViewingProfileUid) {
+                    renderProfileData(currentlyViewingProfileUid);
+                }
+                if(document.getElementById('view-ranking').classList.contains('active')) renderRanking();
+            });
+            db.ref('posts').on('value', snap => {
+                const data = snap.val(); posts = data ? Object.values(data).sort((a,b) => b.timestamp - a.timestamp) : [];
+                if(document.getElementById('view-feed').classList.contains('active')) renderFeed();
+                if(document.getElementById('view-profile').classList.contains('active') && currentlyViewingProfileUid) {
+                    renderProfileData(currentlyViewingProfileUid);
+                }
+                checkUrlForPost();
+            });
+            db.ref('stories').on('value', snap => {
+                const data = snap.val(); stories = data ? Object.values(data) : [];
+                if(document.getElementById('view-feed').classList.contains('active')) renderStories();
+            });
+        }
+        function openSettings() { 
+            checkPermissionsOnLoad();
+            document.getElementById('overlay').style.display = 'block'; document.getElementById('settings-modal').style.display = 'flex'; 
+        }
+
+        /* === HISTORIAS === */
+        function handleStoryUpload(e) {
+            const file = e.target.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = async ev => {
+                if (file.type === 'image/gif') {
+                    const newStory = { id: 'story_' + Date.now(), userId: currentUser.uid, userName: currentUser.name, userAvatar: currentUser.avatar, image: ev.target.result, timestamp: Date.now(), score: 0 };
+                    await db.ref('stories/' + newStory.id).set(newStory);
+                } else {
+                    compressImage(ev.target.result, 800, async (compressed) => {
+                        const newStory = { id: 'story_' + Date.now(), userId: currentUser.uid, userName: currentUser.name, userAvatar: currentUser.avatar, image: compressed, timestamp: Date.now(), score: 0 };
+                        await db.ref('stories/' + newStory.id).set(newStory);
+                    });
+                }
+            }; reader.readAsDataURL(file);
+        }
+        
+        // Optimizado usando un buffer
+        function renderStories() {
+            const container = document.getElementById('friends-stories'); 
+            const now = Date.now(); const oneDay = 24 * 60 * 60 * 1000;
+            
+            let grouped = {};
+            stories.forEach(s => {
+                if (now - s.timestamp > oneDay) { db.ref('stories/' + s.id).remove(); return; } 
+                if (s.userId !== currentUser.uid && !(currentUser.friends && currentUser.friends[s.userId])) return;
+
+                if (!grouped[s.userId]) grouped[s.userId] = [];
+                grouped[s.userId].push(s);
+            });
+
+            const userIds = Object.keys(grouped).sort((a, b) => {
+                if (a === currentUser.uid) return -1;
+                if (b === currentUser.uid) return 1;
+                return 0;
+            });
+
+            let htmlBuffer = '';
+            userIds.forEach(uid => {
+                let userStories = grouped[uid];
+                userStories.sort((a,b) => a.timestamp - b.timestamp); 
+                let latestStory = userStories[userStories.length - 1]; 
+                
+                let nameDisplay = (uid === currentUser.uid) ? (i18n[currentLang].yourStory || "Tu Historia") : latestStory.userName.split(' ')[0];
+
+                htmlBuffer += `
+                    <div>
+                        <div class="story-circle" onclick="viewUserStories('${uid}')"><img src="${latestStory.image}"></div>
+                        <div class="story-username">${nameDisplay}</div>
+                    </div>
+                `;
+            });
+            container.innerHTML = htmlBuffer;
+        }
+
+        function viewUserStories(uid) {
+            const now = Date.now(); const oneDay = 24 * 60 * 60 * 1000;
+            viewingUserStories = stories.filter(s => s.userId === uid && (now - s.timestamp <= oneDay)).sort((a,b) => a.timestamp - b.timestamp);
+            if(viewingUserStories.length === 0) return;
+            viewingStoryIndex = 0;
+            showStoryIndex(viewingStoryIndex);
+            document.getElementById('story-view-modal').style.display = 'flex';
+        }
+
+        function showStoryIndex(index) {
+            const story = viewingUserStories[index];
+            currentStoryId = story.id;
+            
+            const imgEl = document.getElementById('sv-img');
+            imgEl.src = ""; 
+            setTimeout(() => { imgEl.src = story.image; }, 10);
+            
+            document.getElementById('sv-avatar').src = story.userAvatar;
+            document.getElementById('sv-name').innerText = story.userName;
+            document.getElementById('sv-time').innerText = `${i18n[currentLang].published || "Publicado: "}${new Date(story.timestamp).toLocaleString()}`;
+            document.getElementById('story-counter').innerText = `${index + 1}/${viewingUserStories.length}`;
+
+            if(story.userId === currentUser.uid) {
+                document.getElementById('story-delete-btn').style.display = 'inline-block';
+            } else {
+                document.getElementById('story-delete-btn').style.display = 'none';
+            }
+
+            const myStoryRating = (story.raters && story.raters[currentUser.uid]) ? story.raters[currentUser.uid] : 0;
+            const starsHTML = [1,2,3,4,5].map(i => `<i class="fas fa-star star ${i <= myStoryRating ? 'active' : ''}" onclick="rateStory(${i})" style="transition:0.3s; margin: 0 5px;"></i>`).join('');
+            document.getElementById('story-stars-container').innerHTML = starsHTML;
+        }
+
+        function nextStory() { if (viewingStoryIndex < viewingUserStories.length - 1) { viewingStoryIndex++; showStoryIndex(viewingStoryIndex); } else { closeStory(); } }
+        function prevStory() { if (viewingStoryIndex > 0) { viewingStoryIndex--; showStoryIndex(viewingStoryIndex); } }
+        async function deleteCurrentStory() {
+            if(!currentStoryId) return;
+            if(confirm("¿Seguro que quieres eliminar esta historia?")) { await db.ref(`stories/${currentStoryId}`).remove(); closeStory(); }
+        }
+        function closeStory() { document.getElementById('story-view-modal').style.display = 'none'; currentStoryId = null; viewingUserStories = []; }
+        
+        async function rateStory(points) {
+            if(!currentStoryId) return;
+            const story = viewingUserStories[viewingStoryIndex];
+            if(!story.raters) story.raters = {};
+            story.raters[currentUser.uid] = points;
+            const totalScore = Object.values(story.raters).reduce((a, b) => a + b, 0);
+            const starElements = document.getElementById('story-stars-container').children;
+            for(let i=0; i<5; i++) {
+                if(i < points) starElements[i].classList.add('active');
+                else starElements[i].classList.remove('active');
+            }
+            await db.ref(`stories/${currentStoryId}`).update({ raters: story.raters, score: totalScore });
+            setTimeout(() => { nextStory(); }, 400);
+        }
+
+        /* === BÚSQUEDA Y CARGA PERFIL === */
+        function searchUsers() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const res = document.getElementById('search-results'); 
+            
+            if (query.trim() === '') { res.innerHTML = ''; return; }
+
+            let htmlBuffer = '';
+            Object.values(allUsers).forEach(u => {
+                if(u.name.toLowerCase().includes(query) || (u.username && u.username.toLowerCase().includes(query))) {
+                    htmlBuffer += `
+                        <div class="search-user-item" onclick="simulateLoadingAndProfile('${u.uid}')">
+                            <img class="avatar" src="${u.avatar}">
+                            <div style="flex:1;">
+                                <div style="font-weight:bold; color:var(--text-main);">${u.name}</div>
+                                <div style="font-size:0.8rem; color:var(--primary);">${u.username || ''}</div>
+                            </div>
+                            <button class="btn-small btn-primary" style="margin-left:auto; pointer-events:none;"><i class="fas fa-eye"></i> Perfil</button>
+                        </div>
+                    `;
+                }
+            });
+            res.innerHTML = htmlBuffer;
+        }
+
+        function simulateLoadingAndProfile(uid) {
+            document.getElementById('profile-loader-overlay').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('profile-loader-overlay').style.display = 'none';
+                viewProfile(uid);
+            }, 1500);
+        }
+
+        /* === SEGUIR / AÑADIR AMIGOS === */
+        async function toggleFollow(targetUid) {
+            if (!currentUser.friends) currentUser.friends = {};
+            const isFollowing = !!currentUser.friends[targetUid];
+            const targetUser = allUsers[targetUid];
+            let targetFollowers = targetUser.followersCount || 0;
+            let myFollowing = currentUser.followingCount || 0;
+
+            if (isFollowing) {
+                await db.ref(`users/${currentUser.uid}/friends/${targetUid}`).remove();
+                await db.ref(`users/${targetUid}/followersCount`).set(Math.max(0, targetFollowers - 1));
+                await db.ref(`users/${currentUser.uid}/followingCount`).set(Math.max(0, myFollowing - 1));
+            } else {
+                await db.ref(`users/${currentUser.uid}/friends/${targetUid}`).set(true);
+                await db.ref(`users/${targetUid}/followersCount`).set(targetFollowers + 1);
+                await db.ref(`users/${currentUser.uid}/followingCount`).set(myFollowing + 1);
+            }
+        }
+
+        /* === COMPARTIR ENLACE === */
+        async function sharePost(postId) {
+            const url = window.location.href.split('?')[0] + `?post=${postId}`;
+            if (navigator.share) {
+                try { await navigator.share({ title: `Post en StarShine`, url: url }); } catch (err) { fallbackShare(url); }
+            } else { fallbackShare(url); }
+        }
+
+        function fallbackShare(url) {
+            navigator.clipboard.writeText(url).then(() => { alert("¡Enlace copiado al portapapeles!"); }).catch(() => { alert("Tu URL es: " + url); });
+        }
+        
+        function checkUrlForPost() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const postId = urlParams.get('post');
+            if(postId && posts.find(p => p.id === postId)) {
+                openComments(postId);
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+
+        function shareProfileLink() {
+            const appUrl = window.location.href.split('?')[0]; 
+            if (navigator.share) { navigator.share({ title: `Mi perfil en StarShine`, text: `¡Agrégame en StarShine! Mi usuario es ${currentUser.username}`, url: appUrl }).catch(err => fallbackShare(appUrl)); } 
+            else { fallbackShare(appUrl); }
+        }
+
+        /* === GESTIÓN DE POSTS (FEED, EDITAR, ELIMINAR) OPTIMIZADA CON BUFFER === */
+        function togglePostMenu(postId) {
+            const menu = document.getElementById(`menu-${postId}`);
+            const allMenus = document.querySelectorAll('.post-menu');
+            allMenus.forEach(m => { if(m.id !== `menu-${postId}`) m.style.display = 'none'; });
+            menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function doubleTapRate(postId) {
+            const burst = document.getElementById(`burst-${postId}`);
+            if(burst) {
+                burst.style.animation = 'none';
+                void burst.offsetWidth; 
+                burst.style.animation = 'starBurstAnim 0.8s ease-out forwards';
+            }
+            ratePost(postId, 5);
+        }
+
+        function renderFeed() {
+            const container = document.getElementById('feed-container'); 
+            if (!posts || posts.length === 0) {
+                container.innerHTML = `
+                    <div class="space-loader-container">
+                        <div class="space-loader-stars"></div>
+                        <div class="space-loader-planet"></div>
+                        <p id="feed-loading-text" style="color:var(--primary); margin-top:15px; font-weight:bold; animation: pulse 1.5s infinite; z-index: 1;">${i18n[currentLang].loadingUniverse || 'Cargando tu universo...'}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let htmlBuffer = '';
+            posts.forEach(post => {
+                if (post.privacy === 'friends' && post.userId !== currentUser.uid && !(currentUser.friends && currentUser.friends[post.userId])) return;
+
+                const myRating = (post.raters && post.raters[currentUser.uid]) ? post.raters[currentUser.uid] : 0;
+                const privIcon = post.privacy === 'public' ? '<i class="fas fa-globe"></i>' : '<i class="fas fa-user-friends"></i>';
+                const commCount = post.comments ? Object.keys(post.comments).length : 0;
+                const timeText = formatTimeAgo(post.timestamp);
+                const editedTag = post.edited ? `<span class="edited-badge">${i18n[currentLang].edited}</span>` : '';
+
+                const optionsMenu = post.userId === currentUser.uid ? `
+                    <div style="position:relative;">
+                        <i class="fas fa-ellipsis-v post-options" onclick="togglePostMenu('${post.id}')"></i>
+                        <div class="post-menu" id="menu-${post.id}">
+                            <button onclick="openEditPost('${post.id}')"><i class="fas fa-edit"></i> Editar</button>
+                            <button class="delete" onclick="deletePost('${post.id}')"><i class="fas fa-trash"></i> Eliminar</button>
+                        </div>
+                    </div>
+                ` : '';
+
+                const aiLabel = post.isAI ? `<div class="ai-badge" style="color:#fff; background: linear-gradient(135deg, #ff007f, #7f00ff); border: none; box-shadow: 0 4px 15px rgba(255,0,127,0.4);"><i class="fas fa-robot"></i> Imagen creada con IA</div>` : '';
+
+                const mediaHtml = post.isVideo 
+                    ? `<video class="post-media boomerang-video" src="${post.image}" autoplay muted playsinline></video>` 
+                    : `<img class="post-media" src="${post.image}" loading="lazy">`;
+
+                htmlBuffer += `
+                    <div class="post-card">
+                        <div class="post-header">
+                            <div class="avatar" onclick="simulateLoadingAndProfile('${post.userId}')"><img src="${post.userAvatar}"></div>
+                            <div class="post-user-info" onclick="simulateLoadingAndProfile('${post.userId}')">
+                                <h4>${post.userName} <span style="font-size:0.8rem; color:var(--primary); font-weight:normal;">${post.username || ''}</span></h4>
+                                <p>${timeText} • ${privIcon} ${editedTag}</p>
+                            </div>
+                            ${optionsMenu}
+                        </div>
+                        ${post.caption ? `<div class="post-caption">${post.caption}</div>` : ''}
+                        
+                        <div class="post-media-container" ondblclick="doubleTapRate('${post.id}')">
+                            ${mediaHtml}
+                            <i class="fas fa-expand" style="position:absolute; top:10px; right:10px; color:white; background:rgba(0,0,0,0.5); padding:8px; border-radius:50%; cursor:pointer; z-index:5;" onclick="openFullScreen('${post.image}', ${post.isVideo}, '${post.id}')"></i>
+                            <i class="fas fa-star star-burst" id="burst-${post.id}"></i>
+                        </div>
+
+                        ${aiLabel}
+                        <div class="ai-badge">${post.emotion}</div>
+                        <div class="interaction-bar">
+                            <div class="stars">${[1,2,3,4,5].map(i => `<i class="fas fa-star star ${i <= myRating ? 'active' : ''}" onclick="ratePost('${post.id}', ${i})"></i>`).join('')}</div>
+                            <div class="action-icons">
+                                <span style="font-size:0.95rem; font-weight:bold; color:var(--primary);">${post.stars || 0} ★</span>
+                                <div style="display:flex; align-items:center; gap:5px;"><i class="far fa-comment" onclick="openComments('${post.id}')"></i> <span style="font-size:0.9rem;">${commCount}</span></div>
+                                <i class="fas fa-share-alt" onclick="sharePost('${post.id}')"></i>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = htmlBuffer;
+        }
+        
+        async function ratePost(postId, value) {
+            const post = posts.find(p => p.id === postId); if(!post.raters) post.raters = {};
+            post.raters[currentUser.uid] = value;
+            let totalStars = Object.values(post.raters).reduce((a, v) => a + v, 0);
+            await db.ref(`posts/${postId}`).update({ raters: post.raters, stars: totalStars });
+            
+            const authorPosts = posts.filter(p => p.userId === post.userId);
+            let authorTotalStars = 0;
+            authorPosts.forEach(p => {
+                let pStars = 0;
+                if(p.id === postId) pStars = totalStars;
+                else pStars = p.stars || 0;
+                authorTotalStars += pStars;
+            });
+            await db.ref(`users/${post.userId}/stars`).set(authorTotalStars);
+            
+            renderFeed();
+        }
+
+        /* === EDITAR Y ELIMINAR POSTS === */
+        function openEditPost(postId) {
+            const post = posts.find(p => p.id === postId); if(!post) return;
+            editingPostId = postId;
+            editingPostBase64 = post.image;
+            document.getElementById('edit-post-preview').src = post.image;
+            document.getElementById('edit-post-caption').value = post.caption || '';
+            const menu = document.getElementById(`menu-${postId}`);
+            if(menu) menu.style.display = 'none'; 
+            
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('edit-post-modal').style.display = 'flex';
+        }
+        
+        function handleEditPostImage(e) {
+            const file = e.target.files[0]; if(!file) return;
+            checkAIGenerated(file);
+            const reader = new FileReader();
+            reader.onload = ev => {
+                if (file.type === 'image/gif' || file.type.startsWith('video/')) {
+                    editingPostBase64 = ev.target.result;
+                    document.getElementById('edit-post-preview').src = editingPostBase64;
+                } else {
+                    compressImage(ev.target.result, 800, (compressedBase64) => {
+                        editingPostBase64 = compressedBase64;
+                        document.getElementById('edit-post-preview').src = editingPostBase64;
+                    });
+                }
+            }; reader.readAsDataURL(file);
+        }
+
+        async function saveEditPost() {
+            if(!editingPostId) return;
+            const post = posts.find(p => p.id === editingPostId);
+            const newCaption = document.getElementById('edit-post-caption').value;
+            
+            let updateData = { caption: newCaption, edited: true };
+            if (editingPostBase64 !== post.image) {
+                updateData.image = editingPostBase64;
+                updateData.isAI = currentUploadIsAI;
+            }
+
+            await db.ref(`posts/${editingPostId}`).update(updateData);
+            currentUploadIsAI = false;
+            closeModals();
+        }
+
+        async function deletePost(postId) {
+            if(confirm("¿Estás seguro de que deseas eliminar esta publicación? Esto no se puede deshacer.")) {
+                const postToDelete = posts.find(p => p.id === postId);
+                const targetUserId = postToDelete ? postToDelete.userId : currentUser.uid;
+                await db.ref(`posts/${postId}`).remove();
+                
+                setTimeout(async () => {
+                    const remainingPosts = posts.filter(p => p.userId === targetUserId && p.id !== postId);
+                    let recalculatedStars = remainingPosts.reduce((acc, p) => acc + (p.stars || 0), 0);
+                    await db.ref(`users/${targetUserId}/stars`).set(recalculatedStars);
+                }, 300);
+            }
+        }
+
+        /* === FUNCIONES DE EMOJIS === */
+        function toggleEmojiBox() {
+            const box = document.getElementById('emoji-box');
+            box.style.display = box.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        function addEmoji(emoji) {
+            const input = document.getElementById('comment-input');
+            input.value += emoji;
+            input.focus();
+        }
+
+        /* === COMENTARIOS Y FUNCIONES OPTIMIZADAS === */
+        function openComments(postId) {
+            currentPostIdForAction = postId; replyingToCommentId = null;
+            document.getElementById('reply-badge').style.display = 'none';
+            document.getElementById('comment-input').value = '';
+            document.getElementById('emoji-box').style.display = 'none';
+            document.getElementById('overlay').style.display = 'block'; document.getElementById('comment-modal').style.display = 'flex';
+            renderCommentThreads(postId);
+        }
+        
+        function setReplyTo(commentId, userName) {
+            replyingToCommentId = commentId;
+            document.getElementById('reply-to-name').innerText = userName;
+            document.getElementById('reply-badge').style.display = 'flex';
+            document.getElementById('comment-input').focus();
+        }
+
+        function cancelReply() {
+            replyingToCommentId = null;
+            document.getElementById('reply-badge').style.display = 'none';
+        }
+
+        function renderCommentThreads(postId) {
+            const post = posts.find(p => p.id === postId); 
+            const list = document.getElementById('comments-list'); 
+            if(!post || !post.comments) { list.innerHTML = ''; return; }
+            
+            const commentsArr = Object.values(post.comments).sort((a,b) => a.timestamp - b.timestamp);
+            const roots = commentsArr.filter(c => !c.parentId);
+
+            let htmlBuffer = '';
+            roots.forEach(c => {
+                htmlBuffer += `<div class="comment">
+                    <img class="avatar" src="${c.userAvatar}" style="width:30px; height:30px;">
+                    <div class="comment-content">
+                        <h5>${c.userName}</h5>
+                        <p>${c.text}</p>
+                        <span class="comment-reply-btn" onclick="setReplyTo('${c.id}', '${c.userName}')">Responder</span>
+                    </div>
+                </div>`;
+                
+                const replies = commentsArr.filter(reply => reply.parentId === c.id);
+                replies.forEach(r => {
+                    htmlBuffer += `<div class="comment" style="margin-left: 35px; margin-top: -5px;">
+                        <img class="avatar" src="${r.userAvatar}" style="width:24px; height:24px;">
+                        <div class="comment-content" style="background: rgba(0,168,232,0.1);">
+                            <h5>${r.userName} <span style="font-size:0.7rem; color:var(--text-muted);">respondió</span></h5>
+                            <p>${r.text}</p>
+                            <span class="comment-reply-btn" onclick="setReplyTo('${c.id}', '${r.userName}')">Responder</span>
+                        </div>
+                    </div>`;
+                });
+            });
+            list.innerHTML = htmlBuffer;
+        }
+
+        async function submitComment() {
+            const text = document.getElementById('comment-input').value;
+            if(!text || !currentPostIdForAction) return;
+            const post = posts.find(p => p.id === currentPostIdForAction);
+            if(!post.comments) post.comments = {};
+            const cid = 'c_' + Date.now();
+            post.comments[cid] = { id: cid, userId: currentUser.uid, userName: currentUser.name, userAvatar: currentUser.avatar, text: text, parentId: replyingToCommentId, timestamp: Date.now() };
+            await db.ref(`posts/${currentPostIdForAction}/comments`).set(post.comments);
+            document.getElementById('comment-input').value = '';
+            cancelReply();
+            renderCommentThreads(currentPostIdForAction);
+        }
+
+        function closeModals() {
+            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+        function viewMyProfile() { viewProfile(currentUser.uid); }
+
+        function viewProfile(uid) {
+            currentlyViewingProfileUid = uid;
+            openView('view-profile');
+            renderProfileData(uid);
+        }
+
+        function renderProfileData(uid) {
+            const user = allUsers[uid];
+            if(!user) return;
+            const header = document.getElementById('profile-header');
+            
+            let linksHTML = '<div class="social-icons-container">';
+            if(user.wa) linksHTML += `<a href="https://wa.me/${user.wa.replace(/\D/g,'')}" target="_blank" class="social-icon"><i class="fab fa-whatsapp"></i></a>`;
+            if(user.ig) linksHTML += `<a href="https://instagram.com/${user.ig.replace('@','')}" target="_blank" class="social-icon"><i class="fab fa-instagram"></i></a>`;
+            if(user.snap) linksHTML += `<a href="https://snapchat.com/add/${user.snap}" target="_blank" class="social-icon"><i class="fab fa-snapchat-ghost"></i></a>`;
+            if(user.yt) linksHTML += `<a href="${user.yt.startsWith('http') ? user.yt : 'https://youtube.com/'+user.yt}" target="_blank" class="social-icon"><i class="fab fa-youtube"></i></a>`;
+            if(user.tt) linksHTML += `<a href="https://tiktok.com/@${user.tt.replace('@','')}" target="_blank" class="social-icon"><i class="fab fa-tiktok"></i></a>`;
+            if(user.x) linksHTML += `<a href="https://x.com/${user.x.replace('@','')}" target="_blank" class="social-icon"><i class="fab fa-twitter"></i></a>`;
+            if(user.web) linksHTML += `<a href="${user.web.startsWith('http') ? user.web : 'https://'+user.web}" target="_blank" class="social-icon"><i class="fas fa-link"></i></a>`;
+            linksHTML += '</div>';
+
+            header.innerHTML = `
+                <div class="profile-cover"></div>
+                <div class="profile-header">
+                    <img class="avatar" src="${user.avatar}">
+                    <h3 style="color:var(--text-main);">${user.name}</h3>
+                    <div class="profile-username">${user.username || ''}</div>
+                    <div class="profile-bio">${user.bio || ''}</div>
+                    <div class="profile-stats">
+                        <div class="stat"><strong>${user.followersCount || 0}</strong><span>Seguidores</span></div>
+                        <div class="stat"><strong>${user.followingCount || 0}</strong><span>Siguiendo</span></div>
+                        <div class="stat"><strong>${user.stars || 0}</strong><span>Estrellas</span></div>
+                    </div>
+                    ${linksHTML}
+                    <div style="margin-top: 15px;">
+                        ${uid === currentUser.uid ? `<button class="btn-secondary" onclick="openEditProfile()">Editar Perfil</button>` : `<button class="btn-primary" onclick="toggleFollow('${uid}')">${currentUser.friends && currentUser.friends[uid] ? 'Dejar de seguir' : 'Seguir'}</button>`}
+                    </div>
+                </div>
+            `;
+            
+            const grid = document.getElementById('profile-grid');
+            const userPosts = posts.filter(p => p.userId === uid).sort((a,b) => b.timestamp - a.timestamp);
+            let gridBuffer = '';
+            userPosts.forEach(p => {
+                if(p.isVideo) {
+                    gridBuffer += `<div style="position:relative;"><video src="${p.image}" autoplay muted loop playsinline></video><i class="fas fa-expand" style="position:absolute; top:5px; right:5px; color:white; background:rgba(0,0,0,0.5); padding:5px; border-radius:50%; font-size:0.8rem; cursor:pointer;" onclick="openFullScreen('${p.image}', true, '${p.id}')"></i></div>`;
+                } else {
+                    gridBuffer += `<div style="position:relative;"><img src="${p.image}"><i class="fas fa-expand" style="position:absolute; top:5px; right:5px; color:white; background:rgba(0,0,0,0.5); padding:5px; border-radius:50%; font-size:0.8rem; cursor:pointer;" onclick="openFullScreen('${p.image}', false, '${p.id}')"></i></div>`;
+                }
+            });
+            grid.innerHTML = gridBuffer;
+        }
+
+        function openEditProfile() {
+            document.getElementById('edit-name').value = currentUser.name || '';
+            document.getElementById('edit-bio').value = currentUser.bio || '';
+            document.getElementById('edit-avatar-preview').src = currentUser.avatar || '';
+            
+            document.getElementById('edit-wa').value = currentUser.wa || '';
+            document.getElementById('edit-ig').value = currentUser.ig || '';
+            document.getElementById('edit-snap').value = currentUser.snap || '';
+            document.getElementById('edit-yt').value = currentUser.yt || '';
+            document.getElementById('edit-tt').value = currentUser.tt || '';
+            document.getElementById('edit-x').value = currentUser.x || '';
+            document.getElementById('edit-web').value = currentUser.web || '';
+
+            editAvatarBase64 = currentUser.avatar;
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('edit-profile-modal').style.display = 'flex';
+        }
+
+        function handleEditAvatar(e) {
             const file = e.target.files[0];
             if(!file) return;
             const reader = new FileReader();
-            reader.onload = (event) => {
-                compressImage(event.target.result, 300, (compressed) => {
-                    regAvatarBase64 = compressed;
-                    document.getElementById('reg-avatar-preview').src = compressed;
-                    document.getElementById('reg-avatar-preview').style.display = 'block';
-                    document.getElementById('reg-avatar-icon').style.display = 'none';
+            reader.onload = ev => {
+                compressImage(ev.target.result, 400, (comp) => {
+                    editAvatarBase64 = comp;
+                    document.getElementById('edit-avatar-preview').src = comp;
                 });
             };
             reader.readAsDataURL(file);
         }
 
-        function toggleStar(postId) {
-            if(!currentUser) return;
-            const ref = db.ref(`posts/${postId}/stars/${currentUser.uid}`);
-            ref.once('value', snap => {
-                if(snap.exists()) ref.remove();
-                else ref.set(true);
+        async function saveProfileChanges() {
+            const name = document.getElementById('edit-name').value;
+            const bio = document.getElementById('edit-bio').value;
+            const wa = document.getElementById('edit-wa').value;
+            const ig = document.getElementById('edit-ig').value;
+            const snap = document.getElementById('edit-snap').value;
+            const yt = document.getElementById('edit-yt').value;
+            const tt = document.getElementById('edit-tt').value;
+            const x = document.getElementById('edit-x').value;
+            const web = document.getElementById('edit-web').value;
+
+            await db.ref(`users/${currentUser.uid}`).update({ 
+                name: name, bio: bio, avatar: editAvatarBase64,
+                wa: wa, ig: ig, snap: snap, yt: yt, tt: tt, x: x, web: web
             });
-        }
-        
-        function openFullScreen(src, isVideo, postId) {
-            currentFsSrc = src;
-            currentFsIsVideo = isVideo;
-            currentFsPostId = postId;
-            
-            const fs = document.getElementById('fullscreen-view');
-            const img = document.getElementById('fs-img');
-            const vid = document.getElementById('fs-vid');
-            
-            fs.style.display = 'flex';
-            
-            const post = posts.find(p => p.id === postId);
-            if(post && post.userId === currentUser.uid) {
-                document.getElementById('fs-edit-btn').style.display = 'block';
-                document.getElementById('fs-delete-btn').style.display = 'block';
-            } else {
-                document.getElementById('fs-edit-btn').style.display = 'none';
-                document.getElementById('fs-delete-btn').style.display = 'none';
-            }
-
-            if(isVideo) {
-                img.style.display = 'none';
-                vid.style.display = 'block';
-                vid.src = src;
-                vid.play();
-            } else {
-                vid.style.display = 'none';
-                img.style.display = 'block';
-                img.src = src;
-            }
+            closeModals();
         }
 
-        function closeFullScreen() {
-            document.getElementById('fullscreen-view').style.display = 'none';
-            document.getElementById('fs-vid').pause();
-        }
-        
-        function openEditPostFromFS() {
-            closeFullScreen();
-            if(currentFsPostId) openEditPost(currentFsPostId);
-        }
-        function deletePostFromFS() {
-            closeFullScreen();
-            if(currentFsPostId) deletePost(currentFsPostId);
-        }
-        
-        function downloadCurrentMedia() {
-            if(!currentFsSrc) return;
-            const a = document.createElement('a');
-            a.href = currentFsSrc;
-            a.download = "StarShine_Media_" + new Date().getTime();
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+        function renderRanking() {
+            const container = document.getElementById('ranking-container');
+            const banner = document.getElementById('ranking-banner');
+            banner.innerHTML = `<h3>Top Estrellas</h3><p>¡Sube de nivel ganando estrellas en tus posts!</p>`;
+            
+            const sortedUsers = Object.values(allUsers).sort((a,b) => (b.stars||0) - (a.stars||0));
+            let htmlBuffer = '';
+            sortedUsers.forEach((u, i) => {
+                htmlBuffer += `
+                    <div class="rank-item top-${i+1}" onclick="simulateLoadingAndProfile('${u.uid}')">
+                        <div class="rank-pos">#${i+1}</div>
+                        <img class="avatar" src="${u.avatar}" style="margin: 0 15px; width:40px; height:40px;">
+                        <div style="flex:1;">
+                           <div style="color:var(--text-main); font-weight:bold;">${u.name}</div>
+                           <div style="font-size:0.8rem; color:var(--primary);">${u.username || ''}</div>
+                        </div>
+                        <div class="rank-score">${u.stars||0} ★</div>
+                    </div>
+                `;
+            });
+            container.innerHTML = htmlBuffer;
         }
     </script>
 </body>
