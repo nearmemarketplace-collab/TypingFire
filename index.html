@@ -13,7 +13,8 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700;900&display=swap');
 
-        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+        /* CORRECCIÓN SCROLL MÓVIL: Se removió touch-action: none de * y body. Se aplica sólo al canvas. */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             background: #020205;
@@ -97,6 +98,7 @@
             flex-direction: column; justify-content: center; align-items: center;
             background: rgba(5, 5, 12, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 30;
             animation: fadeIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            touch-action: none; pointer-events: auto;
         }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
 
@@ -104,7 +106,7 @@
             width: 90%; max-width: 350px; background: rgba(15, 15, 28, 0.95);
             border: 1px solid rgba(0, 210, 255, 0.3); border-radius: 20px; padding: 30px 22px;
             text-align: center; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), 0 0 25px rgba(0, 210, 255, 0.25);
-            max-height: 85%; overflow-y: auto;
+            max-height: 85%; overflow-y: auto; pointer-events: auto; touch-action: pan-y; /* PERMITE SCROLL MÓVIL */
         }
 
         .modal-title {
@@ -152,12 +154,13 @@
         .rank-score { font-weight: 900; color: #00ff7f; font-size: 1.2rem; }
         .crown-icon { color: #ffd700; font-size: 1.2rem; filter: drop-shadow(0 0 5px #ffd700); }
 
-        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; mix-blend-mode: screen; }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; mix-blend-mode: screen; touch-action: none; /* DESHABILITA SCROLL SÓLO AQUÍ */ }
 
         #screens {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; background: rgba(10, 10, 15, 0.85); z-index: 20; 
             padding: 20px 15px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); overflow-y: auto; overflow-x: hidden;
+            touch-action: pan-y;
         }
 
         .top-bar { width: 100%; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; align-items: center; margin-bottom: 15px; }
@@ -257,7 +260,7 @@
     <div id="loading-screen">
         <div class="loader-logo">NBEAT</div>
         <div class="loader-spinner"></div>
-        <div class="loader-text">Cargando Sistema...</div>
+        <div class="loader-text" data-lang="load">Cargando Sistema...</div>
     </div>
 
     <div id="game-wrapper">
@@ -268,19 +271,19 @@
             </div>
             <div class="health-container"><div id="health-bar"></div></div>
             <button id="btn-pause" title="Pausar juego">
-                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg> PAUSA
+                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg> <span data-lang="pause">PAUSA</span>
             </button>
         </div>
 
         <!-- MENU DE PAUSA -->
         <div id="pause-menu" class="overlay-menu">
             <div class="modal-card">
-                <div class="modal-title">PAUSA</div>
+                <div class="modal-title" data-lang="pause">PAUSA</div>
                 <button id="btn-resume" class="btn-epic btn-primary">
-                    <svg class="icon-svg" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> REANUDAR
+                    <svg class="icon-svg" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> <span data-lang="resume">REANUDAR</span>
                 </button>
                 <button id="btn-quit" class="btn-epic btn-secondary">
-                    <svg class="icon-svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg> INICIO
+                    <svg class="icon-svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg> <span data-lang="home">INICIO</span>
                 </button>
             </div>
         </div>
@@ -288,55 +291,46 @@
         <!-- MENU DE AYUDA -->
         <div id="help-menu" class="overlay-menu">
             <div class="modal-card" style="max-width: 380px;">
-                <div class="modal-title" style="font-size: 1.8rem; margin-bottom: 10px;">CÓMO JUGAR</div>
+                <div class="modal-title" style="font-size: 1.8rem; margin-bottom: 10px;" data-lang="helpTitle">CÓMO JUGAR</div>
                 <div class="help-section">
-                    <h3 style="color: #00d2ff;">🎹 MODO PIANO</h3>
-                    <p>Atrapa las notas cuando toquen la línea inferior.<br>
-                    <span style="color: #ff007f; font-weight: 700;">¡IMPORTANTE EN PC!</span><br>
-                    Usa las teclas <span class="kbd-key">D</span>, <span class="kbd-key">F</span>, <span class="kbd-key">J</span> y <span class="kbd-key">K</span>.<br>
-                    <span style="font-size: 0.85rem;">En móvil, simplemente toca el carril.</span></p>
+                    <h3 style="color: #00d2ff;" data-lang="mode1Title">🎹 MODO PIANO</h3>
+                    <p id="txt-help-piano" data-lang="pianoInfo"></p>
 
-                    <h3 style="color: #ff007f;">🌐 MODO ESFERA</h3>
-                    <p>Mueve tu esfera entre los 3 carriles centrales.<br>
-                    <strong>PC:</strong> Teclas <span class="kbd-key">A</span> / <span class="kbd-key">D</span> o Flechas Izquierda/Derecha.<br>
-                    <span style="font-size: 0.85rem;">En móvil, presiona la mitad izquierda o derecha.</span></p>
+                    <h3 style="color: #ff007f;" data-lang="mode2Title">🌐 MODO ESFERA</h3>
+                    <p id="txt-help-sphere" data-lang="sphereInfo"></p>
 
-                    <h3 style="color: #00ff7f;">🛸 MODO DESLIZADOR</h3>
-                    <p>Desliza tu barra lateralmente para interceptar los ritmos.<br>
-                    <strong>PC:</strong> Usa el puntero del ratón para guiarla.<br>
-                    <span style="font-size: 0.85rem;">En móvil, arrastra tu dedo por la pantalla.</span></p>
+                    <h3 style="color: #00ff7f;" data-lang="mode3Title">🛸 MODO DESLIZADOR</h3>
+                    <p id="txt-help-slider" data-lang="sliderInfo"></p>
 
-                    <h3 style="color: #ffd700;">🚀 ASTRO JUMP</h3>
-                    <p>Esquiva los muros de luz controlando la gravedad.<br>
-                    <strong>PC:</strong> Usa la <span class="kbd-key">BARRA ESPACIADORA</span> o Flecha Arriba.<br>
-                    <span style="font-size: 0.85rem;">En móvil, toca la pantalla para saltar.</span></p>
+                    <h3 style="color: #ffd700;" data-lang="mode4Title">🚀 ASTRO JUMP</h3>
+                    <p id="txt-help-astro" data-lang="astroInfo"></p>
                 </div>
-                <button id="btn-close-help" class="btn-epic btn-secondary">ENTENDIDO</button>
+                <button id="btn-close-help" class="btn-epic btn-secondary"><span data-lang="helpGotIt">ENTENDIDO</span></button>
             </div>
         </div>
 
         <!-- MENU AUTHENTICATION -->
         <div id="auth-menu" class="overlay-menu">
             <div class="modal-card">
-                <div class="modal-title">ACCESO</div>
+                <div class="modal-title" data-lang="authTitle">ACCESO</div>
                 <input type="text" id="auth-username" class="input-epic" placeholder="Usuario (Ej. Sam)" />
                 <input type="email" id="auth-email" class="input-epic" placeholder="Correo Electrónico" />
                 <input type="password" id="auth-password" class="input-epic" placeholder="Contraseña" />
-                <button id="btn-login-submit" class="btn-epic btn-primary">INICIAR SESIÓN</button>
-                <button id="btn-register-submit" class="btn-epic btn-secondary">REGISTRARSE</button>
+                <button id="btn-login-submit" class="btn-epic btn-primary"><span data-lang="login">INICIAR SESIÓN</span></button>
+                <button id="btn-register-submit" class="btn-epic btn-secondary"><span data-lang="register">REGISTRARSE</span></button>
                 <div id="auth-status" class="auth-status"></div>
-                <button id="btn-close-auth" class="btn-epic btn-secondary" style="margin-top: 15px; font-size:0.9rem;">VOLVER</button>
+                <button id="btn-close-auth" class="btn-epic btn-secondary" style="margin-top: 15px; font-size:0.9rem;"><span data-lang="authBack">VOLVER</span></button>
             </div>
         </div>
 
         <!-- MENU RANKING -->
         <div id="ranking-menu" class="overlay-menu">
             <div class="modal-card">
-                <div class="modal-title">👑 RANKING</div>
+                <div class="modal-title" data-lang="rankTitle">👑 RANKING</div>
                 <div id="ranking-container" class="ranking-list">
-                    <div style="color: #aaa; text-align: center;">Cargando leyendas...</div>
+                    <div style="color: #aaa; text-align: center;" data-lang="rankLoading">Cargando leyendas...</div>
                 </div>
-                <button id="btn-close-ranking" class="btn-epic btn-secondary">CERRAR</button>
+                <button id="btn-close-ranking" class="btn-epic btn-secondary"><span data-lang="rankClose">CERRAR</span></button>
             </div>
         </div>
 
@@ -346,9 +340,10 @@
         <!-- MENU PRINCIPAL -->
         <div id="screens">
             <div class="top-bar">
-                <div id="btn-open-auth" class="user-badge">ACCEDER</div>
-                <div id="btn-open-ranking" class="user-badge" style="background: rgba(255,0,127,0.1); border-color: rgba(255,0,127,0.4); color: #ff007f;">🏆 RANKING</div>
-                <div id="btn-open-help" class="user-badge" style="background: rgba(0,255,127,0.1); border-color: rgba(0,255,127,0.4); color: #00ff7f;">❓ AYUDA</div>
+                <div id="btn-lang" class="user-badge" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.4); color: #fff;">🌐 ES / EN</div>
+                <div id="btn-open-auth" class="user-badge"><span data-lang="menuAccess">ACCEDER</span></div>
+                <div id="btn-open-ranking" class="user-badge" style="background: rgba(255,0,127,0.1); border-color: rgba(255,0,127,0.4); color: #ff007f;"><span data-lang="menuRank">🏆 RANKING</span></div>
+                <div id="btn-open-help" class="user-badge" style="background: rgba(0,255,127,0.1); border-color: rgba(0,255,127,0.4); color: #00ff7f;"><span data-lang="menuHelp">❓ AYUDA</span></div>
             </div>
 
             <div class="logo-title">NBEAT</div>
@@ -356,32 +351,32 @@
             
             <div id="result-board"></div>
             
-            <div class="section-title">Modo de Juego</div>
+            <div class="section-title" data-lang="modeTitle">Modo de Juego</div>
             <div class="grid-selector">
                 <div class="btn-card mode-card active-mode" data-mode="1">
-                    <span class="title">Piano</span>
+                    <span class="title" data-lang="mode1">Piano</span>
                 </div>
                 <div class="btn-card mode-card" data-mode="2">
-                    <span class="title">Esfera</span>
+                    <span class="title" data-lang="mode2">Esfera</span>
                 </div>
                 <div class="btn-card mode-card" data-mode="3">
-                    <span class="title">Deslizador</span>
+                    <span class="title" data-lang="mode3">Deslizador</span>
                 </div>
                 <div class="btn-card mode-card" data-mode="4">
-                    <span class="title">Astro Jump</span>
+                    <span class="title" data-lang="mode4">Astro Jump</span>
                 </div>
             </div>
 
-            <div class="section-title">Dificultad</div>
+            <div class="section-title" data-lang="diffTitle">Dificultad</div>
             <div class="grid-selector" style="grid-template-columns: repeat(3, 1fr);">
-                <div class="btn-card diff-card" data-diff="easy"> <span class="title">Fácil</span> </div>
-                <div class="btn-card diff-card active-diff" data-diff="medium"> <span class="title">Medio</span> </div>
-                <div class="btn-card diff-card" data-diff="hard"> <span class="title">Difícil</span> </div>
+                <div class="btn-card diff-card" data-diff="easy"> <span class="title" data-lang="diffEasy">Fácil</span> </div>
+                <div class="btn-card diff-card active-diff" data-diff="medium"> <span class="title" data-lang="diffMed">Medio</span> </div>
+                <div class="btn-card diff-card" data-diff="hard"> <span class="title" data-lang="diffHard">Difícil</span> </div>
             </div>
 
-            <div class="section-title">Librería Musical</div>
+            <div class="section-title" data-lang="libTitle">Librería Musical</div>
             <div class="song-controls">
-                <select id="saved-songs" title="Lista de Canciones"><option value="">-- Canciones guardadas --</option></select>
+                <select id="saved-songs" title="Lista de Canciones"><option value="" id="opt-default">-- Canciones guardadas --</option></select>
                 <button id="btn-delete-song" class="btn-icon btn-delete" title="Borrar pista seleccionada">
                     <svg class="icon-svg" style="margin:0" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6"/></svg>
                 </button>
@@ -389,20 +384,94 @@
 
             <label for="audio-upload" class="upload-label">
                 <svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                CARGAR PISTAS
+                <span data-lang="upload">CARGAR PISTAS</span>
             </label>
             <input type="file" id="audio-upload" accept="audio/*" multiple>
             
-            <p id="track-status">Sube o selecciona música para jugar.</p>
+            <p id="track-status" data-lang="trackReq">Sube o selecciona música para jugar.</p>
             <button id="btn-start" class="btn-start" disabled>
-                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> INICIAR
+                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> <span data-lang="start">INICIAR</span>
             </button>
 
-            <div class="menu-footer">Creado por Sam Alexander 2026</div>
+            <div class="menu-footer" data-lang="footer">Creado por Sam Alexander 2026</div>
         </div>
     </div>
 
     <script>
+        // === DICCIONARIO DE IDIOMAS ===
+        const L = {
+            es: {
+                load: "Cargando Sistema...", pause: "PAUSA", resume: "REANUDAR", home: "INICIO",
+                helpTitle: "CÓMO JUGAR", helpGotIt: "ENTENDIDO",
+                authTitle: "ACCESO", login: "INICIAR SESIÓN", register: "REGISTRARSE", authBack: "VOLVER",
+                rankTitle: "👑 RANKING", rankClose: "CERRAR", rankLoading: "Cargando leyendas...", rankEmpty: "Sin registros aún.",
+                menuAccess: "ACCEDER", menuRank: "🏆 RANKING", menuHelp: "❓ AYUDA",
+                modeTitle: "Modo de Juego", diffTitle: "Dificultad", libTitle: "Librería Musical",
+                diffEasy: "Fácil", diffMed: "Medio", diffHard: "Difícil",
+                upload: "CARGAR PISTAS", start: "INICIAR", footer: "Creado por Sam Alexander 2026",
+                pianoInfo: "Atrapa las notas cuando toquen la línea inferior.<br><span style='color: #ff007f; font-weight: 700;'>¡IMPORTANTE EN PC!</span><br>Usa las teclas <span class='kbd-key'>D</span>, <span class='kbd-key'>F</span>, <span class='kbd-key'>J</span> y <span class='kbd-key'>K</span>.<br><span style='font-size: 0.85rem;'>En móvil, simplemente toca el carril.</span>",
+                sphereInfo: "Mueve tu esfera entre los 3 carriles centrales.<br><strong>PC:</strong> Teclas <span class='kbd-key'>A</span> / <span class='kbd-key'>D</span> o Flechas Izquierda/Derecha.<br><span style='font-size: 0.85rem;'>En móvil, presiona la mitad izquierda o derecha.</span>",
+                sliderInfo: "Desliza tu barra lateralmente para interceptar los ritmos.<br><strong>PC:</strong> Usa el puntero del ratón para guiarla.<br><span style='font-size: 0.85rem;'>En móvil, arrastra tu dedo por la pantalla.</span>",
+                astroInfo: "Esquiva los muros de luz controlando la gravedad.<br><strong>PC:</strong> Usa la <span class='kbd-key'>BARRA ESPACIADORA</span> o Flecha Arriba.<br><span style='font-size: 0.85rem;'>En móvil, toca la pantalla para saltar.</span>",
+                trackReq: "Sube o selecciona música para jugar.",
+                mode1Title: "🎹 MODO PIANO", mode2Title: "🌐 MODO ESFERA", mode3Title: "🛸 MODO DESLIZADOR", mode4Title: "🚀 ASTRO JUMP",
+                mode1: "Piano", mode2: "Esfera", mode3: "Deslizador", mode4: "Astro Jump",
+                phUser: "Usuario (Ej. Sam)", phEmail: "Correo Electrónico", phPass: "Contraseña",
+                selSongs: "-- Canciones guardadas --", selSave: "-- Selecciona una pista --",
+                msgFill: "Rellena todos los campos", msgVerif: "Verificando usuario...", msgTaken: "❌ El usuario ya está tomado.", msgRegOk: "✅ Registro exitoso. Bienvenido.", msgErr: "Error: ", msgCreds: "Introduce correo y contraseña", msgLog: "Iniciando sesión...", msgLogOk: "✅ Sesión iniciada.", msgLogErr: "❌ Error al iniciar sesión.",
+                msgLogout: "¿Deseas cerrar sesión?", msgSaveTrk: "Guardando pistas...", msgSavedTrks: "pistas guardadas. ¡Selecciona una!", msgLoadTrk: "Cargando en memoria...", msgDel: "Pista eliminada.", msgErrTrk: "Error: Archivo corrupto o no soportado.", msgTrack: "PISTA: ",
+                rankStats: "Pistas |", rankPerf: "Perfectos", rankPts: "PTS",
+                resPass: "¡PISTA SUPERADA!", resLose: "Has perdido", resClass: "Clasificación Final", resPts: "PTS:", resMax: "COMBO MÁX:", resAgain: "JUGAR DE NUEVO"
+            },
+            en: {
+                load: "Loading System...", pause: "PAUSE", resume: "RESUME", home: "HOME",
+                helpTitle: "HOW TO PLAY", helpGotIt: "GOT IT",
+                authTitle: "ACCESS", login: "LOGIN", register: "REGISTER", authBack: "BACK",
+                rankTitle: "👑 LEADERBOARD", rankClose: "CLOSE", rankLoading: "Loading legends...", rankEmpty: "No records yet.",
+                menuAccess: "LOGIN", menuRank: "🏆 LEADERBOARD", menuHelp: "❓ HELP",
+                modeTitle: "Game Mode", diffTitle: "Difficulty", libTitle: "Music Library",
+                diffEasy: "Easy", diffMed: "Medium", diffHard: "Hard",
+                upload: "UPLOAD TRACKS", start: "START", footer: "Created by Sam Alexander 2026",
+                pianoInfo: "Catch notes when they hit the bottom line.<br><span style='color: #ff007f; font-weight: 700;'>IMPORTANT ON PC!</span><br>Use keys <span class='kbd-key'>D</span>, <span class='kbd-key'>F</span>, <span class='kbd-key'>J</span> and <span class='kbd-key'>K</span>.<br><span style='font-size: 0.85rem;'>On mobile, just tap the lane.</span>",
+                sphereInfo: "Move your sphere between the 3 central lanes.<br><strong>PC:</strong> Keys <span class='kbd-key'>A</span> / <span class='kbd-key'>D</span> or Left/Right Arrows.<br><span style='font-size: 0.85rem;'>On mobile, tap left or right half.</span>",
+                sliderInfo: "Slide your bar sideways to intercept the beats.<br><strong>PC:</strong> Use mouse pointer to guide.<br><span style='font-size: 0.85rem;'>On mobile, drag your finger across.</span>",
+                astroInfo: "Dodge the light walls by controlling gravity.<br><strong>PC:</strong> Use <span class='kbd-key'>SPACEBAR</span> or Up Arrow.<br><span style='font-size: 0.85rem;'>On mobile, tap the screen to jump.</span>",
+                trackReq: "Upload or select music to play.",
+                mode1Title: "🎹 PIANO MODE", mode2Title: "🌐 SPHERE MODE", mode3Title: "🛸 SLIDER MODE", mode4Title: "🚀 ASTRO JUMP",
+                mode1: "Piano", mode2: "Sphere", mode3: "Slider", mode4: "Astro Jump",
+                phUser: "Username (Eg. Sam)", phEmail: "Email", phPass: "Password",
+                selSongs: "-- Saved songs --", selSave: "-- Select a saved track --",
+                msgFill: "Fill all fields", msgVerif: "Verifying user...", msgTaken: "❌ Username is already taken.", msgRegOk: "✅ Registration successful. Welcome.", msgErr: "Error: ", msgCreds: "Enter email and password", msgLog: "Logging in...", msgLogOk: "✅ Session started.", msgLogErr: "❌ Login error.",
+                msgLogout: "Do you want to log out?", msgSaveTrk: "Saving tracks...", msgSavedTrks: "tracks saved. Select one!", msgLoadTrk: "Loading into memory...", msgDel: "Track deleted.", msgErrTrk: "Error: Corrupted or unsupported file.", msgTrack: "TRACK: ",
+                rankStats: "Tracks |", rankPerf: "Flawless", rankPts: "PTS",
+                resPass: "TRACK CLEARED!", resLose: "You lost", resClass: "Final Rank", resPts: "PTS:", resMax: "MAX COMBO:", resAgain: "PLAY AGAIN"
+            }
+        };
+
+        let lang = 'es';
+
+        function setLanguage(selectedLang) {
+            lang = selectedLang;
+            document.querySelectorAll('[data-lang]').forEach(el => {
+                let key = el.getAttribute('data-lang');
+                if (L[lang][key]) el.innerHTML = L[lang][key];
+            });
+            document.getElementById('auth-username').placeholder = L[lang].phUser;
+            document.getElementById('auth-email').placeholder = L[lang].phEmail;
+            document.getElementById('auth-password').placeholder = L[lang].phPass;
+            
+            const btnAuth = document.getElementById('btn-open-auth');
+            if (!currentFirebaseUser) btnAuth.innerHTML = `<span data-lang="menuAccess">${L[lang].menuAccess}</span>`;
+            else btnAuth.textContent = `👤 ${myUsername}`;
+            
+            document.getElementById('opt-default').textContent = L[lang].selSongs;
+            if(trackStatus.textContent === L['es'].trackReq || trackStatus.textContent === L['en'].trackReq) trackStatus.textContent = L[lang].trackReq;
+        }
+
+        document.getElementById('btn-lang').addEventListener('click', () => {
+            setLanguage(lang === 'es' ? 'en' : 'es');
+        });
+
         // === 0. CONFIGURACIÓN FIREBASE ===
         const firebaseConfig = {
             apiKey: "AIzaSyBWqJI7OKZcEjN2CeTZxPi8pWzo8rBMIkI",
@@ -421,6 +490,7 @@
         let myUsername = null;
 
         window.addEventListener('load', () => {
+            setLanguage('es');
             setTimeout(() => {
                 const ls = document.getElementById('loading-screen');
                 ls.style.opacity = '0';
@@ -441,7 +511,7 @@
                 });
             } else {
                 myUsername = null;
-                document.getElementById('btn-open-auth').textContent = "ACCEDER";
+                document.getElementById('btn-open-auth').innerHTML = `<span data-lang="menuAccess">${L[lang].menuAccess}</span>`;
             }
         });
 
@@ -454,39 +524,39 @@
             const user = document.getElementById('auth-username').value.trim();
             const email = document.getElementById('auth-email').value.trim();
             const pass = document.getElementById('auth-password').value;
-            if(!user || !email || !pass) return showAuthMsg("Rellena todos los campos", true);
+            if(!user || !email || !pass) return showAuthMsg(L[lang].msgFill, true);
 
-            showAuthMsg("Verificando usuario...", false);
+            showAuthMsg(L[lang].msgVerif, false);
             try {
                 const userRef = db.ref('usernames/' + user.toLowerCase());
                 const snap = await userRef.once('value');
                 if (snap.exists()) {
-                    showAuthMsg("❌ El usuario ya está tomado.", true);
+                    showAuthMsg(L[lang].msgTaken, true);
                 } else {
                     const cred = await auth.createUserWithEmailAndPassword(email, pass);
-                    await db.ref('users/' + cred.user.uid).set({ username: user, score: 0, flawless: 0, songsPassed: 0 });
+                    await db.ref('users/' + cred.user.uid).set({ username: user, score: 0, flawless: 0, songsPassed: 0, lastFlawlessMode: "" });
                     await db.ref('usernames/' + user.toLowerCase()).set(cred.user.uid);
-                    showAuthMsg("✅ Registro exitoso. Bienvenido.", false);
+                    showAuthMsg(L[lang].msgRegOk, false);
                     setTimeout(() => document.getElementById('auth-menu').style.display = 'none', 1500);
                 }
-            } catch(e) { showAuthMsg("Error: " + e.message, true); }
+            } catch(e) { showAuthMsg(L[lang].msgErr + e.message, true); }
         });
 
         document.getElementById('btn-login-submit').addEventListener('click', async () => {
             const email = document.getElementById('auth-email').value.trim();
             const pass = document.getElementById('auth-password').value;
-            if(!email || !pass) return showAuthMsg("Introduce correo y contraseña", true);
-            showAuthMsg("Iniciando sesión...", false);
+            if(!email || !pass) return showAuthMsg(L[lang].msgCreds, true);
+            showAuthMsg(L[lang].msgLog, false);
             try {
                 await auth.signInWithEmailAndPassword(email, pass);
-                showAuthMsg("✅ Sesión iniciada.", false);
+                showAuthMsg(L[lang].msgLogOk, false);
                 setTimeout(() => document.getElementById('auth-menu').style.display = 'none', 1000);
-            } catch(e) { showAuthMsg("❌ Error al iniciar sesión.", true); }
+            } catch(e) { showAuthMsg(L[lang].msgLogErr, true); }
         });
 
         document.getElementById('btn-open-auth').addEventListener('click', () => {
             if(currentFirebaseUser) {
-                if(confirm("¿Deseas cerrar sesión?")) auth.signOut();
+                if(confirm(L[lang].msgLogout)) auth.signOut();
             } else {
                 document.getElementById('auth-menu').style.display = 'flex';
                 document.getElementById('auth-status').textContent = "";
@@ -497,7 +567,7 @@
         document.getElementById('btn-open-ranking').addEventListener('click', async () => {
             document.getElementById('ranking-menu').style.display = 'flex';
             const container = document.getElementById('ranking-container');
-            container.innerHTML = '<div style="color: #00d2ff; text-align: center; animation: pulseGlow 1s infinite alternate;">Cargando leyendas...</div>';
+            container.innerHTML = `<div style="color: #00d2ff; text-align: center; animation: pulseGlow 1s infinite alternate;">${L[lang].rankLoading}</div>`;
             
             try {
                 const snap = await db.ref('users').orderByChild('score').limitToLast(20).once('value');
@@ -506,25 +576,25 @@
                 users.reverse();
 
                 container.innerHTML = '';
-                if(users.length === 0) { container.innerHTML = '<div style="color: #aaa; text-align: center;">Sin registros aún.</div>'; return; }
+                if(users.length === 0) { container.innerHTML = `<div style="color: #aaa; text-align: center;">${L[lang].rankEmpty}</div>`; return; }
 
                 users.forEach((u, idx) => {
                     const isFirst = idx === 0;
+                    const modeTxt = u.lastFlawlessMode ? ` <span style="color:#ff007f; font-size:0.75rem; font-weight:700;">(${u.lastFlawlessMode})</span>` : '';
                     container.innerHTML += `
                         <div class="rank-item ${isFirst ? 'first' : ''}">
                             <div class="rank-info">
                                 <div class="rank-name">${isFirst ? '<span class="crown-icon">👑</span>' : `#${idx+1}`} ${u.username}</div>
-                                <div class="rank-stats">${u.songsPassed || 0} Pistas | ${u.flawless || 0} Perfectos</div>
+                                <div class="rank-stats">${u.songsPassed || 0} ${L[lang].rankStats} ${u.flawless || 0} ${L[lang].rankPerf}${modeTxt}</div>
                             </div>
-                            <div class="rank-score">${u.score || 0} PTS</div>
+                            <div class="rank-score">${u.score || 0} ${L[lang].rankPts}</div>
                         </div>
                     `;
                 });
-            } catch(e) { container.innerHTML = '<div style="color: #ff0055; text-align: center;">Error al cargar.</div>'; }
+            } catch(e) { container.innerHTML = '<div style="color: #ff0055; text-align: center;">Error</div>'; }
         });
         document.getElementById('btn-close-ranking').addEventListener('click', () => { document.getElementById('ranking-menu').style.display = 'none'; });
 
-        // Eventos para el nuevo menú de AYUDA
         document.getElementById('btn-open-help').addEventListener('click', () => {
             document.getElementById('help-menu').style.display = 'flex';
         });
@@ -535,15 +605,18 @@
         function saveGameStats() {
             if(!currentFirebaseUser || health <= 0) return;
             const isFlawless = totalMisses === 0 ? 1 : 0;
+            const modeStr = L[lang]['mode' + selectedMode];
             const ref = db.ref('users/' + currentFirebaseUser.uid);
             ref.once('value').then(snap => {
                 const d = snap.val();
                 if(d) {
-                    ref.update({
+                    let updates = {
                         score: (d.score || 0) + score,
                         songsPassed: (d.songsPassed || 0) + 1,
                         flawless: (d.flawless || 0) + isFlawless
-                    });
+                    };
+                    if(isFlawless) updates.lastFlawlessMode = modeStr;
+                    ref.update(updates);
                 }
             });
         }
@@ -589,10 +662,12 @@
         let songDuration = 0; let masterBeatmap = []; let spawnIndex = 0; let gameStartTime = 0;
 
         let notes = [], particles = [], laneFlashes = [0,0,0,0], keysHeld = [false, false, false, false];
+        let floatingTexts = []; let flappyTrail = [];
         const HIT_Y = 580; let ballLane = 1; let sliderX = 210;
         let flappy = { y: 340, vy: 0, gravity: 1500, jump: -420 }; let pipes = [];
 
-        let previousSpectrum = new Float32Array(256); let fluxHistory = new Array(30).fill(0); let fluxIndex = 0; let bgPulse = 0; 
+        let previousSpectrum = new Float32Array(256); let fluxHistory = new Array(30).fill(0); let fluxIndex = 0; 
+        let bgPulse = 0; let currentBeatColor = '#00d2ff';
 
         const screensEl = document.getElementById('screens');
         const pauseMenu = document.getElementById('pause-menu');
@@ -618,29 +693,29 @@
 
         async function initLib() {
             const songs = await getSongs();
-            selSongs.innerHTML = '<option value="">-- Selecciona una pista guardada --</option>';
+            selSongs.innerHTML = `<option value="" id="opt-default">${L[lang].selSave}</option>`;
             songs.forEach(s => { const opt = document.createElement('option'); opt.value = s.id; opt.textContent = s.name; selSongs.appendChild(opt); });
         }
         initLib();
 
         document.getElementById('audio-upload').addEventListener('change', async e => {
             const files = e.target.files; if(files.length === 0) return;
-            trackStatus.textContent = "Guardando pistas..."; trackStatus.style.color = "#00d2ff"; btnStart.disabled = true;
+            trackStatus.textContent = L[lang].msgSaveTrk; trackStatus.style.color = "#00d2ff"; btnStart.disabled = true;
             for (let i = 0; i < files.length; i++) { const buf = await files[i].arrayBuffer(); await saveSong(files[i].name, buf); }
             await initLib();
             if (files.length === 1) { const songs = await getSongs(); const lastSong = songs[songs.length - 1]; selSongs.value = lastSong.id; prepAudio(lastSong.data, lastSong.name); } 
-            else { trackStatus.textContent = `${files.length} pistas guardadas. ¡Selecciona una!`; trackStatus.style.color = "#00ff7f"; }
+            else { trackStatus.textContent = `${files.length} ${L[lang].msgSavedTrks}`; trackStatus.style.color = "#00ff7f"; }
         });
 
         selSongs.addEventListener('change', async function() {
             const id = parseInt(this.value); if(!id) return;
-            trackStatus.textContent = "Cargando en memoria..."; btnStart.disabled = true;
+            trackStatus.textContent = L[lang].msgLoadTrk; btnStart.disabled = true;
             const songs = await getSongs(); const s = songs.find(x => x.id === id);
             if(s) prepAudio(s.data, s.name);
         });
 
         document.getElementById('btn-delete-song').addEventListener('click', async () => {
-            if(selSongs.value) { await delSong(parseInt(selSongs.value)); initLib(); trackStatus.textContent="Pista eliminada."; trackStatus.style.color="#ff0055"; btnStart.disabled=true; }
+            if(selSongs.value) { await delSong(parseInt(selSongs.value)); initLib(); trackStatus.textContent=L[lang].msgDel; trackStatus.style.color="#ff0055"; btnStart.disabled=true; }
         });
 
         async function prepAudio(buf, name) {
@@ -648,8 +723,8 @@
             synth = new GameSynth(audioCtx);
             try {
                 audioBuffer = await audioCtx.decodeAudioData(buf.slice(0));
-                trackStatus.textContent = `PISTA: ${name}`; trackStatus.style.color = "#00ff7f"; btnStart.disabled = false;
-            } catch(e) { trackStatus.textContent = "Error: Archivo corrupto o no soportado."; trackStatus.style.color = "#ff0055"; }
+                trackStatus.textContent = `${L[lang].msgTrack} ${name}`; trackStatus.style.color = "#00ff7f"; btnStart.disabled = false;
+            } catch(e) { trackStatus.textContent = L[lang].msgErrTrk; trackStatus.style.color = "#ff0055"; }
         }
 
         function pauseGame() {
@@ -717,7 +792,7 @@
 
         function resetGame() {
             score = 0; combo = 0; maxCombo = 0; health = 100; totalMisses = 0;
-            notes = []; pipes = []; particles = []; masterBeatmap = []; spawnIndex = 0;
+            notes = []; pipes = []; particles = []; masterBeatmap = []; spawnIndex = 0; floatingTexts = []; flappyTrail = [];
             ballLane = 1; sliderX = canvas.width/2; flappy = { y: canvas.height/2, vy: 0, gravity: 1500, jump: -420 }; 
             fluxHistory.fill(0); previousSpectrum.fill(0); bgPulse = 0; keysHeld = [false, false, false, false]; updateUI();
         }
@@ -729,7 +804,7 @@
             analyser = audioCtx.createAnalyser(); analyser.fftSize = 512; analyser.smoothingTimeConstant = 0.2;
             source.connect(delay); delay.connect(analyser); analyser.connect(audioCtx.destination); 
             gameStartTime = audioCtx.currentTime; source.start(0);
-            source.onended = () => { setTimeout(() => { if(isPlaying && !isPaused) end("¡PISTA SUPERADA!"); }, FALL_TIME*1000 + 500); };
+            source.onended = () => { setTimeout(() => { if(isPlaying && !isPaused) end(L[lang].resPass); }, FALL_TIME*1000 + 500); };
         }
 
         let lastFrameTime = performance.now();
@@ -768,7 +843,11 @@
             let flux = 0; for(let i = 0; i < 15; i++) { let diff = spectrum[i] - previousSpectrum[i]; if (diff > 0) flux += diff; }
             previousSpectrum.set(spectrum); fluxHistory[fluxIndex] = flux; fluxIndex = (fluxIndex + 1) % fluxHistory.length;
             let avgFlux = fluxHistory.reduce((a,b)=>a+b, 0) / fluxHistory.length;
-            if (flux > Math.max(8, avgFlux * 1.8)) bgPulse = 1; 
+            
+            if (flux > Math.max(8, avgFlux * 1.8)) {
+                bgPulse = 1; 
+                currentBeatColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+            }
         }
 
         function updateGame(gameTime, dt) {
@@ -795,6 +874,11 @@
                 }
             } else {
                 flappy.vy += flappy.gravity * dt; flappy.y += flappy.vy * dt;
+                
+                // Trail effects for Astro Jump
+                flappyTrail.push({x: 100, y: flappy.y, life: 1});
+                if(flappyTrail.length > 20) flappyTrail.shift();
+
                 if (flappy.y > canvas.height - 20 || flappy.y < 0) { totalMisses++; adjustHealth(-20); flappy.y = canvas.height/2; flappy.vy = 0; combo = 0; updateUI(); }
                 let playerX = 100; 
                 for (let i = pipes.length - 1; i >= 0; i--) {
@@ -804,7 +888,18 @@
                     if (p.x < playerX + sphereR && p.x + pWidth > playerX - sphereR) {
                         if (flappy.y - sphereR < p.gapY - p.gapH/2 || flappy.y + sphereR > p.gapY + p.gapH/2) { pipes.splice(i, 1); combo = 0; totalMisses++; adjustHealth(-15); updateUI(); createExplosion(playerX, flappy.y, '#ff0055'); showFeedback("CRASH!", '#ff0055'); continue; }
                     }
-                    if (!p.passed && p.x + pWidth < playerX) { p.passed = true; combo++; if(combo > maxCombo) maxCombo = combo; score += 15 + combo; adjustHealth(2); updateUI(); synth.playHit(); }
+                    if (!p.passed && p.x + pWidth < playerX) { 
+                        p.passed = true; 
+                        combo++; if(combo > maxCombo) maxCombo = combo; 
+                        
+                        // Sistema ÉPICO de Combos para Astro Jump
+                        let comboMult = Math.min(5, 1 + Math.floor(combo / 5));
+                        let pts = (15 + combo) * comboMult;
+                        score += pts; 
+                        floatingTexts.push({x: playerX + 20, y: flappy.y - 20, text: `+${pts} (x${comboMult})`, life: 1, color: '#00ff7f'});
+                        
+                        adjustHealth(2); updateUI(); synth.playHit(); 
+                    }
                     if (p.x < -100) pipes.splice(i, 1);
                 }
             }
@@ -817,6 +912,27 @@
             ctx.fillStyle = '#050508';
             ctx.fillRect(0, 0, wT, hT);
             
+            // --- DISEÑO RITMICO ÉPICO ---
+            if (bgPulse > 0.1) {
+                if (selectedMode === 1) {
+                    // Resplandor Modo Piano en HIT_Y
+                    let glowGrad = ctx.createLinearGradient(0, HIT_Y - 200, 0, hT);
+                    glowGrad.addColorStop(0, 'rgba(0,0,0,0)');
+                    glowGrad.addColorStop(1, currentBeatColor);
+                    ctx.fillStyle = glowGrad;
+                    ctx.globalAlpha = bgPulse * 0.7;
+                    ctx.fillRect(0, HIT_Y - 200, wT, hT - (HIT_Y - 200));
+                    ctx.globalAlpha = 1;
+                } else {
+                    // Otros Modos: Efecto de latido en los bordes / entorno
+                    ctx.lineWidth = 4 + bgPulse * 15;
+                    ctx.strokeStyle = currentBeatColor;
+                    ctx.globalAlpha = bgPulse * 0.4;
+                    ctx.strokeRect(0, 0, wT, hT);
+                    ctx.globalAlpha = 1;
+                }
+            }
+
             drawGrid();
 
             if (selectedMode !== 4) {
@@ -839,8 +955,31 @@
                     ctx.fillRect(p.x, 0, 60, p.gapY - p.gapH/2); ctx.strokeRect(p.x, 0, 60, p.gapY - p.gapH/2);
                     ctx.fillRect(p.x, p.gapY + p.gapH/2, 60, hT); ctx.strokeRect(p.x, p.gapY + p.gapH/2, 60, hT); ctx.shadowBlur = 0;
                 }
+                
+                // Dibujar Trail épico del Flappy
+                for(let i=0; i<flappyTrail.length; i++) {
+                    let ft = flappyTrail[i];
+                    ctx.fillStyle = `rgba(255, 215, 0, ${ft.life * 0.4})`;
+                    ctx.beginPath();
+                    ctx.arc(ft.x - (flappyTrail.length - i)*2, ft.y, 14 * ft.life, 0, Math.PI*2);
+                    ctx.fill();
+                    ft.life -= 0.05;
+                }
             }
             drawPlayer(); drawParticles();
+            
+            // Dibujar Textos Flotantes (Combos Astro Jump)
+            for (let i = floatingTexts.length-1; i>=0; i--) {
+                let ft = floatingTexts[i];
+                ctx.fillStyle = ft.color;
+                ctx.globalAlpha = ft.life;
+                ctx.font = "900 24px Rajdhani";
+                ctx.fillText(ft.text, ft.x, ft.y);
+                ctx.globalAlpha = 1;
+                ft.y -= 2;
+                ft.life -= 0.02;
+                if(ft.life <= 0) floatingTexts.splice(i, 1);
+            }
         }
 
         function drawGrid() {
@@ -863,9 +1002,9 @@
                     ctx.strokeStyle = keysHeld[i] ? '#fff' : COLORS[i]; ctx.lineWidth = keysHeld[i] ? 4 : 2; ctx.strokeRect(i*w + w*0.1, HIT_Y - 10, w*0.8, 30);
                 }
             } else if (selectedMode === 2) {
-                let w = wT/3; let x = ballLane*w + w/2; ctx.fillStyle = '#00d2ff'; ctx.shadowColor = '#00d2ff'; ctx.shadowBlur = 15 + bgPulse*15; ctx.beginPath(); ctx.arc(x, HIT_Y, 20 + bgPulse*3, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+                let w = wT/3; let x = ballLane*w + w/2; ctx.fillStyle = '#00d2ff'; ctx.shadowColor = '#00d2ff'; ctx.shadowBlur = 15 + bgPulse*15; ctx.beginPath(); ctx.arc(x, HIT_Y, 20 + bgPulse*5, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
             } else if (selectedMode === 3) {
-                ctx.fillStyle = '#ff007f'; ctx.shadowColor = '#ff007f'; ctx.shadowBlur = 15 + bgPulse*15; ctx.beginPath(); ctx.roundRect(sliderX - 45, HIT_Y - 8, 90, 16, 10); ctx.fill(); ctx.shadowBlur = 0;
+                ctx.fillStyle = '#ff007f'; ctx.shadowColor = '#ff007f'; ctx.shadowBlur = 15 + bgPulse*15; ctx.beginPath(); ctx.roundRect(sliderX - 45, HIT_Y - 8, 90 + bgPulse*10, 16 + bgPulse*5, 10); ctx.fill(); ctx.shadowBlur = 0;
             } else if (selectedMode === 4) {
                 ctx.fillStyle = '#ffd700'; ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 15 + bgPulse*15; ctx.beginPath(); ctx.arc(100, flappy.y, 14, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
                 if(flappy.vy < 0) createExplosion(100, flappy.y+10, '#ffd700', 1);
@@ -937,7 +1076,7 @@
         function adjustHealth(amt) {
             health = Math.min(100, Math.max(0, health + amt)); const hb = document.getElementById('health-bar');
             hb.style.width = health + '%'; hb.style.background = health < 30 ? '#ff0055' : 'linear-gradient(90deg, #ff0055, #00ff7f)';
-            if(health <= 0) end("Has perdido");
+            if(health <= 0) end(L[lang].resLose);
         }
         
         function triggerPartyEffect() {
@@ -986,12 +1125,12 @@
             let msgColor = health <= 0 ? '#ff0055' : '#00ff7f';
             resBoard.innerHTML = `
                 <div style="font-size: 1.3rem; font-weight: 900; margin-bottom: 10px; color: ${msgColor}; text-shadow: 0 0 10px ${msgColor}; text-transform: uppercase;">${msg}</div>
-                <div style="font-size: 0.8rem; color: #aaa; text-transform: uppercase; letter-spacing: 2px;">Clasificación Final</div>
+                <div style="font-size: 0.8rem; color: #aaa; text-transform: uppercase; letter-spacing: 2px;">${L[lang].resClass}</div>
                 <div style="font-size: 3.5rem; color: ${colorGrade}; text-shadow: 0 0 20px ${colorGrade}; font-weight: 900; line-height: 1;">${grade}</div>
-                <div style="font-size: 0.95rem; margin-top: 5px; color: #fff;">PTS: <span style="color:#00d2ff">${score}</span> | COMBO MÁX: <span style="color:#ff007f">${maxCombo}</span></div>
+                <div style="font-size: 0.95rem; margin-top: 5px; color: #fff;">${L[lang].resPts} <span style="color:#00d2ff">${score}</span> | ${L[lang].resMax} <span style="color:#ff007f">${maxCombo}</span></div>
             `;
             
-            btnStart.innerHTML = `<svg class="icon-svg" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> JUGAR DE NUEVO`;
+            btnStart.innerHTML = `<svg class="icon-svg" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> <span data-lang="resAgain">${L[lang].resAgain}</span>`;
             btnStart.disabled = false;
         }
 
