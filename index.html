@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NBeat Ultimate</title>
+    <title>KEYRAF3</title>
     
     <!-- Firebase Compat Libraries -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -13,7 +13,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700;900&display=swap');
 
-        /* CORRECCIÓN SCROLL MÓVIL: Se removió touch-action: none de * y body. Se aplica sólo al canvas. */
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
@@ -84,29 +83,40 @@
         .icon-svg { width: 18px; height: 18px; fill: currentColor; margin-right: 8px; vertical-align: middle; transition: 0.3s; }
         
         #btn-pause {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%) translateY(-20px);
             background: rgba(10, 10, 20, 0.75); border: 1px solid rgba(0, 210, 255, 0.5); color: #00d2ff;
             border-radius: 20px; padding: 6px 20px; cursor: pointer; font-family: 'Rajdhani', sans-serif;
-            font-size: 1.1rem; font-weight: 700; letter-spacing: 2px; display: none; pointer-events: auto;
-            transition: all 0.2s ease; z-index: 12; box-shadow: 0 0 15px rgba(0, 210, 255, 0.25); backdrop-filter: blur(5px);
+            font-size: 1.1rem; font-weight: 700; letter-spacing: 2px; opacity: 0; visibility: hidden; pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 12; box-shadow: 0 0 15px rgba(0, 210, 255, 0.25); backdrop-filter: blur(5px);
             display: flex; align-items: center; justify-content: center; gap: 5px;
         }
+        #btn-pause.active { opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) translateY(0); }
         #btn-pause:hover { background: rgba(0, 210, 255, 0.25); box-shadow: 0 0 20px rgba(0, 210, 255, 0.6); transform: translateX(-50%) scale(1.05); }
 
+        /* --- TRANSICIONES ÉPICAS PARA MENÚS --- */
         .overlay-menu {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none;
-            flex-direction: column; justify-content: center; align-items: center;
-            background: rgba(5, 5, 12, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 30;
-            animation: fadeIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            touch-action: none; pointer-events: auto;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(5, 5, 12, 0.85); backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); z-index: 30;
+            visibility: hidden; opacity: 0; pointer-events: none;
+            transition: opacity 0.4s ease, backdrop-filter 0.4s ease, visibility 0.4s;
+            touch-action: none; 
         }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        .overlay-menu.active {
+            visibility: visible; opacity: 1; pointer-events: auto;
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+        }
 
         .modal-card {
             width: 90%; max-width: 350px; background: rgba(15, 15, 28, 0.95);
             border: 1px solid rgba(0, 210, 255, 0.3); border-radius: 20px; padding: 30px 22px;
             text-align: center; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), 0 0 25px rgba(0, 210, 255, 0.25);
-            max-height: 85%; overflow-y: auto; pointer-events: auto; touch-action: pan-y; /* PERMITE SCROLL MÓVIL */
+            max-height: 85%; overflow-y: auto; touch-action: pan-y;
+            transform: scale(0.85) translateY(30px); opacity: 0;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
+        }
+        .overlay-menu.active .modal-card {
+            transform: scale(1) translateY(0); opacity: 1;
         }
 
         .modal-title {
@@ -134,7 +144,6 @@
         
         .auth-status { font-size: 0.9rem; margin-top: 10px; font-weight: 700; min-height: 20px; }
         
-        /* --- ESTILOS DE AYUDA --- */
         .help-section { text-align: left; margin-bottom: 20px; }
         .help-section h3 { font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; }
         .help-section p { font-size: 0.95rem; line-height: 1.4; color: #bbb; margin-bottom: 12px; font-weight: 500; }
@@ -154,13 +163,19 @@
         .rank-score { font-weight: 900; color: #00ff7f; font-size: 1.2rem; }
         .crown-icon { color: #ffd700; font-size: 1.2rem; filter: drop-shadow(0 0 5px #ffd700); }
 
-        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; mix-blend-mode: screen; touch-action: none; /* DESHABILITA SCROLL SÓLO AQUÍ */ }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; mix-blend-mode: screen; touch-action: none; }
 
         #screens {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; background: rgba(10, 10, 15, 0.85); z-index: 20; 
-            padding: 20px 15px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); overflow-y: auto; overflow-x: hidden;
-            touch-action: pan-y;
+            padding: 20px 15px; overflow-y: auto; overflow-x: hidden; touch-action: pan-y;
+            visibility: hidden; opacity: 0; transform: scale(1.05); pointer-events: none;
+            backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #screens.active {
+            visibility: visible; opacity: 1; transform: scale(1); pointer-events: auto;
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
         }
 
         .top-bar { width: 100%; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; align-items: center; margin-bottom: 15px; }
@@ -174,7 +189,12 @@
         }
         .subtitle { font-size: 0.9rem; color: #fff; letter-spacing: 5px; margin-bottom: 10px; opacity: 0.8; font-weight: 700; text-transform: uppercase; }
 
-        #result-board { display: none; width: 100%; background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 10px; margin-bottom: 10px; text-align: center; }
+        #result-board { 
+            display: none; width: 100%; background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); 
+            border-radius: 12px; padding: 10px; margin-bottom: 10px; text-align: center; 
+            transform: translateY(-20px); opacity: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #result-board.active { display: block; transform: translateY(0); opacity: 1; }
 
         .section-title { width: 100%; font-size: 0.85rem; color: rgba(255,255,255,0.5); letter-spacing: 2px; margin: 8px 0 5px 0; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
         .section-title::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.1); }
@@ -258,7 +278,7 @@
 
     <!-- PANTALLA DE CARGA -->
     <div id="loading-screen">
-        <div class="loader-logo">NBEAT</div>
+        <div class="loader-logo">KEYRAF3</div>
         <div class="loader-spinner"></div>
         <div class="loader-text" data-lang="load">Cargando Sistema...</div>
     </div>
@@ -281,6 +301,9 @@
                 <div class="modal-title" data-lang="pause">PAUSA</div>
                 <button id="btn-resume" class="btn-epic btn-primary">
                     <svg class="icon-svg" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> <span data-lang="resume">REANUDAR</span>
+                </button>
+                <button id="btn-restart" class="btn-epic btn-primary" style="background: linear-gradient(135deg, #ff007f, #ff0055);">
+                    <svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg> <span data-lang="restart">REINICIAR</span>
                 </button>
                 <button id="btn-quit" class="btn-epic btn-secondary">
                     <svg class="icon-svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg> <span data-lang="home">INICIO</span>
@@ -338,7 +361,7 @@
         <div class="feedback" id="feedback">PERFECT!</div>
 
         <!-- MENU PRINCIPAL -->
-        <div id="screens">
+        <div id="screens" class="active">
             <div class="top-bar">
                 <div id="btn-lang" class="user-badge" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.4); color: #fff;">🌐 ES / EN</div>
                 <div id="btn-open-auth" class="user-badge"><span data-lang="menuAccess">ACCEDER</span></div>
@@ -346,7 +369,7 @@
                 <div id="btn-open-help" class="user-badge" style="background: rgba(0,255,127,0.1); border-color: rgba(0,255,127,0.4); color: #00ff7f;"><span data-lang="menuHelp">❓ AYUDA</span></div>
             </div>
 
-            <div class="logo-title">NBEAT</div>
+            <div class="logo-title">KEYRAF3</div>
             <div class="subtitle">Ultimate Edition</div>
             
             <div id="result-board"></div>
@@ -401,7 +424,7 @@
         // === DICCIONARIO DE IDIOMAS ===
         const L = {
             es: {
-                load: "Cargando Sistema...", pause: "PAUSA", resume: "REANUDAR", home: "INICIO",
+                load: "Cargando Sistema...", pause: "PAUSA", resume: "REANUDAR", restart: "REINICIAR", home: "INICIO",
                 helpTitle: "CÓMO JUGAR", helpGotIt: "ENTENDIDO",
                 authTitle: "ACCESO", login: "INICIAR SESIÓN", register: "REGISTRARSE", authBack: "VOLVER",
                 rankTitle: "👑 RANKING", rankClose: "CERRAR", rankLoading: "Cargando leyendas...", rankEmpty: "Sin registros aún.",
@@ -424,7 +447,7 @@
                 resPass: "¡PISTA SUPERADA!", resLose: "Has perdido", resClass: "Clasificación Final", resPts: "PTS:", resMax: "COMBO MÁX:", resAgain: "JUGAR DE NUEVO"
             },
             en: {
-                load: "Loading System...", pause: "PAUSE", resume: "RESUME", home: "HOME",
+                load: "Loading System...", pause: "PAUSE", resume: "RESUME", restart: "RESTART", home: "HOME",
                 helpTitle: "HOW TO PLAY", helpGotIt: "GOT IT",
                 authTitle: "ACCESS", login: "LOGIN", register: "REGISTER", authBack: "BACK",
                 rankTitle: "👑 LEADERBOARD", rankClose: "CLOSE", rankLoading: "Loading legends...", rankEmpty: "No records yet.",
@@ -534,10 +557,10 @@
                     showAuthMsg(L[lang].msgTaken, true);
                 } else {
                     const cred = await auth.createUserWithEmailAndPassword(email, pass);
-                    await db.ref('users/' + cred.user.uid).set({ username: user, score: 0, flawless: 0, songsPassed: 0, lastFlawlessMode: "" });
+                    await db.ref('users/' + cred.user.uid).set({ username: user, score: 0, flawless: 0, songsPassed: 0, lastFlawlessMode: "", lastTrackTime: "" });
                     await db.ref('usernames/' + user.toLowerCase()).set(cred.user.uid);
                     showAuthMsg(L[lang].msgRegOk, false);
-                    setTimeout(() => document.getElementById('auth-menu').style.display = 'none', 1500);
+                    setTimeout(() => document.getElementById('auth-menu').classList.remove('active'), 1500);
                 }
             } catch(e) { showAuthMsg(L[lang].msgErr + e.message, true); }
         });
@@ -550,7 +573,7 @@
             try {
                 await auth.signInWithEmailAndPassword(email, pass);
                 showAuthMsg(L[lang].msgLogOk, false);
-                setTimeout(() => document.getElementById('auth-menu').style.display = 'none', 1000);
+                setTimeout(() => document.getElementById('auth-menu').classList.remove('active'), 1000);
             } catch(e) { showAuthMsg(L[lang].msgLogErr, true); }
         });
 
@@ -558,14 +581,14 @@
             if(currentFirebaseUser) {
                 if(confirm(L[lang].msgLogout)) auth.signOut();
             } else {
-                document.getElementById('auth-menu').style.display = 'flex';
+                document.getElementById('auth-menu').classList.add('active');
                 document.getElementById('auth-status').textContent = "";
             }
         });
-        document.getElementById('btn-close-auth').addEventListener('click', () => { document.getElementById('auth-menu').style.display = 'none'; });
+        document.getElementById('btn-close-auth').addEventListener('click', () => { document.getElementById('auth-menu').classList.remove('active'); });
 
         document.getElementById('btn-open-ranking').addEventListener('click', async () => {
-            document.getElementById('ranking-menu').style.display = 'flex';
+            document.getElementById('ranking-menu').classList.add('active');
             const container = document.getElementById('ranking-container');
             container.innerHTML = `<div style="color: #00d2ff; text-align: center; animation: pulseGlow 1s infinite alternate;">${L[lang].rankLoading}</div>`;
             
@@ -580,12 +603,13 @@
 
                 users.forEach((u, idx) => {
                     const isFirst = idx === 0;
-                    const modeTxt = u.lastFlawlessMode ? ` <span style="color:#ff007f; font-size:0.75rem; font-weight:700;">(${u.lastFlawlessMode})</span>` : '';
+                    const modeTxt = u.lastFlawlessMode ? ` <span style="color:#ff007f; font-weight:700;">(${u.lastFlawlessMode})</span>` : '';
+                    const timeTxt = u.lastTrackTime ? ` | ⏱️ ${u.lastTrackTime}` : '';
                     container.innerHTML += `
                         <div class="rank-item ${isFirst ? 'first' : ''}">
                             <div class="rank-info">
                                 <div class="rank-name">${isFirst ? '<span class="crown-icon">👑</span>' : `#${idx+1}`} ${u.username}</div>
-                                <div class="rank-stats">${u.songsPassed || 0} ${L[lang].rankStats} ${u.flawless || 0} ${L[lang].rankPerf}${modeTxt}</div>
+                                <div class="rank-stats">${u.songsPassed || 0} ${L[lang].rankStats} ${u.flawless || 0} ${L[lang].rankPerf}${modeTxt}${timeTxt}</div>
                             </div>
                             <div class="rank-score">${u.score || 0} ${L[lang].rankPts}</div>
                         </div>
@@ -593,14 +617,16 @@
                 });
             } catch(e) { container.innerHTML = '<div style="color: #ff0055; text-align: center;">Error</div>'; }
         });
-        document.getElementById('btn-close-ranking').addEventListener('click', () => { document.getElementById('ranking-menu').style.display = 'none'; });
+        document.getElementById('btn-close-ranking').addEventListener('click', () => { document.getElementById('ranking-menu').classList.remove('active'); });
 
         document.getElementById('btn-open-help').addEventListener('click', () => {
-            document.getElementById('help-menu').style.display = 'flex';
+            document.getElementById('help-menu').classList.add('active');
         });
         document.getElementById('btn-close-help').addEventListener('click', () => {
-            document.getElementById('help-menu').style.display = 'none';
+            document.getElementById('help-menu').classList.remove('active');
         });
+
+        const formatTime = (secs) => `${Math.floor(secs / 60)}:${Math.floor(secs % 60).toString().padStart(2, '0')}`;
 
         function saveGameStats() {
             if(!currentFirebaseUser || health <= 0) return;
@@ -613,7 +639,8 @@
                     let updates = {
                         score: (d.score || 0) + score,
                         songsPassed: (d.songsPassed || 0) + 1,
-                        flawless: (d.flawless || 0) + isFlawless
+                        flawless: (d.flawless || 0) + isFlawless,
+                        lastTrackTime: formatTime(songDuration)
                     };
                     if(isFlawless) updates.lastFlawlessMode = modeStr;
                     ref.update(updates);
@@ -621,7 +648,7 @@
             });
         }
 
-        const DB_NAME = 'NeonBeatUlt';
+        const DB_NAME = 'KEYRAF3';
         function openDB() { return new Promise((res, rej) => { const req = indexedDB.open(DB_NAME, 1); req.onupgradeneeded = e => { if (!e.target.result.objectStoreNames.contains('music')) e.target.result.createObjectStore('music', { keyPath: 'id', autoIncrement: true }); }; req.onsuccess = () => res(req.result); req.onerror = () => rej(req.error); }); }
         async function saveSong(name, data) { const dbLocal = await openDB(); return new Promise(res => { const req = dbLocal.transaction('music', 'readwrite').objectStore('music').add({ name, data }); req.onsuccess = () => res(req.result); }); }
         async function getSongs() { const dbLocal = await openDB(); return new Promise(res => { const req = dbLocal.transaction('music', 'readonly').objectStore('music').getAll(); req.onsuccess = () => res(req.result); }); }
@@ -663,11 +690,14 @@
 
         let notes = [], particles = [], laneFlashes = [0,0,0,0], keysHeld = [false, false, false, false];
         let floatingTexts = []; let flappyTrail = [];
+        let laneCooldowns = [0,0,0,0,0]; let shakeIntensity = 0;
+
         const HIT_Y = 580; let ballLane = 1; let sliderX = 210;
         let flappy = { y: 340, vy: 0, gravity: 1500, jump: -420 }; let pipes = [];
 
         let previousSpectrum = new Float32Array(256); let fluxHistory = new Array(30).fill(0); let fluxIndex = 0; 
         let bgPulse = 0; let currentBeatColor = '#00d2ff';
+        let currentTrackDarkness = 0.95; // Variable para oscurecimiento dinámico modo piano
 
         const screensEl = document.getElementById('screens');
         const pauseMenu = document.getElementById('pause-menu');
@@ -703,7 +733,12 @@
             trackStatus.textContent = L[lang].msgSaveTrk; trackStatus.style.color = "#00d2ff"; btnStart.disabled = true;
             for (let i = 0; i < files.length; i++) { const buf = await files[i].arrayBuffer(); await saveSong(files[i].name, buf); }
             await initLib();
-            if (files.length === 1) { const songs = await getSongs(); const lastSong = songs[songs.length - 1]; selSongs.value = lastSong.id; prepAudio(lastSong.data, lastSong.name); } 
+            if (files.length === 1) { 
+                const songs = await getSongs(); 
+                const lastSong = songs[songs.length - 1]; 
+                selSongs.value = lastSong.id; 
+                selSongs.dispatchEvent(new Event('change')); // Disparar selección automática
+            } 
             else { trackStatus.textContent = `${files.length} ${L[lang].msgSavedTrks}`; trackStatus.style.color = "#00ff7f"; }
         });
 
@@ -731,21 +766,41 @@
             if (!isPlaying || isPaused) return;
             isPaused = true;
             if (audioCtx && audioCtx.state === 'running') audioCtx.suspend();
-            pauseMenu.style.display = 'flex';
+            pauseMenu.classList.add('active');
         }
 
         function resumeGame() {
             if (!isPlaying || !isPaused) return;
-            isPaused = false; pauseMenu.style.display = 'none';
+            isPaused = false; pauseMenu.classList.remove('active');
             if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
             lastFrameTime = performance.now();
         }
 
-        function goToMainMenu() {
-            isPaused = false; isPlaying = false; pauseMenu.style.display = 'none'; btnPause.style.display = 'none';
+        document.getElementById('btn-restart').addEventListener('click', () => {
+            isPaused = false; pauseMenu.classList.remove('active');
+            if (source) { try { source.onended = null; source.stop(); } catch(e) {} }
+            resetGame(); generateMasterBeatmap(); startAudio();
+            isPlaying = true; lastFrameTime = performance.now();
+        });
+
+        async function goToMainMenu() {
+            isPaused = false; isPlaying = false; 
+            pauseMenu.classList.remove('active'); btnPause.classList.remove('active');
+            
             if (source) { try { source.onended = null; source.stop(); } catch(e) {} }
             if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-            screensEl.style.display = 'flex'; document.getElementById('result-board').style.display = 'none';
+            
+            // Garantizar que la lista de canciones guardadas se recargue sin fallar
+            let currentTrack = selSongs.value;
+            await initLib();
+            if (currentTrack) {
+                selSongs.value = currentTrack;
+                selSongs.dispatchEvent(new Event('change')); // Recargar la info para que todo funcione
+            }
+
+            screensEl.classList.add('active'); 
+            document.getElementById('result-board').classList.remove('active');
+            
             resetGame();
         }
 
@@ -765,8 +820,15 @@
                 e /= c; energies.push(e); sum += e;
             }
             
-            let avg = sum / energies.length; let threshold = avg * 1.5; 
-            let cooldown = difficulty === 'hard' ? 0.22 : (difficulty === 'medium' ? 0.35 : 0.5); let lastTime = 0;
+            let avg = sum / energies.length;
+            
+            // Dificultad Dinámica: ajusta cantidad de notas
+            let threshold, cooldown;
+            if (difficulty === 'hard') { threshold = avg * 1.0; cooldown = 0.15; }
+            else if (difficulty === 'medium') { threshold = avg * 1.4; cooldown = 0.35; }
+            else { threshold = avg * 1.8; cooldown = 0.50; }
+            
+            let lastTime = 0;
             
             for(let i=0; i < energies.length; i++) {
                 if(energies[i] > threshold) {
@@ -783,18 +845,20 @@
 
         btnStart.addEventListener('click', () => {
             if(!audioBuffer) return;
-            screensEl.style.display = 'none'; document.getElementById('result-board').style.display = 'none';
-            pauseMenu.style.display = 'none'; btnPause.style.display = 'flex'; isPaused = false;
+            screensEl.classList.remove('active'); document.getElementById('result-board').classList.remove('active');
+            pauseMenu.classList.remove('active'); btnPause.classList.add('active'); isPaused = false;
             
             resetGame(); generateMasterBeatmap(); startAudio();
             isPlaying = true; lastFrameTime = performance.now(); requestAnimationFrame(loop);
         });
 
         function resetGame() {
-            score = 0; combo = 0; maxCombo = 0; health = 100; totalMisses = 0;
+            score = 0; combo = 0; maxCombo = 0; health = 100; totalMisses = 0; currentTrackDarkness = 0.95;
             notes = []; pipes = []; particles = []; masterBeatmap = []; spawnIndex = 0; floatingTexts = []; flappyTrail = [];
             ballLane = 1; sliderX = canvas.width/2; flappy = { y: canvas.height/2, vy: 0, gravity: 1500, jump: -420 }; 
-            fluxHistory.fill(0); previousSpectrum.fill(0); bgPulse = 0; keysHeld = [false, false, false, false]; updateUI();
+            fluxHistory.fill(0); previousSpectrum.fill(0); bgPulse = 0; keysHeld = [false, false, false, false]; 
+            laneCooldowns = [0,0,0,0,0]; shakeIntensity = 0;
+            updateUI();
         }
 
         function startAudio() {
@@ -831,9 +895,33 @@
                 let gapY = 180 + rand1 * (canvas.height - 360); let gapHeight = difficulty === 'hard' ? 140 : 180;
                 pipes.push({ spawnTime: spawnTimeInGame, hitTime: hitTimeInGame, gapY: gapY, gapH: gapHeight, passed: false });
             } else {
-                let maxLanes = selectedMode === 1 ? 4 : (selectedMode === 2 ? 3 : 5); let lane = Math.floor(rand1 * maxLanes);
+                let maxLanes = selectedMode === 1 ? 4 : (selectedMode === 2 ? 3 : 5); 
+                let lane;
+                
+                // Cambios erráticos de posición en dificultad alta
+                if (difficulty === 'hard') { lane = Math.floor(rand1 * maxLanes + rand2 * 7) % maxLanes; } 
+                else if (difficulty === 'medium') { lane = Math.floor(rand1 * maxLanes + rand2 * 3) % maxLanes; } 
+                else { lane = Math.floor(rand1 * maxLanes) % maxLanes; }
+
+                if (selectedMode === 1) {
+                    let attempt = 0;
+                    // Prevenir el bug de superposición de notas en el mismo carril
+                    while (beat.audioTime < laneCooldowns[lane] && attempt < maxLanes) {
+                        lane = (lane + 1) % maxLanes;
+                        attempt++;
+                    }
+                    if (attempt === maxLanes) return; // Si no hay carriles libres, descartar la nota
+                }
+
                 let isLong = false; let duration = 0;
-                if (selectedMode === 1 && beat.intensity > beat.avg * 2.2 && rand2 > 0.6) { isLong = true; duration = 0.4 + (rand1 * 0.5); }
+                if (selectedMode === 1 && beat.intensity > beat.avg * 2.2 && rand2 > 0.6) { 
+                    isLong = true; duration = 0.4 + (rand1 * 0.5); 
+                }
+                
+                if (selectedMode === 1) {
+                    laneCooldowns[lane] = beat.audioTime + duration + 0.15; // padding
+                }
+
                 notes.push({ lane, spawnTime: spawnTimeInGame, hitTime: hitTimeInGame, isLong, duration, hit: false, released: false, activeHold: false });
             }
         }
@@ -852,6 +940,8 @@
 
         function updateGame(gameTime, dt) {
             bgPulse = Math.max(0, bgPulse - dt * 2.5);
+            if (shakeIntensity > 0) shakeIntensity = Math.max(0, shakeIntensity - dt * 60);
+            
             const wT = canvas.width;
 
             if (selectedMode !== 4) {
@@ -886,13 +976,22 @@
                     let timeAlive = gameTime - p.spawnTime; p.x = wT - (speed * timeAlive);
                     let sphereR = 12; let pWidth = 60;
                     if (p.x < playerX + sphereR && p.x + pWidth > playerX - sphereR) {
-                        if (flappy.y - sphereR < p.gapY - p.gapH/2 || flappy.y + sphereR > p.gapY + p.gapH/2) { pipes.splice(i, 1); combo = 0; totalMisses++; adjustHealth(-15); updateUI(); createExplosion(playerX, flappy.y, '#ff0055'); showFeedback("CRASH!", '#ff0055'); continue; }
+                        if (flappy.y - sphereR < p.gapY - p.gapH/2 || flappy.y + sphereR > p.gapY + p.gapH/2) { 
+                            pipes.splice(i, 1); combo = 0; totalMisses++; adjustHealth(-15); updateUI();
+                            
+                            // EFECTO ÉPICO FLAPPY JUMP CRASH
+                            shakeIntensity = 30;
+                            createExplosion(playerX, flappy.y, '#ff0055', 30);
+                            createExplosion(playerX, flappy.y, '#ffd700', 15);
+                            createExplosion(playerX, flappy.y, '#ffffff', 10);
+                            showFeedback("CRASH!", '#ff0055'); 
+                            continue; 
+                        }
                     }
                     if (!p.passed && p.x + pWidth < playerX) { 
                         p.passed = true; 
                         combo++; if(combo > maxCombo) maxCombo = combo; 
                         
-                        // Sistema ÉPICO de Combos para Astro Jump
                         let comboMult = Math.min(5, 1 + Math.floor(combo / 5));
                         let pts = (15 + combo) * comboMult;
                         score += pts; 
@@ -908,14 +1007,45 @@
         function drawGame(gameTime) {
             const wT = canvas.width; const hT = canvas.height;
             
+            ctx.save();
+            
+            // Temblor de cámara ÉPICO
+            if (shakeIntensity > 0) {
+                ctx.translate((Math.random()-0.5)*shakeIntensity, (Math.random()-0.5)*shakeIntensity);
+            }
+
             // --- FONDO LIMPIO ---
             ctx.fillStyle = '#050508';
-            ctx.fillRect(0, 0, wT, hT);
+            ctx.fillRect(-20, -20, wT+40, hT+40);
+
+            // EFECTO FONDO PIANO OSCURECIDO Y ESCLARECIMIENTO ÉPICO
+            if (selectedMode === 1) {
+                let targetDarkness = 0.95; // Oscuro por defecto
+
+                // Si hay notas cayendo en pantalla, acláralo
+                if (notes.length > 0) {
+                    targetDarkness = 0.15; 
+                } 
+                // Responder sutilmente a la música intensa aunque no hayan notas
+                else if (bgPulse > 0.5) {
+                    targetDarkness = 0.6;
+                }
+
+                // Efecto 'Lerp' fluido para que la pista no titile tan abruptamente
+                currentTrackDarkness += (targetDarkness - currentTrackDarkness) * 0.1;
+                
+                ctx.fillStyle = `rgba(0,0,0,${currentTrackDarkness})`; // Overlay oscurecedor animado
+                ctx.fillRect(-20, -20, wT+40, hT+40);
+            }
+            
+            if (shakeIntensity > 0) {
+                ctx.fillStyle = `rgba(255, 0, 85, ${shakeIntensity/150})`;
+                ctx.fillRect(-20, -20, wT+40, hT+40);
+            }
             
             // --- DISEÑO RITMICO ÉPICO ---
             if (bgPulse > 0.1) {
                 if (selectedMode === 1) {
-                    // Resplandor Modo Piano en HIT_Y
                     let glowGrad = ctx.createLinearGradient(0, HIT_Y - 200, 0, hT);
                     glowGrad.addColorStop(0, 'rgba(0,0,0,0)');
                     glowGrad.addColorStop(1, currentBeatColor);
@@ -924,7 +1054,6 @@
                     ctx.fillRect(0, HIT_Y - 200, wT, hT - (HIT_Y - 200));
                     ctx.globalAlpha = 1;
                 } else {
-                    // Otros Modos: Efecto de latido en los bordes / entorno
                     ctx.lineWidth = 4 + bgPulse * 15;
                     ctx.strokeStyle = currentBeatColor;
                     ctx.globalAlpha = bgPulse * 0.4;
@@ -956,7 +1085,6 @@
                     ctx.fillRect(p.x, p.gapY + p.gapH/2, 60, hT); ctx.strokeRect(p.x, p.gapY + p.gapH/2, 60, hT); ctx.shadowBlur = 0;
                 }
                 
-                // Dibujar Trail épico del Flappy
                 for(let i=0; i<flappyTrail.length; i++) {
                     let ft = flappyTrail[i];
                     ctx.fillStyle = `rgba(255, 215, 0, ${ft.life * 0.4})`;
@@ -968,7 +1096,6 @@
             }
             drawPlayer(); drawParticles();
             
-            // Dibujar Textos Flotantes (Combos Astro Jump)
             for (let i = floatingTexts.length-1; i>=0; i--) {
                 let ft = floatingTexts[i];
                 ctx.fillStyle = ft.color;
@@ -980,6 +1107,8 @@
                 ft.life -= 0.02;
                 if(ft.life <= 0) floatingTexts.splice(i, 1);
             }
+            
+            ctx.restore();
         }
 
         function drawGrid() {
@@ -1103,13 +1232,13 @@
             }
         }
 
-        function end(msg) {
-            isPlaying = false; isPaused = false; btnPause.style.display = 'none'; pauseMenu.style.display = 'none';
+        async function end(msg) {
+            isPlaying = false; isPaused = false; btnPause.classList.remove('active'); pauseMenu.classList.remove('active');
             if(source) { source.onended = null; try { source.stop(); } catch(e){} }
             
             if (health > 0) saveGameStats();
 
-            screensEl.style.display = 'flex';
+            screensEl.classList.add('active');
             let grade = 'D'; let colorGrade = '#ff0055'; 
             
             if (health > 0) { 
@@ -1121,7 +1250,7 @@
                 } 
             }
             
-            const resBoard = document.getElementById('result-board'); resBoard.style.display = 'block';
+            const resBoard = document.getElementById('result-board'); resBoard.classList.add('active');
             let msgColor = health <= 0 ? '#ff0055' : '#00ff7f';
             resBoard.innerHTML = `
                 <div style="font-size: 1.3rem; font-weight: 900; margin-bottom: 10px; color: ${msgColor}; text-shadow: 0 0 10px ${msgColor}; text-transform: uppercase;">${msg}</div>
@@ -1132,6 +1261,13 @@
             
             btnStart.innerHTML = `<svg class="icon-svg" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> <span data-lang="resAgain">${L[lang].resAgain}</span>`;
             btnStart.disabled = false;
+
+            // Garantizar que la lista se muestre correcta y no se buguee tras el juego
+            let currentTrack = selSongs.value;
+            await initLib();
+            if (currentTrack) {
+                selSongs.value = currentTrack;
+            }
         }
 
         function createExplosion(x, y, color, count=12) { for(let i=0; i<count; i++) particles.push({ x, y, vx: (Math.random()-0.5)*14, vy: (Math.random()-0.5)*14, life: 1, color }); }
